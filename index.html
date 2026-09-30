@@ -270,16 +270,22 @@ details.rules[open]>summary::after{content:"-"}
 .ach-more .stone{font-size:9px;padding:9px 12px}
 @media (max-width:900px){.ach-grid{grid-template-columns:1fr!important}}
 #fx{position:fixed;inset:0;pointer-events:none;z-index:0;display:none;image-rendering:pixelated}
-#fx.snow,#fx.ocean,#fx.night,#fx.day,#fx.nether{display:block}
+#fx.snow,#fx.ocean,#fx.night,#fx.day,#fx.nether,#fx.lava{display:block}
 .wrap,footer{position:relative;z-index:1}
 #fx::before,#fx::after{content:"";position:absolute;inset:0;background-repeat:repeat;image-rendering:pixelated}
 #fx .moon{display:none;position:absolute;top:10px;right:max(12px,calc(50% - 470px));width:64px;height:64px;background:var(--moon) center/100% no-repeat;image-rendering:pixelated;filter:drop-shadow(0 0 18px rgba(243,239,210,.35))}
-#fx.snow::before{background-image:var(--snowA);background-size:192px 192px;animation:fxFallA 16s linear infinite}
-#fx.snow::after{background-image:var(--snowB);background-size:224px 224px;animation:fxFallB 26s linear infinite;opacity:.85}
+#fx.snow::before{top:60px;background-image:var(--snowA);background-size:192px 192px;animation:fxFallA 16s linear infinite}
+#fx.snow .l1{display:block;top:-6px;bottom:auto;height:112px;z-index:1;background-image:var(--snowClouds);background-size:768px 168px;background-repeat:repeat-x;animation:fxCloudA 70s linear infinite}
+#fx.snow .l2{display:block;top:30px;bottom:auto;height:90px;opacity:.75;background-image:var(--snowClouds);background-size:560px 122px;background-repeat:repeat-x;animation:fxCloudB 95s linear infinite reverse}
+#fx.snow::after{top:70px;background-image:var(--snowB);background-size:224px 224px;animation:fxFallB 26s linear infinite;opacity:.85}
 @keyframes fxFallA{from{background-position:0 0}to{background-position:0 192px}}
 @keyframes fxFallB{from{background-position:0 0}to{background-position:224px 224px}}
-#fx.ocean::before{background-image:var(--waves);background-size:192px 96px;animation:fxDrift 18s linear infinite}
-#fx.ocean::after{background-image:var(--bubbles);background-size:160px 160px;animation:fxRise 14s linear infinite;opacity:.9}
+#fx.ocean{background:linear-gradient(#2B1B4F 0,#7A2E5E 34px,#E8603F 72px,#FFB36B 104px,#FFE3A3 110px,#3E8EC4 112px,#2466A0 40%,#123C68 75%,#0B2A4A 100%)}
+#fx.ocean .sun{display:block;top:74px;right:max(40px,calc(50% - 360px));width:76px;height:76px;clip-path:inset(0 0 50% 0);filter:hue-rotate(-28deg) saturate(1.5) drop-shadow(0 0 24px rgba(255,120,60,.8))}
+#fx.ocean .l3{display:block;top:114px;bottom:auto;height:220px;left:auto;right:max(40px,calc(50% - 360px));width:76px;background-image:var(--shimmer);background-size:80px 80px;animation:fxShim 1.6s steps(4) infinite;-webkit-mask-image:linear-gradient(#000,transparent);mask-image:linear-gradient(#000,transparent)}
+@keyframes fxShim{0%{background-position:0 0;opacity:1}50%{opacity:.55}100%{background-position:8px 12px;opacity:1}}
+#fx.ocean::before{top:112px;background-image:var(--waves);background-size:192px 96px;animation:fxDrift 18s linear infinite}
+#fx.ocean::after{top:140px;background-image:var(--bubbles);background-size:160px 160px;animation:fxRise 14s linear infinite;opacity:.9}
 @keyframes fxDrift{from{background-position:0 0}to{background-position:192px 0}}
 @keyframes fxRise{from{background-position:0 160px}to{background-position:0 0}}
 #fx.night{background:linear-gradient(#050818,#101845 70%,#1A2356)}
@@ -301,6 +307,11 @@ details.rules[open]>summary::after{content:"-"}
 #fx.nether{background:radial-gradient(ellipse at 50% 115%,rgba(255,96,16,.38),transparent 62%),linear-gradient(rgba(40,0,0,.25),rgba(120,20,0,.15))}
 #fx.nether .l1{display:block;background-image:var(--embersA);background-size:240px 240px;animation:fxEmberA 9s linear infinite}
 #fx.nether .l2{display:block;background-image:var(--embersB);background-size:300px 300px;animation:fxEmberB 14s linear infinite;opacity:.85}
+#fx.lava::before{background:radial-gradient(ellipse at 50% 110%,rgba(255,110,20,.55),transparent 60%);animation:fxGlow 5s ease-in-out infinite alternate}
+#fx.lava .l1{display:block;background-image:var(--lavaB);background-size:280px 280px;animation:fxBubble 11s linear infinite;opacity:.9;-webkit-mask-image:linear-gradient(transparent,#000 55%);mask-image:linear-gradient(transparent,#000 55%)}
+#fx.lava .l2{display:block;background-image:var(--embersB);background-size:300px 300px;animation:fxEmberB 16s linear infinite;opacity:.7}
+@keyframes fxGlow{from{opacity:.55}to{opacity:1}}
+@keyframes fxBubble{0%{background-position:0 280px}100%{background-position:0 0}}
 @keyframes fxEmberA{from{background-position:0 240px}to{background-position:40px 0}}
 @keyframes fxEmberB{from{background-position:0 300px}to{background-position:-60px 0}}
 @media (prefers-reduced-motion:reduce){#fx::before,#fx::after,#fx .l1,#fx .l2,#fx .l3{animation:none!important}}
@@ -979,6 +990,9 @@ details.rules[open]>summary::after{content:"-"}
       clouds2:svgUri(200,50,(function(){var o="",W="#FFFFFF";o+='<rect x="30" y="18" width="30" height="4" fill="'+W+'"/><rect x="24" y="22" width="44" height="6" fill="'+W+'"/><rect x="120" y="30" width="22" height="3" fill="'+W+'"/><rect x="114" y="33" width="34" height="5" fill="'+W+'"/>';return o})()),
       embersA:svgUri(120,120,scatter(116,116,9,71,function(x,y,r){return px(x,y,r()>.5?2:1,r()>.5?"#FFB347":"#FF6A1A",.95)})),
       embersB:svgUri(150,150,scatter(146,146,7,83,function(x,y){return px(x,y,1,"#FFE08A",.9)})),
+      snowClouds:svgUri(256,56,(function(){var o="",A="#AEB9C4",B="#C3CCD5",Cc="#97A3AF";function cl(x,y,w){o+='<rect x="'+(x+6)+'" y="'+y+'" width="'+(w-12)+'" height="6" fill="'+B+'"/><rect x="'+x+'" y="'+(y+6)+'" width="'+w+'" height="10" fill="'+A+'"/><rect x="'+(x+4)+'" y="'+(y+16)+'" width="'+(w-8)+'" height="4" fill="'+Cc+'"/><rect x="'+(x+14)+'" y="'+(y-5)+'" width="'+Math.max(10,w-34)+'" height="5" fill="'+B+'"/>'}cl(0,14,70);cl(62,20,60);cl(118,12,78);cl(190,18,66);return o})()),
+      shimmer:svgUri(40,40,scatter(36,38,6,91,function(x,y){return '<rect x="'+x+'" y="'+y+'" width="'+(6+(x%3)*2)+'" height="1" fill="#FFD08A" fill-opacity=".85"/>'})),
+      lavaB:svgUri(140,140,scatter(132,132,8,101,function(x,y,r){var s=r()>.5?3:2;return '<rect x="'+x+'" y="'+y+'" width="'+s+'" height="'+s+'" fill="#FF8A1F"/><rect x="'+x+'" y="'+y+'" width="1" height="1" fill="#FFE08A"/>'})),
       sun:svgUri(20,20,(function(){var o="",Y="#FFE066",O="#FFC21A";for(var y=0;y<20;y++)for(var x=0;x<20;x++){var dx=x-9.5,dy=y-9.5,dd=dx*dx+dy*dy;if(dd<=30)o+=px(x,y,1,dd<=12?"#FFF3A8":Y);else if(dd<=42&&(x===9||x===10||y===9||y===10))o+=px(x,y,1,O)}[[9,0],[10,0],[9,19],[10,19],[0,9],[0,10],[19,9],[19,10],[3,3],[16,3],[3,16],[16,16]].forEach(function(p){o+=px(p[0],p[1],1,O)});return o})()),
       moon:svgUri(16,16,(function(){var o="",c="#F3EFD2",sh="#D9D3A8";for(var y=0;y<16;y++)for(var x=0;x<16;x++){var dx=x-7.5,dy=y-7.5,in1=dx*dx+dy*dy<=49,in2=(x-11.5)*(x-11.5)+(y-4.5)*(y-4.5)<=25;if(in1&&!in2)o+=px(x,y,1,(x+y)%5===0?sh:c)}return o})())
     };
@@ -988,9 +1002,9 @@ details.rules[open]>summary::after{content:"-"}
   function applyTheme(){
     var t=cfg().theme;if(t==="stone")t="";var st=document.documentElement.style,fx=document.getElementById("fx"),eff=t||(mqDark&&mqDark.matches?"night":"grass");
     ["--dirt","--grass","--bg"].forEach(function(p){st.removeProperty(p)});
-    if(eff==="night"||eff==="day"){st.setProperty("--dirt","none");st.setProperty("--grass","none");st.setProperty("--bg",eff==="day"?"#7EC8F2":"#0B1026")}
-    else if(t&&THEMES[t]){var p=THEMES[t];st.setProperty("--dirt",tile(p.d,null,7,p.w));st.setProperty("--grass",tile(p.d,p.g,11,p.w));st.setProperty("--bg",p.bg)}
-    if(fx){fx.className=["snow","ocean","night","day","nether"].indexOf(eff)>=0?eff:"";if(fx.className){var P=fxPatterns();Object.keys(P).forEach(function(k){fx.style.setProperty("--"+k,P[k])})}}
+    if(eff==="night"||eff==="day"||eff==="ocean"){st.setProperty("--dirt","none");st.setProperty("--grass","none");st.setProperty("--bg",eff==="day"?"#7EC8F2":eff==="ocean"?"#0B2A4A":"#0B1026")}
+    else if(t&&THEMES[t]){var p=THEMES[t];st.setProperty("--dirt",tile(p.d,null,7,p.w));st.setProperty("--grass",eff==="snow"?tile(p.d,null,7,p.w):tile(p.d,p.g,11,p.w));st.setProperty("--bg",p.bg)}
+    if(fx){fx.className=["snow","ocean","night","day","nether","lava"].indexOf(eff)>=0?eff:"";if(fx.className){var P=fxPatterns();Object.keys(P).forEach(function(k){fx.style.setProperty("--"+k,P[k])})}}
   }
   if(mqDark&&mqDark.addEventListener)mqDark.addEventListener("change",function(){if(!cfg().theme)applyTheme()});
   /* ---- settings panel ---- */
@@ -1004,9 +1018,9 @@ details.rules[open]>summary::after{content:"-"}
     if(v)h+='<div class="edrow"><span class="pz">'+(v.from>T?'Vacation starts '+fmtD(v.from)+', ':'On vacation ')+'until '+fmtD(add(v.to,-1))+'</span><button type="button" class="stone del" id="vacEnd">End vacation</button></div>';
     else h+='<div class="edrow"><label>Vacation length<select id="vacLen">'+[1,2,3,4,5,6,7,10,14].map(function(x){return '<option value="'+x+'">'+x+' day'+(x>1?'s':'')+'</option>'}).join("")+'</select></label><button type="button" class="stone" id="vacToday">Start today</button><button type="button" class="stone" id="vacTom">Start tomorrow</button></div>';
     h+='<p class="help">Vacation days are rest days: every quest turns optional and your streak is safe. Streak freezes are earned automatically: one for every 14 clean days in a row (hold up to 3). If you miss two days in a row, a freeze saves the streak.</p>';
-    h+='<h3 class="sh">Deadlines</h3><div id="dlList">'+(c.deadlines||[]).slice().sort(function(a,b){return a.date<b.date?-1:1}).map(function(d){return '<div class="edrow"><input data-dt="'+esc(d.id)+'" value="'+esc(d.title)+'" aria-label="Deadline name"><label>Date<input type="date" data-dd="'+esc(d.id)+'" value="'+esc(d.date)+'"></label><button type="button" class="stone mini del" data-dx="'+esc(d.id)+'">x</button></div>'}).join("")+'</div><div class="edrow"><input id="dlNewT" placeholder="e.g. Thesis draft due"><label>Date<input type="date" id="dlNewD"></label><button type="button" class="stone" id="dlAdd">Add</button></div><p class="help">Upcoming deadlines show as countdown chips in the top panel.</p>';
+    h+='<h3 class="sh">Deadlines</h3><div id="dlList">'+(c.deadlines||[]).slice().sort(function(a,b){return a.date<b.date?-1:1}).map(function(d){return '<div class="edrow"><label class="grow">Name<input data-dt="'+esc(d.id)+'" value="'+esc(d.title)+'"></label><label>Date<input type="date" data-dd="'+esc(d.id)+'" value="'+esc(d.date)+'"></label><button type="button" class="stone mini del" data-dx="'+esc(d.id)+'">x</button></div>'}).join("")+'</div><div class="edrow"><label class="grow">Name<input id="dlNewT" placeholder="Thesis draft due"></label><label>Date<input type="date" id="dlNewD"></label><button type="button" class="stone" id="dlAdd">Add</button></div><p class="help">Upcoming deadlines show as countdown chips in the top panel.</p>';
     var tm=c.term||{};
-    h+='<h3 class="sh">Term</h3><div class="edrow"><label class="grow">Name<input id="tmName" value="'+esc(tm.name||"")+'" placeholder="e.g. Fall 2026"></label><label>Starts<input type="date" id="tmStart" value="'+esc(tm.start||"")+'"></label><label>Ends<input type="date" id="tmEnd" value="'+esc(tm.end||"")+'"></label></div><div class="edrow"><label>Break from<input type="date" id="brFrom"></label><label>to<input type="date" id="brTo"></label><button type="button" class="stone" id="brAdd">Add break</button>'+(c.term?'<button type="button" class="stone del" id="tmClear">Clear term</button>':'')+'</div><p class="help">Shows "Week 6 of 13" in the top panel. A break works like a vacation: every quest turns optional and your streak is safe.</p>';
+    h+='<h3 class="sh">Term</h3><div class="edrow"><label class="grow">Name<input id="tmName" value="'+esc(tm.name||"")+'" placeholder="Fall 2026"></label><label>Starts<input type="date" id="tmStart" value="'+esc(tm.start||"")+'"></label><label>Ends<input type="date" id="tmEnd" value="'+esc(tm.end||"")+'"></label></div><div class="edrow"><label>Break from<input type="date" id="brFrom"></label><label>to<input type="date" id="brTo"></label><button type="button" class="stone" id="brAdd">Add break</button>'+(c.term?'<button type="button" class="stone del" id="tmClear">Clear term</button>':'')+'</div><p class="help">Shows "Week 6 of 13" in the top panel. A break works like a vacation: every quest turns optional and your streak is safe.</p>';
     var CA=c.customAch||[];
     h+='<h3 class="sh">Custom achievements ('+CA.length+'/4)</h3>'+CA.map(function(a){return '<div class="mq ca"><div class="edrow"><input data-ca="'+esc(a.id)+'" data-cf="title" maxlength="24" value="'+esc(a.title)+'" aria-label="Title"><select data-ca="'+esc(a.id)+'" data-cf="icon" aria-label="Icon">'+Object.keys(D.icons).map(function(k){return '<option value="'+k+'"'+(a.icon===k?" selected":"")+'>'+k+'</option>'}).join("")+'</select></div><div class="edrow"><label class="grow">Description<input data-ca="'+esc(a.id)+'" data-cf="desc" maxlength="40" value="'+esc(a.desc||"")+'"></label></div><div class="edrow"><label>Unlocks at<select data-ca="'+esc(a.id)+'" data-cf="kind"><option value="streak"'+(a.kind==="streak"?" selected":"")+'>Streak (days)</option><option value="total"'+(a.kind==="total"?" selected":"")+'>Total cleared days</option><option value="level"'+(a.kind==="level"?" selected":"")+'>Level</option></select></label><label>Number<input type="number" min="1" max="3650" data-ca="'+esc(a.id)+'" data-cf="n" value="'+a.n+'"></label><button type="button" class="stone mini del" data-cax="'+esc(a.id)+'">Delete</button></div></div>'}).join("");
     if(CA.length<4)h+='<div class="edrow"><button type="button" class="stone" id="caAdd">+ Add custom achievement</button></div>';
@@ -1129,8 +1143,8 @@ details.rules[open]>summary::after{content:"-"}
       var p=isPaused(q,T),par="";
       if(q.type==="weekly")par=numIn("Times per week","min",i,q.min,1,1,7);
       else if(q.type==="time")par=numIn("Min (minutes)","min",i,q.min,10,10,960)+numIn("Project total, hours (optional)","totalh",i,q.total?num(q.total/60):"","any",0);
-      else if(q.type==="target")par=numIn("Goal","min",i,q.min,"any",0)+txtIn("Unit","ul",i,q.ul,"e.g. glasses")+numIn("Step","step",i,q.step||1,"any",0)+numIn("Project total (optional)","total",i,q.total||"","any",0);
-      else if(q.type==="limit")par=numIn("Max","max",i,q.max,1,0,999)+'<label>Counts<select data-p="unit" data-i="'+i+'"><option value=""'+(q.unit==="min"?"":" selected")+'>number</option><option value="min"'+(q.unit==="min"?" selected":"")+'>minutes</option></select></label>'+(q.unit==="min"?"":txtIn("Unit","ul",i,q.ul,"e.g. cups"));
+      else if(q.type==="target")par=numIn("Goal","min",i,q.min,"any",0)+txtIn("Unit","ul",i,q.ul,"glasses")+numIn("Step","step",i,q.step||1,"any",0)+numIn("Project total (optional)","total",i,q.total||"","any",0);
+      else if(q.type==="limit")par=numIn("Max","max",i,q.max,1,0,999)+'<label>Counts<select data-p="unit" data-i="'+i+'"><option value=""'+(q.unit==="min"?"":" selected")+'>number</option><option value="min"'+(q.unit==="min"?" selected":"")+'>minutes</option></select></label>'+(q.unit==="min"?"":txtIn("Unit","ul",i,q.ul,"cups"));
       else if(q.type==="wake")par='<label>From<input type="time" data-p="from" data-i="'+i+'" value="'+q.from+'"></label><label>To<input type="time" data-p="to" data-i="'+i+'" value="'+q.to+'"></label>';
       else if(q.type==="scale")par='<label>Out of<select data-p="scale" data-i="'+i+'"><option value="5"'+((q.scale||5)==5?" selected":"")+'>5</option><option value="10"'+(q.scale==10?" selected":"")+'>10</option></select></label>'+numIn("Pass at","min",i,q.min,1,1,q.scale||5);
       var days=q.days&&q.days.length?q.days:[0,1,2,3,4,5,6],dh='<div class="days" role="group" aria-label="Days">';[1,2,3,4,5,6,0].forEach(function(d){dh+='<button type="button" class="stone mini'+(days.indexOf(d)>=0?' on':'')+'" data-day="'+i+','+d+'" aria-pressed="'+(days.indexOf(d)>=0)+'">'+DN[d].slice(0,2)+'</button>'});dh+='</div>';

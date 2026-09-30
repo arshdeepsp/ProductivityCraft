@@ -16,7 +16,7 @@ Opening `index.html` straight from disk also works, just without offline caching
 
 ## Updating
 
-Replace the files on the host and bump the cache name in `sw.js` (`productivitycraft-v1` to `productivitycraft-v2`, and so on). Installed copies fetch the update and show "An update is ready. Reload to use it."
+Replace the files on the host and bump the cache name in `sw.js` (`productivitycraft-v3` to `productivitycraft-v2`, and so on). Installed copies fetch the update and show "An update is ready. Reload to use it."
 
 ## Data and privacy
 
