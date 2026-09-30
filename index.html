@@ -285,7 +285,9 @@ details.rules[open]>summary::after{content:"-"}
 #fx.ocean .l3{display:block;top:114px;bottom:auto;height:220px;left:auto;right:max(40px,calc(50% - 360px));width:76px;background-image:var(--shimmer);background-size:80px 80px;animation:fxShim 1.6s steps(4) infinite;-webkit-mask-image:linear-gradient(#000,transparent);mask-image:linear-gradient(#000,transparent)}
 @keyframes fxShim{0%{background-position:0 0;opacity:1}50%{opacity:.55}100%{background-position:8px 12px;opacity:1}}
 #fx.ocean::before{top:112px;background-image:var(--waves);background-size:192px 96px;animation:fxDrift 18s linear infinite}
-#fx.ocean::after{top:140px;background-image:var(--bubbles);background-size:160px 160px;animation:fxRise 14s linear infinite;opacity:.9}
+#fx.ocean::after{top:124px;background-image:var(--crests);background-size:320px 160px;animation:fxCrest 26s linear infinite,fxBob 3.2s ease-in-out infinite alternate;opacity:.85}
+@keyframes fxCrest{from{background-position:0 0}to{background-position:-320px 0}}
+@keyframes fxBob{from{transform:translateY(0)}to{transform:translateY(3px)}}
 @keyframes fxDrift{from{background-position:0 0}to{background-position:192px 0}}
 @keyframes fxRise{from{background-position:0 160px}to{background-position:0 0}}
 #fx.night{background:linear-gradient(#050818,#101845 70%,#1A2356)}
@@ -314,7 +316,7 @@ details.rules[open]>summary::after{content:"-"}
 @keyframes fxBubble{0%{background-position:0 280px}100%{background-position:0 0}}
 @keyframes fxEmberA{from{background-position:0 240px}to{background-position:40px 0}}
 @keyframes fxEmberB{from{background-position:0 300px}to{background-position:-60px 0}}
-@media (prefers-reduced-motion:reduce){#fx::before,#fx::after,#fx .l1,#fx .l2,#fx .l3{animation:none!important}}
+@media (prefers-reduced-motion:reduce){#fx::before,#fx::after,#fx .l1,#fx .l2,#fx .l3{animation:none!important;transform:none!important}}
 
 .wk{font-family:"Press Start 2P",monospace;font-size:8px;color:#E6E6E6;margin-right:10px;align-self:center}
 .ctl:has(.wk){display:flex;align-items:center}
@@ -991,6 +993,7 @@ details.rules[open]>summary::after{content:"-"}
       embersA:svgUri(120,120,scatter(116,116,9,71,function(x,y,r){return px(x,y,r()>.5?2:1,r()>.5?"#FFB347":"#FF6A1A",.95)})),
       embersB:svgUri(150,150,scatter(146,146,7,83,function(x,y){return px(x,y,1,"#FFE08A",.9)})),
       snowClouds:svgUri(256,56,(function(){var o="",A="#AEB9C4",B="#C3CCD5",Cc="#97A3AF";function cl(x,y,w){o+='<rect x="'+(x+6)+'" y="'+y+'" width="'+(w-12)+'" height="6" fill="'+B+'"/><rect x="'+x+'" y="'+(y+6)+'" width="'+w+'" height="10" fill="'+A+'"/><rect x="'+(x+4)+'" y="'+(y+16)+'" width="'+(w-8)+'" height="4" fill="'+Cc+'"/><rect x="'+(x+14)+'" y="'+(y-5)+'" width="'+Math.max(10,w-34)+'" height="5" fill="'+B+'"/>'}cl(0,14,70);cl(62,20,60);cl(118,12,78);cl(190,18,66);return o})()),
+      crests:svgUri(160,80,scatter(150,74,7,117,function(x,y){return '<rect x="'+x+'" y="'+(y+1)+'" width="2" height="1" fill="#CFEFFF" fill-opacity=".35"/><rect x="'+(x+2)+'" y="'+y+'" width="4" height="1" fill="#E6F7FF" fill-opacity=".45"/><rect x="'+(x+6)+'" y="'+(y+1)+'" width="2" height="1" fill="#CFEFFF" fill-opacity=".35"/>'})),
       shimmer:svgUri(40,40,scatter(36,38,6,91,function(x,y){return '<rect x="'+x+'" y="'+y+'" width="'+(6+(x%3)*2)+'" height="1" fill="#FFD08A" fill-opacity=".85"/>'})),
       lavaB:svgUri(140,140,scatter(132,132,8,101,function(x,y,r){var s=r()>.5?3:2;return '<rect x="'+x+'" y="'+y+'" width="'+s+'" height="'+s+'" fill="#FF8A1F"/><rect x="'+x+'" y="'+y+'" width="1" height="1" fill="#FFE08A"/>'})),
       sun:svgUri(20,20,(function(){var o="",Y="#FFE066",O="#FFC21A";for(var y=0;y<20;y++)for(var x=0;x<20;x++){var dx=x-9.5,dy=y-9.5,dd=dx*dx+dy*dy;if(dd<=30)o+=px(x,y,1,dd<=12?"#FFF3A8":Y);else if(dd<=42&&(x===9||x===10||y===9||y===10))o+=px(x,y,1,O)}[[9,0],[10,0],[9,19],[10,19],[0,9],[0,10],[19,9],[19,10],[3,3],[16,3],[3,16],[16,16]].forEach(function(p){o+=px(p[0],p[1],1,O)});return o})()),
