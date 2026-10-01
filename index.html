@@ -197,6 +197,13 @@ details.rules[open]>summary::after{content:"-"}
 .empty{font-size:20px;color:#3F3F3F;padding:8px 2px}
 .rules-empty{font-size:20px;color:var(--muted);text-shadow:2px 2px 0 #000;margin:18px 3px 0}
 .privacy{font-size:18px;color:var(--muted);text-shadow:2px 2px 0 #000;text-align:center;margin:0}
+.morestats{display:contents}
+.statsbtn{font:16px/1 var(--vt);background:#3A3A3A;color:#E0E0E0;border:2px solid #000;padding:3px 8px;cursor:pointer}
+.statsbtn:hover{background:#555}
+.stabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:-4px 0 6px;position:sticky;top:-16px;z-index:2;background:#C6C6C6;padding:8px 0}
+.stab-b{font-size:8px;padding:9px 4px}
+.stab-b.on{background:#3C8527;border-color:#2A5E1B #5DB33F #5DB33F #2A5E1B}
+.drawer-b .sh.first{margin-top:4px;border-top:0;padding-top:0}
 .qmenu{position:absolute;z-index:40;display:grid;min-width:170px;background:#C6C6C6;border:3px solid;border-color:#fff #555 #555 #fff;box-shadow:0 0 0 3px #000,0 6px 0 rgba(0,0,0,.3)}
 .qmenu button{font:19px/1.2 var(--vt);text-align:left;background:none;border:0;border-bottom:2px solid #A6A6A6;padding:8px 12px;color:#1E1E1E;cursor:pointer}
 .qmenu button:last-child{border-bottom:0;color:#5A5A5A}
@@ -217,6 +224,8 @@ details.rules[open]>summary::after{content:"-"}
 .xpbar i.on{background:#FFD23F;box-shadow:inset 0 -3px 0 #B8860B}
 .q.limok .gem{background:transparent;border:2px dashed #E6E6E6}
 .packs.wel{margin:10px 0}
+.packs.wel .stone.on{background:#3C8527;border-color:#2A5E1B #5DB33F #5DB33F #2A5E1B}
+.stone:disabled{opacity:.5;cursor:default}
 .help-g .sh2:first-child{margin-top:0}
 .mhead{font-family:"Press Start 2P",monospace;font-size:11px;line-height:1.6;margin:0 0 10px;color:#3F3F3F}
 .mhead.good{color:#2E6B24}.mhead.bad{color:#9E2A1F}
@@ -465,7 +474,7 @@ details.rules[open]>summary::after{content:"-"}
     <div class="slot" id="rankIcon"></div>
     <div>
       <div class="rank" id="rankName">Apprentice</div>
-      <div class="stats"><span>Streak <b id="stStreak">0</b></span><span>Best <b id="stBest">0</b></span><span>Cleared <b id="stTotal">0</b></span><span>Freezes <b id="stFz">0</b></span><span class="term" id="termTxt" hidden></span></div>
+      <div class="stats"><span>Streak <b id="stStreak">0</b></span><span class="morestats" id="moreStats" hidden><span>Best <b id="stBest">0</b></span><span>Cleared <b id="stTotal">0</b></span><span>Freezes <b id="stFz">0</b></span></span><button type="button" class="statsbtn" id="statsToggle" aria-controls="moreStats" aria-expanded="false">More</button><span class="term" id="termTxt" hidden></span></div>
       <div class="dlrow" id="dlRow" hidden></div>
       <div class="lvl"><div class="lvlrow"><span class="lvn" id="lvlNum">Lv 1</span><span id="lvlText">0 / 300 XP</span></div><div class="xpb"><i id="xpFill"></i></div></div>
       <div class="note" id="hudNote"></div>
@@ -735,6 +744,7 @@ details.rules[open]>summary::after{content:"-"}
   }
 
   /* ---- render ---- */
+  var statsOpen=false;try{statsOpen=localStorage.getItem("pc-stats")==="1"}catch(x){}document.getElementById("statsToggle").addEventListener("click",function(){statsOpen=!statsOpen;try{localStorage.setItem("pc-stats",statsOpen?"1":"0")}catch(x){}render()});
   var achOpen=false;document.getElementById("achMore").addEventListener("click",function(){achOpen=!achOpen;render()});
   var lastEval={set:false},lastCleared=null,page=0,selDay=null,lastSt=null;
   function fmtD(k){return parse(k).toLocaleDateString("en-CA",{month:"short",day:"numeric"})}
@@ -764,7 +774,7 @@ details.rules[open]>summary::after{content:"-"}
     rn.textContent=st.rebase?"Rebasing":r[1];ri.innerHTML=svg(st.rebase?"sprout":r[2]);ri.firstChild.style.filter=st.rebase?"grayscale(1)":"";
     document.getElementById("stStreak").textContent=st.streak+(st.streak===1?" day":" days");
     document.getElementById("stBest").textContent=st.best;
-    document.getElementById("stTotal").textContent=st.total;document.getElementById("stFz").textContent=st.fz;
+    document.getElementById("stTotal").textContent=st.total;var ms=document.getElementById("moreStats"),stb=document.getElementById("statsToggle");ms.hidden=!statsOpen;stb.textContent=statsOpen?"Less":"More";stb.setAttribute("aria-expanded",statsOpen);document.getElementById("stFz").textContent=st.fz;
     var note=document.getElementById("hudNote"),nx=null;
     RANKS.forEach(function(x){if(!nx&&x[0]>st.streak)nx=x});
     note.className="note";
@@ -792,7 +802,7 @@ details.rules[open]>summary::after{content:"-"}
       var el=qEls[q.id];if(!el)return;var v=e[q.id];
       if(q.type==="wake"){if(document.activeElement!==el.inp)el.inp.value=v||"";var w=metQ(q,e);el.row.classList.toggle("met",w);el.row.classList.toggle("fail",!!v&&!w)}
       else if(q.type==="todo"){el.row.querySelector(".req").textContent=reqText(q);el.td.setAttribute("aria-pressed",!!v);el.td.textContent=v?"Done \u2713":"Mark done";el.row.classList.toggle("met",!!v);el.row.classList.toggle("tddone",!!v);var od=q.due&&!v&&q.due<T;el.row.classList.toggle("fail",!!od)}
-      else if(q.type==="weekly"){var wc=weekCount(q.id,k),pp="";for(var z=0;z<Math.max(q.min,wc);z++)pp+='<i class="'+(z<wc?"on":"")+'"></i>';el.pips.innerHTML=pp;el.wk.textContent=wc+"/"+q.min+" this week";el.wb.setAttribute("aria-pressed",!!v);el.wb.textContent=v?"Done today \u2713":"Done today";el.row.classList.toggle("met",wc>=q.min)}
+      else if(q.type==="weekly"){var wc=weekCount(q.id,k),pp="";for(var z=0;z<Math.max(q.min,wc);z++)pp+='<i class="'+(z<wc?"on":"")+'"></i>';el.pips.innerHTML=pp;el.wk.textContent=wc+"/"+q.min+" this week";el.wb.setAttribute("aria-pressed",!!v);el.wb.textContent=v?"Done today \u2713":"Done today";el.row.classList.toggle("met",!!v||wc>=q.min)}
       else if(q.type==="check"){el.sw.setAttribute("aria-checked",!!v);el.row.classList.toggle("met",!!v)}
       else if(q.type==="scale"){el.sc.forEach(function(bt){bt.setAttribute("aria-pressed",+bt.getAttribute("data-v")===v)});el.row.classList.toggle("met",metQ(q,e));el.row.classList.toggle("fail",!!v&&!metQ(q,e))}
       else if(q.type==="target"){el.out.textContent=num(v)+" / "+num(q.min);el.minus.disabled=!(num(v)>0);el.row.classList.toggle("met",metQ(q,e))}
@@ -1086,25 +1096,30 @@ details.rules[open]>summary::after{content:"-"}
   /* ---- settings panel ---- */
   function isVac(k){return (cfg().vacs||[]).some(function(v){return k>=v.from&&k<v.to})}
   function curVac(){var T=todayKey();return (cfg().vacs||[]).filter(function(v){return v.to>T})[0]}
+  var setTab="look";
   function renderSettings(){
-    var el=document.getElementById("settingsBody");if(!el)return;var c=cfg(),T=todayKey(),v=curVac(),h='<div class="ed">';
-    h+='<div class="edrow"><label>Theme<select id="setTheme">'+[["","Auto (grass by day, night in dark mode)"],["grass","Grass"],["day","Day"],["night","Night"],["snow","Snow"],["ocean","Ocean"],["lava","Lava"],["nether","Nether"]].map(function(o){return '<option value="'+o[0]+'"'+((c.theme||"")===o[0]?" selected":"")+'>'+o[1]+'</option>'}).join("")+'</select></label>';
-    h+='<label>Day ends at<select id="setDayEnd">'+[0,1,2,3,4,5].map(function(x){return '<option value="'+x+'"'+((c.dayEnd|0)===x?" selected":"")+'>'+(x?x+":00 am":"Midnight")+'</option>'}).join("")+'</select></label></div>';
-    h+='<p class="help">Night owl? Set the day to end later, and anything logged before then still counts for the previous day.</p>';
-    if(v)h+='<div class="edrow"><span class="pz">'+(v.from>T?'Vacation starts '+fmtD(v.from)+', ':'On vacation ')+'until '+fmtD(add(v.to,-1))+'</span><button type="button" class="stone del" id="vacEnd">End vacation</button></div>';
-    else h+='<div class="edrow"><label>Vacation length<select id="vacLen">'+[1,2,3,4,5,6,7,10,14].map(function(x){return '<option value="'+x+'">'+x+' day'+(x>1?'s':'')+'</option>'}).join("")+'</select></label><button type="button" class="stone" id="vacToday">Start today</button><button type="button" class="stone" id="vacTom">Start tomorrow</button></div>';
-    h+='<p class="help">Vacation days are rest days: every quest turns optional and your streak is safe. Streak freezes are earned automatically: one for every 14 clean days in a row (hold up to 3). If you miss two days in a row, a freeze saves the streak.</p>';
-    h+='<h3 class="sh">Deadlines</h3><div id="dlList">'+(c.deadlines||[]).slice().sort(function(a,b){return a.date<b.date?-1:1}).map(function(d){return '<div class="edrow"><label class="grow">Name<input data-dt="'+esc(d.id)+'" value="'+esc(d.title)+'"></label><label>Date<input type="date" data-dd="'+esc(d.id)+'" value="'+esc(d.date)+'"></label><button type="button" class="stone mini del" data-dx="'+esc(d.id)+'">x</button></div>'}).join("")+'</div><div class="edrow"><label class="grow">Name<input id="dlNewT" placeholder="Thesis draft due"></label><label>Date<input type="date" id="dlNewD"></label><button type="button" class="stone" id="dlAdd">Add</button></div><p class="help">Upcoming deadlines show as countdown chips in the top panel.</p>';
+    var el=document.getElementById("settingsBody");if(!el)return;var c=cfg(),T=todayKey(),v=curVac(),h='<div class="ed">',L='',Sc='',G='',Dt='';
+    L+='<h3 class="sh first">Theme</h3><div class="edrow"><label class="grow">Theme<select id="setTheme">'+[["","Auto (grass by day, night in dark mode)"],["grass","Grass"],["day","Day"],["night","Night"],["snow","Snow"],["ocean","Ocean"],["lava","Lava"],["nether","Nether"]].map(function(o){return '<option value="'+o[0]+'"'+((c.theme||"")===o[0]?" selected":"")+'>'+o[1]+'</option>'}).join("")+'</select></label></div>';
+    Sc+='<h3 class="sh first">Day</h3><div class="edrow"><label>Day ends at<select id="setDayEnd">'+[0,1,2,3,4,5].map(function(x){return '<option value="'+x+'"'+((c.dayEnd|0)===x?" selected":"")+'>'+(x?x+":00 am":"Midnight")+'</option>'}).join("")+'</select></label></div>';
+    Sc+='<p class="help">Night owl? Set the day to end later, and anything logged before then still counts for the previous day.</p>';
+    Sc+='<h3 class="sh">Vacation</h3>';
+    if(v)Sc+='<div class="edrow"><span class="pz">'+(v.from>T?'Vacation starts '+fmtD(v.from)+', ':'On vacation ')+'until '+fmtD(add(v.to,-1))+'</span><button type="button" class="stone del" id="vacEnd">End vacation</button></div>';
+    else Sc+='<div class="edrow"><label>Vacation length<select id="vacLen">'+[1,2,3,4,5,6,7,10,14].map(function(x){return '<option value="'+x+'">'+x+' day'+(x>1?'s':'')+'</option>'}).join("")+'</select></label><button type="button" class="stone" id="vacToday">Start today</button><button type="button" class="stone" id="vacTom">Start tomorrow</button></div>';
+    Sc+='<p class="help">Vacation days are rest days: every quest turns optional and your streak is safe. Streak freezes are earned automatically: one for every 14 clean days in a row (hold up to 3). If you miss two days in a row, a freeze saves the streak.</p>';
+    G+='<h3 class="sh first">Deadlines</h3><div id="dlList">'+(c.deadlines||[]).slice().sort(function(a,b){return a.date<b.date?-1:1}).map(function(d){return '<div class="edrow"><label class="grow">Name<input data-dt="'+esc(d.id)+'" value="'+esc(d.title)+'"></label><label>Date<input type="date" data-dd="'+esc(d.id)+'" value="'+esc(d.date)+'"></label><button type="button" class="stone mini del" data-dx="'+esc(d.id)+'">x</button></div>'}).join("")+'</div><div class="edrow"><label class="grow">Name<input id="dlNewT" placeholder="Thesis draft due"></label><label>Date<input type="date" id="dlNewD"></label><button type="button" class="stone" id="dlAdd">Add</button></div><p class="help">Upcoming deadlines show as countdown chips in the top panel.</p>';
     var tm=c.term||{};
-    h+='<h3 class="sh">Term</h3><div class="edrow"><label class="grow">Name<input id="tmName" value="'+esc(tm.name||"")+'" placeholder="Fall 2026"></label><label>Starts<input type="date" id="tmStart" value="'+esc(tm.start||"")+'"></label><label>Ends<input type="date" id="tmEnd" value="'+esc(tm.end||"")+'"></label></div><div class="edrow"><label>Break from<input type="date" id="brFrom"></label><label>to<input type="date" id="brTo"></label><button type="button" class="stone" id="brAdd">Add break</button>'+(c.term?'<button type="button" class="stone del" id="tmClear">Clear term</button>':'')+'</div><p class="help">Shows "Week 6 of 13" in the top panel. A break works like a vacation: every quest turns optional and your streak is safe.</p>';
+    Sc+='<h3 class="sh">Term</h3><div class="edrow"><label class="grow">Name<input id="tmName" value="'+esc(tm.name||"")+'" placeholder="Fall 2026"></label><label>Starts<input type="date" id="tmStart" value="'+esc(tm.start||"")+'"></label><label>Ends<input type="date" id="tmEnd" value="'+esc(tm.end||"")+'"></label></div><div class="edrow"><label>Break from<input type="date" id="brFrom"></label><label>to<input type="date" id="brTo"></label><button type="button" class="stone" id="brAdd">Add break</button>'+(c.term?'<button type="button" class="stone del" id="tmClear">Clear term</button>':'')+'</div><p class="help">Shows "Week 6 of 13" in the top panel. A break works like a vacation: every quest turns optional and your streak is safe.</p>';
     var CA=c.customAch||[];
-    h+='<h3 class="sh">Custom achievements ('+CA.length+'/4)</h3>'+CA.map(function(a){return '<div class="mq ca"><div class="edrow"><input data-ca="'+esc(a.id)+'" data-cf="title" maxlength="24" value="'+esc(a.title)+'" aria-label="Title"><select data-ca="'+esc(a.id)+'" data-cf="icon" aria-label="Icon">'+Object.keys(D.icons).map(function(k){return '<option value="'+k+'"'+(a.icon===k?" selected":"")+'>'+k+'</option>'}).join("")+'</select></div><div class="edrow"><label class="grow">Description<input data-ca="'+esc(a.id)+'" data-cf="desc" maxlength="40" value="'+esc(a.desc||"")+'"></label></div><div class="edrow"><label>Unlocks at<select data-ca="'+esc(a.id)+'" data-cf="kind"><option value="streak"'+(a.kind==="streak"?" selected":"")+'>Streak (days)</option><option value="total"'+(a.kind==="total"?" selected":"")+'>Total cleared days</option><option value="level"'+(a.kind==="level"?" selected":"")+'>Level</option></select></label><label>Number<input type="number" min="1" max="3650" data-ca="'+esc(a.id)+'" data-cf="n" value="'+a.n+'"></label><button type="button" class="stone mini del" data-cax="'+esc(a.id)+'">Delete</button></div></div>'}).join("");
-    if(CA.length<4)h+='<div class="edrow"><button type="button" class="stone" id="caAdd">+ Add custom achievement</button></div>';
-    h+='<p class="help">Your own goals, shown under Achievements with a downloadable certificate. Streak goals relock if the streak resets.</p>';
-    h+='<h3 class="sh">Display and sound</h3><div class="edrow"><button type="button" class="stone mini'+(c.showPlan?' on':'')+'" id="setPlan" aria-pressed="'+!!c.showPlan+'">Plan counters '+(c.showPlan?'on':'off')+'</button><button type="button" class="stone mini'+(sfxOn?' on':'')+'" id="setSfx" aria-pressed="'+sfxOn+'">Sound '+(sfxOn?'on':'off')+'</button></div><p class="help">Plan counters let you set a target above the minimum for time quests (needed for gold days).</p>';
-    h+='<h3 class="sh">Your data</h3><div class="edrow"><button type="button" class="stone" id="setExp">Export backup</button><button type="button" class="stone" id="setImp">Import backup</button></div><p class="help">Everything is stored on this device only. Export a backup now and then.</p>';
-    h+='<h3 class="sh">Starter packs</h3><div class="edrow"><label>Starter pack<select id="packSel"><option value="">Choose a pack\u2026</option>'+Object.keys(PACKS).map(function(p){return '<option>'+p+'</option>'}).join("")+'</select></label><button type="button" class="stone" id="packAdd">Add pack</button></div><p class="help">A pack adds its quests and a matching rules section to what you already have.</p></div>';
+    G+='<h3 class="sh">Custom achievements ('+CA.length+'/4)</h3>'+CA.map(function(a){return '<div class="mq ca"><div class="edrow"><input data-ca="'+esc(a.id)+'" data-cf="title" maxlength="24" value="'+esc(a.title)+'" aria-label="Title"><select data-ca="'+esc(a.id)+'" data-cf="icon" aria-label="Icon">'+Object.keys(D.icons).map(function(k){return '<option value="'+k+'"'+(a.icon===k?" selected":"")+'>'+k+'</option>'}).join("")+'</select></div><div class="edrow"><label class="grow">Description<input data-ca="'+esc(a.id)+'" data-cf="desc" maxlength="40" value="'+esc(a.desc||"")+'"></label></div><div class="edrow"><label>Unlocks at<select data-ca="'+esc(a.id)+'" data-cf="kind"><option value="streak"'+(a.kind==="streak"?" selected":"")+'>Streak (days)</option><option value="total"'+(a.kind==="total"?" selected":"")+'>Total cleared days</option><option value="level"'+(a.kind==="level"?" selected":"")+'>Level</option></select></label><label>Number<input type="number" min="1" max="3650" data-ca="'+esc(a.id)+'" data-cf="n" value="'+a.n+'"></label><button type="button" class="stone mini del" data-cax="'+esc(a.id)+'">Delete</button></div></div>'}).join("");
+    if(CA.length<4)G+='<div class="edrow"><button type="button" class="stone" id="caAdd">+ Add custom achievement</button></div>';
+    G+='<p class="help">Your own goals, shown under Achievements with a downloadable certificate. Streak goals relock if the streak resets.</p>';
+    L+='<h3 class="sh">Display and sound</h3><div class="edrow"><button type="button" class="stone mini'+(c.showPlan?' on':'')+'" id="setPlan" aria-pressed="'+!!c.showPlan+'">Plan counters '+(c.showPlan?'on':'off')+'</button><button type="button" class="stone mini'+(sfxOn?' on':'')+'" id="setSfx" aria-pressed="'+sfxOn+'">Sound '+(sfxOn?'on':'off')+'</button></div><p class="help">Plan counters let you set a target above the minimum for time quests (needed for gold days).</p>';
+    Dt+='<h3 class="sh first">Your data</h3><div class="edrow"><button type="button" class="stone" id="setExp">Export backup</button><button type="button" class="stone" id="setImp">Import backup</button></div><p class="help">Everything is stored on this device only. Export a backup now and then.</p>';
+    G+='<h3 class="sh">Starter packs</h3><div class="edrow"><label>Starter pack<select id="packSel"><option value="">Choose a pack\u2026</option>'+Object.keys(PACKS).map(function(p){return '<option>'+p+'</option>'}).join("")+'</select></label><button type="button" class="stone" id="packAdd">Add pack</button></div><p class="help">A pack adds its quests and a matching rules section to what you already have.</p>';
+    var TABS=[["look","Look",L],["schedule","Schedule",Sc],["goals","Goals",G],["data","Data",Dt]];
+    h+='<div class="stabs" role="tablist">'+TABS.map(function(t){return '<button type="button" role="tab" class="stone stab-b'+(setTab===t[0]?' on':'')+'" aria-selected="'+(setTab===t[0])+'" data-st="'+t[0]+'">'+t[1]+'</button>'}).join("")+'</div>'+TABS.map(function(t){return '<div class="stab" role="tabpanel" data-panel="'+t[0]+'"'+(setTab===t[0]?'':' hidden')+'>'+t[2]+'</div>'}).join("")+'</div>';
     el.innerHTML=h;
+    el.querySelectorAll("[data-st]").forEach(function(b){b.addEventListener("click",function(){setTab=b.getAttribute("data-st");el.querySelectorAll("[data-st]").forEach(function(x){var on=x===b;x.classList.toggle("on",on);x.setAttribute("aria-selected",on)});el.querySelectorAll("[data-panel]").forEach(function(p){p.hidden=p.getAttribute("data-panel")!==setTab})})});
     document.getElementById("setTheme").addEventListener("change",function(){var c2=clone(cfg());if(this.value)c2.theme=this.value;else delete c2.theme;saveCfg(c2);applyTheme()});
     document.getElementById("setDayEnd").addEventListener("change",function(){var c2=clone(cfg());c2.dayEnd=+this.value;S.cfg.dayEnd=c2.dayEnd;if(typeof setStart==="function"&&todayKey()<START_KEY){c2.start=parse(todayKey()).toISOString();setStart(c2.start);elapsed()}saveCfg(c2);lastDay=todayKey();qSig="";render();lockIn()});
     function startVac(from){var n=+document.getElementById("vacLen").value,c2=clone(cfg());c2.vacs=(c2.vacs||[]).concat([{from:from,to:add(from,n)}]);saveCfg(c2);var T2=todayKey();if(from===T2&&S.days[T2]&&!S.days[T2].ended){S.days[T2]=Object.assign({},S.days[T2],{q:activeDefs(T2)});dirty[T2]=true;cache();clearTimeout(timer);timer=setTimeout(flush,300)}qSig="";render();renderSettings()}
@@ -1316,23 +1331,28 @@ details.rules[open]>summary::after{content:"-"}
     '<p class="sh2">Your data</p><p class="help">Everything stays on this device. Use Export backup in Settings to keep a copy.</p></div>';
   function openHelp(){openG("How it works",function(b){b.innerHTML=HELPHTML+'<div class="edrow end"><button type="button" class="stone" id="hlpClose">Got it</button></div>';b.querySelector("#hlpClose").addEventListener("click",closeG)})}
   document.getElementById("helpBtn").addEventListener("click",openHelp);
-  function openWelcome(step){
-    step=step||0;
-    var steps=[
-      {t:"Welcome",h:'<p class="mhead">Build habits like a game.</p><p class="help">Pick a starter pack to begin, or start empty and add your own quests.</p><div class="packs wel">'+["Student","Fitness","Creative","Wellness","Deep Work"].map(function(p){return '<button type="button" class="stone" data-wp="'+p+'">'+p+'</button>'}).join("")+'<button type="button" class="stone" data-wp="">Start empty</button></div>'},
+  function openWelcome(){
+    var pick=null;
+    function steps(){return[
+      {t:"Welcome",h:'<p class="mhead">Build habits like a game.</p><p class="help">Pick a starter pack to begin, or start empty and add your own quests. You can change this choice until you finish.</p><div class="packs wel" role="radiogroup" aria-label="Starter pack">'+["Student","Fitness","Creative","Wellness","Deep Work",""].map(function(p){var on=pick===p;return '<button type="button" class="stone'+(on?' on':'')+'" role="radio" aria-checked="'+on+'" data-wp="'+p+'">'+(p||"Start empty")+'</button>'}).join("")+'</div>'+(pick?'<p class="help">'+pick+' pack selected: its quests and a rules section will be added.</p>':pick===""?'<p class="help">Starting empty: add quests with + New quest.</p>':'')},
       {t:"How a day works",h:'<p class="mhead">Do your quests, clear the day.</p><p class="help">Each quest shows what counts as done. When every required quest is done (and no limit is broken), the day is cleared.</p><p class="help">Use <b>+ New quest</b> to add more, and <b>End day</b> before bed to lock it in and get your wrap-up.</p>'},
       {t:"Streaks and rewards",h:'<p class="mhead">Keep the streak alive.</p><p class="help">Cleared days in a row build your streak, rank and badges. One missed day is forgiven; two in a row resets the streak.</p><p class="help">Tap <b>?</b> any time for the full guide.</p>'}
-    ];
-    var s=steps[step];
-    openG(s.t+" ("+(step+1)+"/3)",function(b){
-      b.innerHTML=s.h+'<div class="edrow end">'+(step>0?'<button type="button" class="stone" id="wBack">Back</button>':'<button type="button" class="stone" id="wSkip">Skip</button>')+(step<2?'<button type="button" class="stone save" id="wNext">Next</button>':'<button type="button" class="stone save" id="wDone">Let\u2019s go</button>')+'</div>';
-      b.querySelectorAll("[data-wp]").forEach(function(x){x.addEventListener("click",function(){var p=x.getAttribute("data-wp");if(p&&!(cfg().quests||[]).length)applyPack(p);closeG();setTimeout(function(){openWelcome(1)},0)})});
-      var n=b.querySelector("#wNext");if(n)n.addEventListener("click",function(){closeG();setTimeout(function(){openWelcome(step+1)},0)});
-      var bk=b.querySelector("#wBack");if(bk)bk.addEventListener("click",function(){closeG();setTimeout(function(){openWelcome(step-1)},0)});
-      var sk=b.querySelector("#wSkip");if(sk)sk.addEventListener("click",function(){closeG()});
-      var d=b.querySelector("#wDone");if(d)d.addEventListener("click",closeG);
-    },function(){try{localStorage.setItem("pc-welcomed","1")}catch(x){}});
+    ]}
+    openG("",function(b){
+      function draw(step){
+        var s=steps()[step];gTitle.textContent=s.t+" ("+(step+1)+"/3)";
+        b.innerHTML=s.h+'<div class="edrow end">'+(step>0?'<button type="button" class="stone" id="wBack">Back</button>':'<button type="button" class="stone" id="wSkip">Skip</button>')+(step<2?'<button type="button" class="stone save" id="wNext"'+(step===0&&pick===null?' disabled':'')+'>Next</button>':'<button type="button" class="stone save" id="wDone">'+(pick?"Add "+pick+" pack":"Let\u2019s go")+'</button>')+'</div>';
+        b.querySelectorAll("[data-wp]").forEach(function(x){x.addEventListener("click",function(){pick=x.getAttribute("data-wp");draw(0);var f=b.querySelector('[data-wp="'+pick+'"]');if(f)f.focus()})});
+        var n=b.querySelector("#wNext");if(n)n.addEventListener("click",function(){draw(step+1)});
+        var bk=b.querySelector("#wBack");if(bk)bk.addEventListener("click",function(){draw(step-1)});
+        var sk=b.querySelector("#wSkip");if(sk)sk.addEventListener("click",function(){pick=null;closeG()});
+        var d=b.querySelector("#wDone");if(d)d.addEventListener("click",closeG);
+        var foc=b.querySelector("#wNext:not([disabled]),#wDone,[data-wp]");if(foc&&step>0)foc.focus();
+      }
+      draw(0);
+    },function(){try{localStorage.setItem("pc-welcomed","1")}catch(x){}if(pick&&!(cfg().quests||[]).length)applyPack(pick)});
   }
+
 
   /* quest manager */
   var qmgr=document.getElementById("qmgr"),qDraft=null,mgrOpen=false;
@@ -1634,7 +1654,7 @@ details.rules[open]>summary::after{content:"-"}
     bn.querySelector("#bkNow").addEventListener("click",function(){document.getElementById("expBtn").click();bn.hidden=true});
     bn.querySelector("#bkLater").addEventListener("click",function(){localStorage.setItem("pc-backupSnooze",String(now+3*864e5));bn.hidden=true});
   }catch(x){}},4000);
-  try{if(!localStorage.getItem("pc-welcomed")&&!(cfg().quests||[]).length)setTimeout(function(){openWelcome(0)},300)}catch(x){}
+  try{if(!localStorage.getItem("pc-welcomed")&&!(cfg().quests||[]).length)setTimeout(function(){openWelcome()},300)}catch(x){}
   var lastDay=todayKey();
   setInterval(elapsed,5000);
   function lockIn(){if(ro()){document.getElementById("lockIn").textContent="Locked";return}if(endedT()){document.getElementById("lockIn").textContent="Ended";return}var n=new Date(),DE=dayEnd(),sd=new Date(n.getTime()-DE*3600000),m=new Date(sd.getFullYear(),sd.getMonth(),sd.getDate()+1,DE)-n,h=Math.floor(m/3600000),mm=Math.floor(m%3600000/60000);document.getElementById("lockIn").textContent="Locks in "+(h?h+"h ":"")+mm+"m"}
