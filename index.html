@@ -286,6 +286,8 @@ details.rules[open]>summary::after{content:"-"}
 .stone.tmr .ic{display:block;width:0;height:0;border-left:9px solid #fff;border-top:6px solid transparent;border-bottom:6px solid transparent}
 .stone.tmr.on{background:#B3261E}
 .stone.tmr.on .ic{width:9px;height:9px;border:0;background:#fff}
+.stone.tmr.on.hit{background:#3C8527}
+.stone.tmr.on.gold{background:#B8860B}
 .proj{display:grid;gap:3px;margin-top:5px}
 .pbar{height:8px;background:#373737;border:2px solid #1E1E1E;max-width:260px}
 .pbar i{display:block;height:100%;background:#FFD23F}
@@ -594,6 +596,7 @@ details.rules[open]>summary::after{content:"-"}
     else if(kind==="clear"){[523,659,784,1047].forEach(function(f,i){tone(f,i*.09,.14)})}
     else if(kind==="gold"){[784,988,1175,1568,2093].forEach(function(f,i){tone(f,i*.08,.16,"triangle",.08)})}
     else if(kind==="fail"){tone(110,0,.35,"sawtooth",.07);tone(82,.18,.35,"sawtooth",.07)}
+    else if(kind==="chime"){[1047,1319,1568,2093].forEach(function(f,i){tone(f,i*.11,.22,"triangle",.09)})}
     else if(kind==="level"){[392,523,659,784,659,1047].forEach(function(f,i){tone(f,i*.1,.18,"triangle",.09)})}
   }
   function bases(e){e=e||{};return reqOf(defsOf(e)).filter(function(q){return metQ(q,e)}).length}
@@ -787,7 +790,7 @@ details.rules[open]>summary::after{content:"-"}
     if(first<START_KEY){first=START_KEY;T0=add(START_KEY,13)}
     for(var i=13;i>=0;i--){var dk=add(T0,-i),m=dk>T?"future":dk<START_KEY?"pre":(st.marks[dk]||"pend");h+='<i class="'+m+(m==="ok"&&gold(S.days[dk])?" gold":"")+(dk===T?" today":"")+(dk===selDay?" sel":"")+'" data-k="'+dk+'" title="'+dk+'"></i>'}
     strip.innerHTML=h;lastSt=st;
-    document.getElementById("stripRange").textContent=fmtD(first)+" - "+fmtD(T0);if(T0>T)document.getElementById("stripRange").textContent="Day "+(daysBetween(START_KEY,T)+1)+" of your first 14";
+    document.getElementById("stripRange").textContent=fmtD(first)+" - "+fmtD(T0);if(T<START_KEY)document.getElementById("stripRange").textContent="Starts "+fmtD(START_KEY);else if(T0>T)document.getElementById("stripRange").textContent="Day "+(daysBetween(START_KEY,T)+1)+" of your first 14";
     document.getElementById("stripPrev").disabled=first<=START_KEY;
     document.getElementById("stripNext").disabled=page===0;
     // quests
@@ -859,7 +862,7 @@ details.rules[open]>summary::after{content:"-"}
   function elapsed(){
     var now=new Date(),t;
     function u(n,w){return n+" "+w+(n===1?"":"s")}
-    if(now<START_AT){var s=Math.floor((START_AT-now)/1000);t="Starts in "+u(Math.floor(s/3600),"hour")+", "+u(Math.floor(s%3600/60),"minute")}
+    if(now<START_AT){var s=Math.floor((START_AT-now)/1000),dd=Math.floor(s/86400);t="Starts in "+(dd?u(dd,"day")+", ":"")+u(Math.floor(s%86400/3600),"hour")+", "+u(Math.floor(s%3600/60),"minute")}
     else{
       var m=(now.getFullYear()-START_AT.getFullYear())*12+now.getMonth()-START_AT.getMonth();
       var a=new Date(START_AT);a.setMonth(a.getMonth()+m);
@@ -867,7 +870,7 @@ details.rules[open]>summary::after{content:"-"}
       var r=Math.floor((now-a)/60000),D=Math.floor(r/1440),H=Math.floor(r%1440/60),M=r%60;
       t="In effect for "+(m?u(m,"month")+", ":"")+u(D,"day")+", "+u(H,"hour")+", "+u(M,"minute");
     }
-    document.getElementById("elapsed").textContent=t;var tf=document.getElementById("tlFrom");if(tf)tf.textContent="Since "+START_AT.toLocaleString("en-US",{month:"long",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"});
+    document.getElementById("elapsed").textContent=t;var tf=document.getElementById("tlFrom");if(tf)tf.textContent=(new Date()<START_AT?"Starting ":"Since ")+START_AT.toLocaleString("en-US",{month:"long",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"});
   }
   var R=new Date(START_AT),n0=new Date();do{R.setDate(R.getDate()+90)}while(R<=n0);
   var rv=document.getElementById("review");if(rv)rv.textContent=R.toLocaleDateString("en-CA",{month:"long",day:"numeric",year:"numeric",timeZone:"America/Toronto"});
@@ -1100,7 +1103,7 @@ details.rules[open]>summary::after{content:"-"}
   function renderSettings(){
     var el=document.getElementById("settingsBody");if(!el)return;var c=cfg(),T=todayKey(),v=curVac(),h='<div class="ed">',L='',Sc='',G='',Dt='';
     L+='<h3 class="sh first">Theme</h3><div class="edrow"><label class="grow">Theme<select id="setTheme">'+[["","Auto (grass by day, night in dark mode)"],["grass","Grass"],["day","Day"],["night","Night"],["snow","Snow"],["ocean","Ocean"],["lava","Lava"],["nether","Nether"]].map(function(o){return '<option value="'+o[0]+'"'+((c.theme||"")===o[0]?" selected":"")+'>'+o[1]+'</option>'}).join("")+'</select></label></div>';
-    Sc+='<h3 class="sh first">Start date</h3><div class="edrow"><label>Started on<input type="date" id="setStart" value="'+START_KEY+'" max="'+T+'"></label></div><p class="help">The first day the game counts. Days before it are ignored; the "Since" line and review dates follow it.</p>';
+    Sc+='<h3 class="sh first">Start date</h3><div class="edrow"><label>Started on<input type="date" id="setStart" value="'+START_KEY+'"></label></div><p class="help">The first day the game counts. Days before it are ignored. Pick a future date to start fresh on a set day.</p>';
     Sc+='<h3 class="sh">Day</h3><div class="edrow"><label>Day ends at<select id="setDayEnd">'+[0,1,2,3,4,5].map(function(x){return '<option value="'+x+'"'+((c.dayEnd|0)===x?" selected":"")+'>'+(x?x+":00 am":"Midnight")+'</option>'}).join("")+'</select></label></div>';
     Sc+='<p class="help">Night owl? Set the day to end later, and anything logged before then still counts for the previous day.</p>';
     Sc+='<h3 class="sh">Vacation</h3>';
@@ -1121,7 +1124,7 @@ details.rules[open]>summary::after{content:"-"}
     h+='<div class="stabs" role="tablist">'+TABS.map(function(t){return '<button type="button" role="tab" class="stone stab-b'+(setTab===t[0]?' on':'')+'" aria-selected="'+(setTab===t[0])+'" data-st="'+t[0]+'">'+t[1]+'</button>'}).join("")+'</div>'+TABS.map(function(t){return '<div class="stab" role="tabpanel" data-panel="'+t[0]+'"'+(setTab===t[0]?'':' hidden')+'>'+t[2]+'</div>'}).join("")+'</div>';
     el.innerHTML=h;
     el.querySelectorAll("[data-st]").forEach(function(b){b.addEventListener("click",function(){setTab=b.getAttribute("data-st");el.querySelectorAll("[data-st]").forEach(function(x){var on=x===b;x.classList.toggle("on",on);x.setAttribute("aria-selected",on)});el.querySelectorAll("[data-panel]").forEach(function(p){p.hidden=p.getAttribute("data-panel")!==setTab})})});
-    document.getElementById("setStart").addEventListener("change",function(){var v2=this.value,T2=todayKey();if(!/^\d{4}-\d{2}-\d{2}$/.test(v2))return;if(v2>T2){setSync("The start date can\u2019t be in the future.");this.value=START_KEY;return}var iso=parse(v2).toISOString();setStart(iso);var c2=clone(cfg());c2.start=iso;saveCfg(c2);elapsed();qSig="";render();setSync("Start date set to "+fmtD(v2))});
+    document.getElementById("setStart").addEventListener("change",function(){var v2=this.value,T2=todayKey();if(!/^\d{4}-\d{2}-\d{2}$/.test(v2))return;if(v2>add(T2,365)){setSync("Pick a start date within the next year.");this.value=START_KEY;return}var iso=parse(v2).toISOString();setStart(iso);var c2=clone(cfg());c2.start=iso;saveCfg(c2);elapsed();qSig="";render();setSync("Start date set to "+fmtD(v2))});
     document.getElementById("setTheme").addEventListener("change",function(){var c2=clone(cfg());if(this.value)c2.theme=this.value;else delete c2.theme;saveCfg(c2);applyTheme()});
     document.getElementById("setDayEnd").addEventListener("change",function(){var c2=clone(cfg());c2.dayEnd=+this.value;S.cfg.dayEnd=c2.dayEnd;if(typeof setStart==="function"&&todayKey()<START_KEY){c2.start=parse(todayKey()).toISOString();setStart(c2.start);elapsed()}saveCfg(c2);lastDay=todayKey();qSig="";render();lockIn()});
     function startVac(from){var n=+document.getElementById("vacLen").value,c2=clone(cfg());c2.vacs=(c2.vacs||[]).concat([{from:from,to:add(from,n)}]);saveCfg(c2);var T2=todayKey();if(from===T2&&S.days[T2]&&!S.days[T2].ended){S.days[T2]=Object.assign({},S.days[T2],{q:activeDefs(T2)});dirty[T2]=true;cache();clearTimeout(timer);timer=setTimeout(flush,300)}qSig="";render();renderSettings()}
@@ -1169,7 +1172,7 @@ details.rules[open]>summary::after{content:"-"}
     if(locked())return;var now=Date.now(),T=todayKey();
     if(S.timer&&S.timer.id===q.id){stopTimer();return}
     if(S.timer)stopTimer();
-    S.timer={id:q.id,label:q.label,start:now,day:T};cache();timerTick();setSync("Timer started: "+q.label);
+    var e0=S.days[T]||{},lg=e0[q.id]|0;S.timer={id:q.id,label:q.label,start:now,day:T,minHit:lg>=q.min,planHit:lg>=planOf(q,e0)};cache();timerTick();setSync("Timer started: "+q.label);
   }
   function stopTimer(){
     var t=S.timer;if(!t)return;S.timer=null;cache();var m=Math.round((Date.now()-t.start)/60000),T=todayKey();
@@ -1177,7 +1180,15 @@ details.rules[open]>summary::after{content:"-"}
     if(!S.days[T]||!S.days[T].ended){var e=Object.assign({},S.days[T]||{});e.q=activeDefs(T);if(e.q.some(function(x){return x.id===t.id})){e[t.id]=Math.min(MAXM,(e[t.id]|0)+m);S.days[T]=e;dirty[T]=true;cache();clearTimeout(timer);timer=setTimeout(flush,300);render(true);setSync("+"+hm(m)+" added to "+t.label);return}}
     setSync("Timer stopped: "+hm(m)+" could not be added (day locked or quest not active).");render();
   }
-  function timerTick(){Object.keys(qEls).forEach(function(id){var el=qEls[id];if(!el||!el.tmr)return;var on=S.timer&&S.timer.id===id;el.tmr.classList.toggle("on",!!on);el.tmr.querySelector("span").textContent=on?fmtT(Date.now()-S.timer.start):"";el.tmr.setAttribute("aria-label",(on?"Stop":"Start")+" focus timer")})}
+  function timerGoals(){
+    var t=S.timer;if(!t)return;var T=todayKey(),q=activeDefs(T).filter(function(x){return x.id===t.id})[0];if(!q||q.type!=="time")return;
+    var e=S.days[T]||{},tot=(e[q.id]|0)+Math.floor((Date.now()-t.start)/60000),pl=planOf(q,e),hit=null;
+    if(!t.minHit&&tot>=q.min){t.minHit=true;hit="Minimum reached for "+q.label+" ("+hmL(q.min)+")"}
+    if(cfg().showPlan&&pl>q.min&&!t.planHit&&tot>=pl){t.planHit=true;t.minHit=true;hit="Plan reached for "+q.label+" ("+hm(pl)+")"}
+    if(hit){cache();sfx("chime");try{if(navigator.vibrate)navigator.vibrate([120,60,120,60,200])}catch(x){}setSync(hit+". Keep going or stop the timer to log it.")}
+    var el=qEls[t.id];if(el&&el.tmr){el.tmr.classList.toggle("hit",!!t.minHit&&tot>=q.min);el.tmr.classList.toggle("gold",!!t.planHit&&pl>q.min&&tot>=pl)}
+  }
+  function timerTick(){timerGoals();Object.keys(qEls).forEach(function(id){var el=qEls[id];if(!el||!el.tmr)return;var on=S.timer&&S.timer.id===id;el.tmr.classList.toggle("on",!!on);el.tmr.querySelector("span").textContent=on?fmtT(Date.now()-S.timer.start):"";el.tmr.setAttribute("aria-label",(on?"Stop":"Start")+" focus timer")})}
   setInterval(function(){if(S.timer)timerTick()},1000);
   /* ---- to-dos ---- */
   function toggleTodo(q){
