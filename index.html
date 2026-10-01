@@ -197,6 +197,67 @@ details.rules[open]>summary::after{content:"-"}
 .empty{font-size:20px;color:#3F3F3F;padding:8px 2px}
 .rules-empty{font-size:20px;color:var(--muted);text-shadow:2px 2px 0 #000;margin:18px 3px 0}
 .privacy{font-size:18px;color:var(--muted);text-shadow:2px 2px 0 #000;text-align:center;margin:0}
+/* ===== phone layout ===== */
+.mbar,.hudline{display:none}
+@media (max-width:720px){
+  body{padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+  .mbar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;position:fixed;left:0;right:0;bottom:0;z-index:25;padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));background:#C6C6C6;border-top:4px solid #000;box-shadow:0 -3px 0 #fff inset}
+  .mbar .stone{display:flex;align-items:center;justify-content:center;gap:8px;font-size:9px;padding:12px 6px;min-height:46px}
+  .mbar .stone b{font-family:var(--px);font-weight:400;font-size:12px}
+  .mbar svg{width:18px;height:18px}
+  body.grove-on .mbar{display:none}
+  #endBtn,#groveBtn,.qtools #nqBtn{display:none}
+  .hudline{display:flex;align-items:center;gap:12px;width:100%;background:none;border:0;color:#fff;font-family:var(--px);font-size:10px;padding:2px 0;cursor:pointer;text-align:left}
+  .hudline .hl-r{color:#FFFF55;font-size:11px}
+  .hudline:focus{outline:none;background:none}.hudline:focus-visible{outline:2px solid #FFFF55;outline-offset:3px}
+  .hudline{-webkit-tap-highlight-color:transparent}
+  .hudline b{font-weight:400;color:#fff}
+  .hudline .hl-c{margin-left:auto;width:9px;height:9px;border-right:3px solid #BDBDBD;border-bottom:3px solid #BDBDBD;transform:rotate(45deg);transition:transform .15s}
+  .hud.hud-open .hudline .hl-c{transform:rotate(-135deg)}
+  .hud:not(.hud-open){grid-template-columns:1fr;padding:10px 12px}
+  .hud:not(.hud-open) .slot,.hud:not(.hud-open) .hudbody>*:not(.hudline){display:none!important}
+  .hud.hud-open .hudline{margin-bottom:8px;padding-bottom:8px;border-bottom:2px solid #333}
+  .hud.hud-open .rank{display:none}
+}
+/* ===== tablet layout (800-1099px) ===== */
+@media (min-width:800px) and (max-width:1099px){
+  .wrap{max-width:1040px!important}
+  .hud{grid-template-columns:72px 1fr;align-items:start}
+  .hud .slot{width:72px;height:72px}.hud .slot svg{width:54px;height:54px}
+  .hudbody{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);column-gap:22px;align-items:start}
+  .hudbody>.rank{grid-column:1;grid-row:1}
+  .hudbody>.stats{grid-column:1;grid-row:2}
+  .hudbody>.dlrow{grid-column:1;grid-row:3}
+  .hudbody>.lvl{grid-column:1;grid-row:4}
+  .hudbody>.note{grid-column:1;grid-row:5}
+  .hudbody>.stripnav{grid-column:2;grid-row:1;margin-top:0}
+  .hudbody>.strip{grid-column:2;grid-row:2/span 3;align-self:start}
+  .hudbody>.dayinfo{grid-column:2;grid-row:5}
+  #quests{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  #quests .q{grid-template-columns:18px 26px minmax(0,1fr);align-content:start}
+  #quests .q .ctl{grid-column:1/-1;justify-self:stretch;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px 10px}
+  #quests .empty,#quests .packs{grid-column:1/-1}
+  .ach-grid{grid-template-columns:repeat(3,1fr)!important}
+  .ach{grid-template-columns:56px 1fr;padding:10px;gap:10px}.ach .slot{width:56px;height:56px}.ach .slot svg{width:42px;height:42px}
+}
+/* ===== desktop dashboard ===== */
+.sideach{display:none}
+@media (min-width:1100px){
+  .wrap{max-width:1260px!important}
+  .dash{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:0 26px;align-items:start;margin-top:4px}
+  .dash-main{grid-column:1;grid-row:1;margin-top:22px}
+  .dash-side{grid-column:2;grid-row:1;position:sticky;top:calc(14px + env(safe-area-inset-top,0px));max-height:calc(100vh - 28px);overflow:auto;padding:0 4px 8px}
+  .dash-side .hud{grid-template-columns:64px 1fr;padding:14px;gap:14px}
+  .dash-side .hud .slot{width:64px;height:64px}.dash-side .hud .slot svg{width:46px;height:46px}
+  .dash-side .strip{gap:3px}
+  .sideach{display:grid;grid-template-columns:56px 1fr;gap:12px;align-items:center;margin:22px 3px 0;background:#212121;color:#fff;border:4px solid #555;box-shadow:0 0 0 3px #000;padding:12px}
+  .sideach .slot{width:56px;height:56px;background:#C6C6C6;border:3px solid #8B8B8B;display:grid;place-items:center}.sideach .slot svg{width:42px;height:42px}
+  .sideach.locked .slot svg{filter:grayscale(1) brightness(.35)}
+  .sideach .k{font-size:8px;color:#FFFF55;line-height:1.5}.sideach .n{font-size:11px;margin:4px 0;line-height:1.4}
+  .sideach .p{font-family:var(--vt);font-size:17px;color:#BDBDBD}
+  .sideach .bar{height:8px;background:#1E1E1E;border:2px solid #000;margin-top:6px}.sideach .bar i{display:block;height:100%;background:#FFD23F}
+  .sideach .lnk{grid-column:1/-1;justify-self:end;font:16px var(--vt);background:none;border:0;color:#9AD4F5;text-decoration:underline;cursor:pointer;padding:0}
+}
 .grove{position:fixed;inset:0;z-index:50;background:#5DB3EC;image-rendering:pixelated}
 .grove canvas{position:absolute;inset:0;display:block}
 .ginfo{position:absolute;left:max(14px,env(safe-area-inset-left,0px));top:calc(14px + env(safe-area-inset-top,0px));max-width:min(420px,calc(100% - 28px));background:rgba(33,33,33,.88);color:#fff;border:4px solid #555;box-shadow:0 0 0 3px #000;padding:12px 14px;display:grid;gap:6px}
@@ -488,9 +549,12 @@ details.rules>summary h2{flex:1}
   <div class="titlebar"><h1>ProductivityCraft</h1><span class="tbtns"><button type="button" class="stone gearbtn" id="groveBtn" aria-label="Open your grove"><svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><rect x="5" y="2" width="6" height="2" fill="#7CC24E"/><rect x="3" y="4" width="10" height="5" fill="#56A63A"/><rect x="4" y="9" width="8" height="2" fill="#3E8A2C"/><rect x="5" y="4" width="3" height="2" fill="#A6DB72"/><rect x="7" y="11" width="2" height="4" fill="#7A4A24"/></svg><span>Grove</span></button><button type="button" class="stone gearbtn helpbtn" id="helpBtn" aria-label="How it works">?</button><button type="button" class="stone gearbtn" id="setBtn" aria-label="Open settings" aria-expanded="false"><svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><path fill="#fff" d="M7 1h2v2h2V2h2v2h-1v2h2v2h-2v2h1v2h-2v-1h-2v2H9v1H7v-1H5v1H3v-2h1V9H2V7h2V5H3V3h2v1h2z"/><rect x="6" y="6" width="4" height="4" fill="#6A6A6A"/></svg><span>Settings</span></button></span></div>
   <div class="timeline"><span class="tl-from" id="tlFrom"></span><span class="tl-for" id="elapsed"></span></div>
 
+  <div class="dash">
+  <aside class="dash-side">
   <div class="hud px" aria-live="polite">
     <div class="slot" id="rankIcon"></div>
-    <div>
+    <div class="hudbody">
+      <button type="button" class="hudline" id="hudLine" aria-expanded="false" aria-label="Show progress details"></button>
       <div class="rank" id="rankName">Apprentice</div>
       <div class="stats"><span>Streak <b id="stStreak">0</b></span><span class="morestats" id="moreStats" hidden><span>Best <b id="stBest">0</b></span><span>Cleared <b id="stTotal">0</b></span><span>Freezes <b id="stFz">0</b></span></span><button type="button" class="statsbtn" id="statsToggle" aria-controls="moreStats" aria-expanded="false">More</button><span class="term" id="termTxt" hidden></span></div>
       <div class="dlrow" id="dlRow" hidden></div>
@@ -505,8 +569,10 @@ details.rules>summary h2{flex:1}
       <div class="dayinfo" id="dayInfo" aria-live="polite">Tap a day to see its status</div>
     </div>
   </div>
+  <div class="sideach px" id="sideAch"></div>
+  </aside>
 
-  <section class="gui" id="gui" aria-label="Daily quests">
+  <section class="gui dash-main" id="gui" aria-label="Daily quests">
     <div class="gui-h">
       <h2 id="guiTitle">Today's quests</h2>
       <div class="gui-r">
@@ -543,6 +609,7 @@ details.rules>summary h2{flex:1}
     <div class="bknudge" id="bkNudge" hidden><span>It’s been a while since your last backup. Your data lives only on this device.</span><span class="bkb"><button type="button" class="stone save" id="bkNow">Export backup</button><button type="button" class="stone" id="bkLater">Later</button></span></div>
     <p class="sync" id="sync"></p>
   </section>
+  </div>
 </header>
 
 
@@ -557,6 +624,7 @@ details.rules>summary h2{flex:1}
   <p class="ach-note" id="achNote"></p>
 </section>
 
+<nav class="mbar" aria-label="Quick actions"><button type="button" class="stone save" id="mbNew"><b>+</b><span>Quest</span></button><button type="button" class="stone del" id="mbEnd"><b>&#9632;</b><span>End day</span></button><button type="button" class="stone" id="mbGrove"><svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><rect x="5" y="2" width="6" height="2" fill="#7CC24E"/><rect x="3" y="4" width="10" height="5" fill="#56A63A"/><rect x="4" y="9" width="8" height="2" fill="#3E8A2C"/><rect x="5" y="4" width="3" height="2" fill="#A6DB72"/><rect x="7" y="11" width="2" height="4" fill="#7A4A24"/></svg><span>Grove</span></button></nav>
 <footer><p class="privacy">Your data stays on this device. Nothing is sent anywhere. Use Export backup to move it to another device.</p></footer>
 </div>
 <div class="toast" id="toast" aria-live="polite"></div>
@@ -764,6 +832,11 @@ details.rules>summary h2{flex:1}
 
   /* ---- render ---- */
   var statsOpen=false;try{statsOpen=localStorage.getItem("pc-stats")==="1"}catch(x){}document.getElementById("statsToggle").addEventListener("click",function(){statsOpen=!statsOpen;try{localStorage.setItem("pc-stats",statsOpen?"1":"0")}catch(x){}render()});
+  var hudOpen=false;try{hudOpen=localStorage.getItem("pc-hudopen")==="1"}catch(x){}
+  (function(){var hd=document.querySelector(".hud"),hl=document.getElementById("hudLine");function upd(){hd.classList.toggle("hud-open",hudOpen);hl.setAttribute("aria-expanded",hudOpen)}upd();hl.addEventListener("click",function(){hudOpen=!hudOpen;try{localStorage.setItem("pc-hudopen",hudOpen?"1":"0")}catch(x){}upd()})})();
+  document.getElementById("mbNew").addEventListener("click",function(){document.getElementById("nqBtn").click()});
+  document.getElementById("mbEnd").addEventListener("click",function(){openEndModal()});
+  document.getElementById("mbGrove").addEventListener("click",function(){openGrove(false)});
   var achOpen=false;document.getElementById("achMore").addEventListener("click",function(){achOpen=!achOpen;render()});
   var lastEval={set:false},lastCleared=null,page=0,selDay=null,lastSt=null;
   function fmtD(k){return parse(k).toLocaleDateString("en-CA",{month:"short",day:"numeric"})}
@@ -811,6 +884,7 @@ details.rules>summary h2{flex:1}
     document.getElementById("stripNext").disabled=page===0;
     // quests
     var past=ro()||endedT();document.getElementById("endBtn").hidden=past;
+    var mbE=document.getElementById("mbEnd");mbE.disabled=past;mbE.querySelector("span").textContent=endedT()?"Ended":"End day";document.getElementById("mbNew").disabled=locked();
     document.getElementById("gate").hidden=!st.gate||past;document.getElementById("questsWrap").hidden=(!!st.gate&&!past)||mgrOpen;if(ro()&&mgrOpen){mgrOpen=false;qmgr.hidden=true}document.getElementById("qEditBtn").disabled=ro();document.getElementById("nqBtn").disabled=locked();document.getElementById("qEditBtn").textContent=mgrOpen?"Close editor":"Edit quests";
     document.getElementById("gui").classList.toggle("ro",past);document.getElementById("gui").classList.toggle("noplan",!cfg().showPlan);
     document.getElementById("guiTitle").textContent=ro()?parse(viewKey).toLocaleDateString("en-CA",{weekday:"short",month:"short",day:"numeric"}):"Today's quests";
@@ -844,7 +918,7 @@ details.rules>summary h2{flex:1}
     else{cl.textContent="";cl.className=""}
     lastCleared=isOk;
     var xp=totalXP(),lv=level(xp);
-    document.getElementById("lvlNum").textContent="Lv "+lv.l;
+    document.getElementById("lvlNum").textContent="Lv "+lv.l;document.getElementById("hudLine").innerHTML='<span class="hl-r">'+esc(document.getElementById("rankName").textContent)+'</span><span>Streak <b>'+st.streak+'</b></span><span>Lv <b>'+lv.l+'</b></span><i class="hl-c" aria-hidden="true"></i>';
     document.getElementById("lvlText").textContent=lv.cur+" / "+lv.need+" XP";
     document.getElementById("xpFill").style.width=Math.round(lv.cur/lv.need*100)+"%";
     if(fromClick&&!past&&lastEval.set){
@@ -864,6 +938,11 @@ details.rules>summary h2{flex:1}
       b.hidden=!(u&&(dl||dlChecked));
     });
     renderCustomAch(st);
+    // sidebar: next badge (desktop)
+    (function(){var sa=document.getElementById("sideAch");if(!sa)return;var nx=D.ach.filter(function(a){return st.streak<a.need})[0],last=D.ach.filter(function(a){return st.streak>=a.need}).pop(),a=nx||last;if(!a){sa.innerHTML="";return}
+      var pc=nx?Math.round(st.streak/a.need*100):100;sa.className="sideach px"+(nx?" locked":"");
+      sa.innerHTML='<div class="slot">'+svg(a.icon)+'</div><div><div class="k">'+(nx?"Next badge":"All badges earned")+'</div><div class="n"></div><div class="p">'+(nx?(a.need-st.streak)+" more clean day"+(a.need-st.streak===1?"":"s"):"Latest: "+esc(a.title))+'</div><div class="bar"><i style="width:'+pc+'%"></i></div></div><button type="button" class="lnk">See all achievements</button>';
+      sa.querySelector(".n").textContent=a.title;sa.querySelector(".lnk").addEventListener("click",function(){document.getElementById("achievements").scrollIntoView({behavior:"smooth"})});})();
     // visible achievements: latest unlocked + next locked, 3 total
     var unl=D.ach.filter(function(a){return st.streak>=a.need}),lk=D.ach.filter(function(a){return st.streak<a.need}),vs=[];
     if(unl.length)vs.push(unl[unl.length-1].id);lk.forEach(function(a){if(vs.length<3)vs.push(a.id)});for(var ui=unl.length-2;ui>=0&&vs.length<3;ui--)vs.unshift(unl[ui].id);
