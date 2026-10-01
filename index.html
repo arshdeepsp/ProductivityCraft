@@ -197,6 +197,17 @@ details.rules[open]>summary::after{content:"-"}
 .empty{font-size:20px;color:#3F3F3F;padding:8px 2px}
 .rules-empty{font-size:20px;color:var(--muted);text-shadow:2px 2px 0 #000;margin:18px 3px 0}
 .privacy{font-size:18px;color:var(--muted);text-shadow:2px 2px 0 #000;text-align:center;margin:0}
+#fx .stars{position:absolute;inset:0;display:none;background-image:var(--starsA);background-size:400px 400px;image-rendering:pixelated}
+#fx.skyaware .stars{display:block;opacity:var(--stars,0)}
+#fx.skyaware.ocean .stars{bottom:calc(100% - 108px)}
+#fx.skyaware .sun,#fx.skyaware .moon{z-index:0}
+#fx.skyaware .l1,#fx.skyaware .l2,#fx.skyaware .l3,#fx.skyaware .l4,#fx.skyaware .l5,#fx.skyaware .mill,#fx.skyaware::before,#fx.skyaware::after{z-index:1}
+#fx.skyaware.mountains .l1,#fx.skyaware.mountains .l2,#fx.skyaware.mountains .l3,#fx.skyaware.mountains .l5,#fx.skyaware.village .l1,#fx.skyaware.village .l2,#fx.skyaware.village .l4,#fx.skyaware.village .l5,#fx.skyaware.village .mill,#fx.skyaware.ocean::before,#fx.skyaware.ocean::after,#fx.skyaware.ocean .l3{filter:brightness(var(--dim,1))}
+#fx.skyaware.mountains .l4{opacity:calc(.35 + .6*var(--dim,1))}
+#fx.skyaware.city::before{opacity:var(--stars,0)}
+#fx.skyaware.city .l1,#fx.skyaware.city .l2{filter:brightness(var(--dimc,1))}
+#fx.skyaware.city .l3{opacity:calc(1.4 - var(--dim,1))}
+
 /* village scene */
 #fx .mill{display:none;position:absolute;left:max(10px,4%);bottom:56px;width:72px;height:120px;background:var(--millTower) center bottom/100% 100% no-repeat;image-rendering:pixelated}
 #fx .mill i{position:absolute;left:50%;top:-30px;width:96px;height:96px;margin-left:-48px;background:var(--millBlades) center/100% 100% no-repeat;image-rendering:pixelated;animation:fxMill 9s steps(36) infinite}
@@ -586,7 +597,7 @@ details.rules>summary h2{flex:1}
 <div class="scrim" id="modalScrim" hidden></div>
 <div class="modal" id="gModal" role="dialog" aria-modal="true" aria-labelledby="gTitle" hidden><div class="modal-card"><div class="drawer-h"><h2 id="gTitle"></h2><button type="button" class="stone" id="gClose" aria-label="Close">Close</button></div><div class="modal-b" id="gBody"></div></div></div>
 <div class="modal" id="nqModal" role="dialog" aria-modal="true" aria-labelledby="nqTitle" hidden><div class="modal-card"><div class="drawer-h"><h2 id="nqTitle">New quest</h2><button type="button" class="stone" id="nqClose" aria-label="Close">Close</button></div><div class="modal-b" id="nqBody"></div></div></div>
-<div id="fx" aria-hidden="true"><div class="l1"></div><div class="l2"></div><div class="l3"></div><div class="l4"></div><div class="l5"></div><div class="moon"></div><div class="sun"></div><div class="mill"><i></i></div></div>
+<div id="fx" aria-hidden="true"><div class="stars"></div><div class="l1"></div><div class="l2"></div><div class="l3"></div><div class="l4"></div><div class="l5"></div><div class="moon"></div><div class="sun"></div><div class="mill"><i></i></div></div>
 <div class="wrap">
 
 <header class="top">
@@ -1277,21 +1288,49 @@ details.rules>summary h2{flex:1}
     return FX;
   }
   var mqDark=window.matchMedia?window.matchMedia("(prefers-color-scheme: dark)"):null;
-  function applyTheme(){
-    var t=cfg().theme;if(t==="stone")t="";var st=document.documentElement.style,fx=document.getElementById("fx"),eff=t||(mqDark&&mqDark.matches?"night":"grass");
+  var CYCLE=["grass","day","mountains","village","city","night","snow","ocean","lava","nether"],lastEff=null;
+  function effTheme(){var t=cfg().theme;if(t==="stone")t="";if(!t){var sk=skyState(new Date());return sk.alt>=0?"day":"night"}if(t==="cycle"){var n=new Date();return CYCLE[(Math.floor(n.getTime()/36e5))%CYCLE.length]}return t}
+  function applyTheme(force){
+    var st=document.documentElement.style,fx=document.getElementById("fx"),eff=effTheme();if(!force&&eff===lastEff)return;lastEff=eff;
     ["--dirt","--grass","--bg"].forEach(function(p){st.removeProperty(p)});
     if(eff==="night"||eff==="day"||eff==="ocean"||eff==="city"||eff==="mountains"||eff==="village"){st.setProperty("--dirt","none");st.setProperty("--grass","none");st.setProperty("--bg",eff==="day"||eff==="mountains"||eff==="village"?"#7EC8F2":eff==="ocean"?"#0B2A4A":eff==="city"?"#171A36":"#0B1026")}
-    else if(t&&THEMES[t]){var p=THEMES[t];st.setProperty("--dirt",tile(p.d,null,7,p.w));st.setProperty("--grass",eff==="snow"?tile(p.d,null,7,p.w):tile(p.d,p.g,11,p.w));st.setProperty("--bg",p.bg)}
+    else if(THEMES[eff]){var p=THEMES[eff];st.setProperty("--dirt",tile(p.d,null,7,p.w));st.setProperty("--grass",eff==="snow"?tile(p.d,null,7,p.w):tile(p.d,p.g,11,p.w));st.setProperty("--bg",p.bg)}
     if(fx){fx.className=["snow","ocean","night","day","nether","lava","city","mountains","village"].indexOf(eff)>=0?eff:"";if(fx.className){var P=fxPatterns();Object.keys(P).forEach(function(k){fx.style.setProperty("--"+k,P[k])})}}
+    updateSky();
   }
-  if(mqDark&&mqDark.addEventListener)mqDark.addEventListener("change",function(){if(!cfg().theme)applyTheme()});
+  setInterval(function(){applyTheme();updateSky()},60000);window.addEventListener("resize",function(){updateSky()});document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible")applyTheme()});
+  /* ---- time-of-day sky for scenic themes ---- */
+  var SKYT=["mountains","village","city","ocean"];
+  function updateSky(){
+    var fx=document.getElementById("fx");if(!fx)return;var sun=fx.querySelector(".sun"),moon=fx.querySelector(".moon"),eff=fx.className.split(" ")[0];
+    var aware=SKYT.indexOf(eff)>=0;fx.classList.toggle("skyaware",aware);
+    if(!aware){fx.style.removeProperty("background");["top","left","right","clip-path","display","opacity","filter"].forEach(function(p){sun.style.removeProperty(p);moon.style.removeProperty(p)});fx.style.removeProperty("--dim");fx.style.removeProperty("--stars");return}
+    var sk=skyState(new Date()),cols=skyColors(sk.alt),W=window.innerWidth,H=window.innerHeight,alt=sk.alt;
+    var dim=alt>=.25?1:alt>=0?.88+alt*.48:alt>=-.2?.62+(alt+.2)*1.3:.45;
+    var stars=Math.max(0,Math.min(1,(-alt-.05)/.25));fx.style.setProperty("--dim",dim.toFixed(2));fx.style.setProperty("--dimc",Math.max(dim,.78).toFixed(2));fx.style.setProperty("--stars",stars.toFixed(2));
+    var gold=alt>-.15&&alt<.25;
+    if(eff==="ocean"){
+      var hz=alt>=.25?"#FFF2C9":alt>=-.1?"#FFD08A":"#3A4A7A",w1=alt>=.25?"#3E8EC4":gold?"#7A6A8E":"#1A3550",w2=alt>=.25?"#123C68":alt>=-.2?"#163A5E":"#06142A";
+      fx.style.background="linear-gradient("+cols[0]+" 0,"+cols[1]+" 100px,"+hz+" 110px,"+w1+" 112px,"+w2+" 75%,"+(alt>=-.2?"#0B2A4A":"#030B18")+" 100%)";
+    }else fx.style.background="linear-gradient("+cols[0]+" 0,"+cols[1]+" 60%,"+(gold?"#FFC48A":cols[1])+" 100%)";
+    function place(el,p,size,horizonY,top0){
+      if(p==null){el.style.display="none";return}
+      var x=W*(.06+.84*p),y=horizonY-size/2-Math.sin(Math.PI*p)*(horizonY-size/2-top0);
+      el.style.display="block";el.style.left=Math.round(x-size/2)+"px";el.style.right="auto";el.style.top=Math.round(y)+"px";
+      var cut=Math.max(0,Math.round(y+size-horizonY));el.style.clipPath=cut>0?"inset(0 0 "+Math.min(size,cut)+"px 0)":"none";
+    }
+    var horizon=eff==="ocean"?110:Math.round(H*.8),top0=eff==="ocean"?6:24;
+    place(sun,sk.sunP,eff==="ocean"?76:80,horizon,top0);
+    sun.style.filter=alt<.25?"hue-rotate(-28deg) saturate(1.5) drop-shadow(0 0 24px rgba(255,120,60,.8))":"drop-shadow(0 0 22px rgba(255,224,102,.55))";
+    place(moon,(sk.moonP!=null&&sk.illum>.05)?sk.moonP:null,64,horizon,top0+6);moon.style.opacity=alt>.1?".55":"1";
+  }
   /* ---- settings panel ---- */
   function isVac(k){return (cfg().vacs||[]).some(function(v){return k>=v.from&&k<v.to})}
   function curVac(){var T=todayKey();return (cfg().vacs||[]).filter(function(v){return v.to>T})[0]}
   var setTab="look";
   function renderSettings(){
     var el=document.getElementById("settingsBody");if(!el)return;var c=cfg(),T=todayKey(),v=curVac(),h='<div class="ed">',L='',Sc='',G='',Dt='';
-    L+='<h3 class="sh first">Theme</h3><div class="edrow"><label class="grow">Theme<select id="setTheme">'+[["","Auto (grass by day, night in dark mode)"],["grass","Grass"],["day","Day"],["night","Night"],["snow","Snow"],["ocean","Ocean"],["lava","Lava"],["nether","Nether"],["city","City skyline"],["mountains","Mountains"],["village","Medieval village"]].map(function(o){return '<option value="'+o[0]+'"'+((c.theme||"")===o[0]?" selected":"")+'>'+o[1]+'</option>'}).join("")+'</select></label></div>';
+    L+='<h3 class="sh first">Theme</h3><div class="edrow"><label class="grow">Theme<select id="setTheme">'+[["","Auto (day by day, night after sunset)"],["cycle","Change every hour (all themes)"],["grass","Grass"],["day","Day"],["night","Night"],["snow","Snow"],["ocean","Ocean"],["lava","Lava"],["nether","Nether"],["city","City skyline"],["mountains","Mountains"],["village","Medieval village"]].map(function(o){return '<option value="'+o[0]+'"'+((c.theme||"")===o[0]?" selected":"")+'>'+o[1]+'</option>'}).join("")+'</select></label></div>';
     Sc+='<h3 class="sh first">Start date</h3><div class="edrow"><label>Started on<input type="date" id="setStart" value="'+START_KEY+'"></label></div><p class="help">The first day the game counts. Days before it are ignored. Pick a future date to start fresh on a set day.</p>';
     Sc+='<h3 class="sh">Day</h3><div class="edrow"><label>Day ends at<select id="setDayEnd">'+[0,1,2,3,4,5].map(function(x){return '<option value="'+x+'"'+((c.dayEnd|0)===x?" selected":"")+'>'+(x?x+":00 am":"Midnight")+'</option>'}).join("")+'</select></label></div>';
     Sc+='<p class="help">Night owl? Set the day to end later, and anything logged before then still counts for the previous day.</p>';
@@ -1314,7 +1353,7 @@ details.rules>summary h2{flex:1}
     el.innerHTML=h;
     el.querySelectorAll("[data-st]").forEach(function(b){b.addEventListener("click",function(){setTab=b.getAttribute("data-st");el.querySelectorAll("[data-st]").forEach(function(x){var on=x===b;x.classList.toggle("on",on);x.setAttribute("aria-selected",on)});el.querySelectorAll("[data-panel]").forEach(function(p){p.hidden=p.getAttribute("data-panel")!==setTab})})});
     document.getElementById("setStart").addEventListener("change",function(){var v2=this.value,T2=todayKey();if(!/^\d{4}-\d{2}-\d{2}$/.test(v2))return;if(v2>add(T2,365)){setSync("Pick a start date within the next year.");this.value=START_KEY;return}var iso=parse(v2).toISOString();setStart(iso);var c2=clone(cfg());c2.start=iso;saveCfg(c2);elapsed();qSig="";render();setSync("Start date set to "+fmtD(v2))});
-    document.getElementById("setTheme").addEventListener("change",function(){var c2=clone(cfg());if(this.value)c2.theme=this.value;else delete c2.theme;saveCfg(c2);applyTheme()});
+    document.getElementById("setTheme").addEventListener("change",function(){var c2=clone(cfg());if(this.value)c2.theme=this.value;else delete c2.theme;saveCfg(c2);applyTheme(true)});
     document.getElementById("setDayEnd").addEventListener("change",function(){var c2=clone(cfg());c2.dayEnd=+this.value;S.cfg.dayEnd=c2.dayEnd;if(typeof setStart==="function"&&todayKey()<START_KEY){c2.start=parse(todayKey()).toISOString();setStart(c2.start);elapsed()}saveCfg(c2);lastDay=todayKey();qSig="";render();lockIn()});
     function startVac(from){var n=+document.getElementById("vacLen").value,c2=clone(cfg());c2.vacs=(c2.vacs||[]).concat([{from:from,to:add(from,n)}]);saveCfg(c2);var T2=todayKey();if(from===T2&&S.days[T2]&&!S.days[T2].ended){S.days[T2]=Object.assign({},S.days[T2],{q:activeDefs(T2)});dirty[T2]=true;cache();clearTimeout(timer);timer=setTimeout(flush,300)}qSig="";render();renderSettings()}
     var a=document.getElementById("vacToday");if(a){a.addEventListener("click",function(){startVac(todayKey())});document.getElementById("vacTom").addEventListener("click",function(){startVac(add(todayKey(),1))})}
