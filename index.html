@@ -197,6 +197,16 @@ details.rules[open]>summary::after{content:"-"}
 .empty{font-size:20px;color:#3F3F3F;padding:8px 2px}
 .rules-empty{font-size:20px;color:var(--muted);text-shadow:2px 2px 0 #000;margin:18px 3px 0}
 .privacy{font-size:18px;color:var(--muted);text-shadow:2px 2px 0 #000;text-align:center;margin:0}
+.grove{position:fixed;inset:0;z-index:50;background:#5DB3EC;image-rendering:pixelated}
+.grove canvas{position:absolute;inset:0;display:block}
+.ginfo{position:absolute;left:max(14px,env(safe-area-inset-left,0px));top:calc(14px + env(safe-area-inset-top,0px));max-width:min(420px,calc(100% - 28px));background:rgba(33,33,33,.88);color:#fff;border:4px solid #555;box-shadow:0 0 0 3px #000;padding:12px 14px;display:grid;gap:6px}
+.gtitle{font-family:"Press Start 2P",monospace;font-size:12px;color:#FFFF55}
+.gline{font-size:18px;line-height:1.2}.gline.small{font-size:16px;color:#BDBDBD}
+.gbar{height:10px;background:#1E1E1E;border:2px solid #000}.gbar i{display:block;height:100%;background:#7FE05A}
+.gback{position:absolute;right:max(14px,env(safe-area-inset-right,0px));top:calc(14px + env(safe-area-inset-top,0px));font-size:9px;padding:9px 12px}
+.ghint{position:absolute;left:0;right:0;bottom:calc(18px + env(safe-area-inset-bottom,0px));text-align:center;font-family:"Press Start 2P",monospace;font-size:10px;color:#fff;text-shadow:2px 2px 0 #000}
+body.grove-on{overflow:hidden}
+@media (max-width:720px){#groveBtn span{display:none}#groveBtn{padding:8px}.gback{top:auto;bottom:calc(14px + env(safe-area-inset-bottom,0px))}.ghint{bottom:calc(70px + env(safe-area-inset-bottom,0px))}}
 .dragh.mini{width:26px;height:30px}.dragh.mini::before{top:6px}.dragh.mini i{top:12px}.dragh.mini::after{top:18px}
 details.rules>summary .sdrag{margin-right:4px}
 details.rules>summary{justify-content:flex-start}
@@ -467,6 +477,7 @@ details.rules>summary h2{flex:1}
 <body>
 <div class="scrim" id="setScrim" hidden></div>
 <aside class="drawer" id="setDrawer" role="dialog" aria-modal="true" aria-labelledby="setTitle" hidden><div class="drawer-h"><h2 id="setTitle">Settings</h2><button type="button" class="stone" id="setClose" aria-label="Close settings">Close</button></div><div class="drawer-b" id="settingsBody"></div></aside>
+<div class="grove" id="grove" role="dialog" aria-modal="true" aria-label="Your grove" hidden><canvas id="groveCanvas"></canvas><div class="ginfo" id="groveInfo"></div><button type="button" class="stone gback" id="groveBack">Back to game</button><div class="ghint" id="groveHint" hidden>Tap anywhere to return</div></div>
 <div class="scrim" id="modalScrim" hidden></div>
 <div class="modal" id="gModal" role="dialog" aria-modal="true" aria-labelledby="gTitle" hidden><div class="modal-card"><div class="drawer-h"><h2 id="gTitle"></h2><button type="button" class="stone" id="gClose" aria-label="Close">Close</button></div><div class="modal-b" id="gBody"></div></div></div>
 <div class="modal" id="nqModal" role="dialog" aria-modal="true" aria-labelledby="nqTitle" hidden><div class="modal-card"><div class="drawer-h"><h2 id="nqTitle">New quest</h2><button type="button" class="stone" id="nqClose" aria-label="Close">Close</button></div><div class="modal-b" id="nqBody"></div></div></div>
@@ -474,7 +485,7 @@ details.rules>summary h2{flex:1}
 <div class="wrap">
 
 <header class="top">
-  <div class="titlebar"><h1>ProductivityCraft</h1><span class="tbtns"><button type="button" class="stone gearbtn helpbtn" id="helpBtn" aria-label="How it works">?</button><button type="button" class="stone gearbtn" id="setBtn" aria-label="Open settings" aria-expanded="false"><svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><path fill="#fff" d="M7 1h2v2h2V2h2v2h-1v2h2v2h-2v2h1v2h-2v-1h-2v2H9v1H7v-1H5v1H3v-2h1V9H2V7h2V5H3V3h2v1h2z"/><rect x="6" y="6" width="4" height="4" fill="#6A6A6A"/></svg><span>Settings</span></button></span></div>
+  <div class="titlebar"><h1>ProductivityCraft</h1><span class="tbtns"><button type="button" class="stone gearbtn" id="groveBtn" aria-label="Open your grove"><svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><rect x="5" y="2" width="6" height="2" fill="#7CC24E"/><rect x="3" y="4" width="10" height="5" fill="#56A63A"/><rect x="4" y="9" width="8" height="2" fill="#3E8A2C"/><rect x="5" y="4" width="3" height="2" fill="#A6DB72"/><rect x="7" y="11" width="2" height="4" fill="#7A4A24"/></svg><span>Grove</span></button><button type="button" class="stone gearbtn helpbtn" id="helpBtn" aria-label="How it works">?</button><button type="button" class="stone gearbtn" id="setBtn" aria-label="Open settings" aria-expanded="false"><svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><path fill="#fff" d="M7 1h2v2h2V2h2v2h-1v2h2v2h-2v2h1v2h-2v-1h-2v2H9v1H7v-1H5v1H3v-2h1V9H2V7h2V5H3V3h2v1h2z"/><rect x="6" y="6" width="4" height="4" fill="#6A6A6A"/></svg><span>Settings</span></button></span></div>
   <div class="timeline"><span class="tl-from" id="tlFrom"></span><span class="tl-for" id="elapsed"></span></div>
 
   <div class="hud px" aria-live="polite">
@@ -1143,7 +1154,7 @@ details.rules>summary h2{flex:1}
     G+='<h3 class="sh">Custom achievements ('+CA.length+'/4)</h3>'+CA.map(function(a){return '<div class="mq ca"><div class="edrow"><input data-ca="'+esc(a.id)+'" data-cf="title" maxlength="24" value="'+esc(a.title)+'" aria-label="Title"><select data-ca="'+esc(a.id)+'" data-cf="icon" aria-label="Icon">'+Object.keys(D.icons).map(function(k){return '<option value="'+k+'"'+(a.icon===k?" selected":"")+'>'+k+'</option>'}).join("")+'</select></div><div class="edrow"><label class="grow">Description<input data-ca="'+esc(a.id)+'" data-cf="desc" maxlength="40" value="'+esc(a.desc||"")+'"></label></div><div class="edrow"><label>Unlocks at<select data-ca="'+esc(a.id)+'" data-cf="kind"><option value="streak"'+(a.kind==="streak"?" selected":"")+'>Streak (days)</option><option value="total"'+(a.kind==="total"?" selected":"")+'>Total cleared days</option><option value="level"'+(a.kind==="level"?" selected":"")+'>Level</option></select></label><label>Number<input type="number" min="1" max="3650" data-ca="'+esc(a.id)+'" data-cf="n" value="'+a.n+'"></label><button type="button" class="stone mini del" data-cax="'+esc(a.id)+'">Delete</button></div></div>'}).join("");
     if(CA.length<4)G+='<div class="edrow"><button type="button" class="stone" id="caAdd">+ Add custom achievement</button></div>';
     G+='<p class="help">Your own goals, shown under Achievements with a downloadable certificate. Streak goals relock if the streak resets.</p>';
-    L+='<h3 class="sh">Display and sound</h3><div class="edrow"><button type="button" class="stone mini'+(c.showPlan?' on':'')+'" id="setPlan" aria-pressed="'+!!c.showPlan+'">Plan counters '+(c.showPlan?'on':'off')+'</button><button type="button" class="stone mini'+(sfxOn?' on':'')+'" id="setSfx" aria-pressed="'+sfxOn+'">Sound '+(sfxOn?'on':'off')+'</button></div><p class="help">Plan counters let you set a target above the minimum for time quests (needed for gold days).</p>';
+    L+='<h3 class="sh">Display and sound</h3><div class="edrow"><button type="button" class="stone mini'+(c.showPlan?' on':'')+'" id="setPlan" aria-pressed="'+!!c.showPlan+'">Plan counters '+(c.showPlan?'on':'off')+'</button><button type="button" class="stone mini'+(sfxOn?' on':'')+'" id="setSfx" aria-pressed="'+sfxOn+'">Sound '+(sfxOn?'on':'off')+'</button></div><div class="edrow"><label>Show grove when idle<select id="setIdle">'+[[0,"Never"],[2,"After 2 minutes"],[3,"After 3 minutes"],[5,"After 5 minutes"],[10,"After 10 minutes"]].map(function(o){var cur=c.idleGrove==null?3:+c.idleGrove;return '<option value="'+o[0]+'"'+(cur===o[0]?" selected":"")+'>'+o[1]+'</option>'}).join("")+'</select></label></div><p class="help">Plan counters let you set a target above the minimum for time quests (needed for gold days).</p>';
     Dt+='<h3 class="sh first">Your data</h3><div class="edrow"><button type="button" class="stone" id="setExp">Export backup</button><button type="button" class="stone" id="setImp">Import backup</button></div><p class="help">Everything is stored on this device only. Export a backup now and then.</p>';
     G+='<h3 class="sh">Starter packs</h3><div class="edrow"><label>Starter pack<select id="packSel"><option value="">Choose a pack\u2026</option>'+Object.keys(PACKS).map(function(p){return '<option>'+p+'</option>'}).join("")+'</select></label><button type="button" class="stone" id="packAdd">Add pack</button></div><p class="help">A pack adds its quests and a matching rules section to what you already have.</p>';
     var TABS=[["look","Look",L],["schedule","Schedule",Sc],["goals","Goals",G],["data","Data",Dt]];
@@ -1161,6 +1172,7 @@ details.rules>summary h2{flex:1}
     el.querySelectorAll("[data-cf]").forEach(function(x){x.addEventListener("change",function(){var id=x.getAttribute("data-ca"),f=x.getAttribute("data-cf"),v=x.value;upCA(function(L){L.forEach(function(a){if(a.id!==id)return;if(f==="n"){v=Math.max(1,Math.min(3650,Math.round(+v||1)))}if(f==="title"&&!v.trim())return;a[f]=f==="n"?v:String(v).trim()})})})});
     el.querySelectorAll("[data-cax]").forEach(function(x){var arm=null;x.addEventListener("click",function(){if(!arm){x.textContent="Confirm";arm=setTimeout(function(){arm=null;x.textContent="Delete"},4000);return}upCA(function(L){var i=L.findIndex(function(a){return a.id===x.getAttribute("data-cax")});if(i>=0)L.splice(i,1)});renderSettings()})});
     var caA=document.getElementById("caAdd");if(caA)caA.addEventListener("click",function(){upCA(function(L){if(L.length<4)L.push({id:"ca"+Date.now().toString(36),title:"My milestone",desc:"A goal of my own",icon:"star",kind:"streak",n:30})});renderSettings()});
+    document.getElementById("setIdle").addEventListener("change",function(){var c2=clone(cfg());c2.idleGrove=+this.value;saveCfg(c2);if(typeof idleReset==="function")idleReset()});
     document.getElementById("setPlan").addEventListener("click",function(){var c2=clone(cfg());c2.showPlan=!c2.showPlan;saveCfg(c2);render();renderSettings()});
     document.getElementById("setSfx").addEventListener("click",function(){document.getElementById("sndBtn").click();renderSettings()});
     document.getElementById("setExp").addEventListener("click",function(){document.getElementById("expBtn").click()});
@@ -1546,6 +1558,75 @@ details.rules>summary h2{flex:1}
   document.getElementById("nqClose").addEventListener("click",closeNQ);
   nqS.addEventListener("click",closeNQ);
   document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!nqEl.hidden)closeNQ()});
+  /* ---- grove (progress forest) ---- */
+  var groveEl=document.getElementById("grove"),gcv=document.getElementById("groveCanvas"),gctx=gcv.getContext("2d"),groveOpen=false,groveIdleMode=false,groveRAF=0,groveBase=null,groveGeo=null;
+  function grng(seed){var h=2166136261;for(var i=0;i<seed.length;i++){h^=seed.charCodeAt(i);h=Math.imul(h,16777619)}return function(){h+=0x6D2B79F5;var t=h;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
+  function groveStats(){var st=window.__gT!=null?{total:window.__gT,streak:0}:(lastSt||compute());var g=window.__gG!=null?window.__gG:Object.keys(S.days).filter(function(k){return k>=START_KEY&&gold(S.days[k])}).length;return{total:st.total|0,gold:g|0}}
+  function stageOf(age,center){var th=center?[0,1,3,7,21,42,120]:[0,1,4,10,20,40,80],s=-1;for(var i=0;i<th.length;i++)if(age>=th[i])s=i;return s}
+  var SPAWN0=42,SPAWNEVERY=5;
+  function drawPlant(c,P,x,y,stage,rnd,hueShift){
+    function px(cx,cy,col){c.fillStyle=col;c.fillRect(Math.round((x+cx)*P),Math.round((y+cy)*P),P,P)}
+    function rect(cx,cy,w,h,col){c.fillStyle=col;c.fillRect(Math.round((x+cx)*P),Math.round((y+cy)*P),w*P,h*P)}
+    var G=["#2F6B22","#3E8A2C","#56A63A","#7CC24E","#A6DB72"];if(hueShift===1)G=["#6B4A1E","#9A6A22","#C98E2B","#E3B044","#F5D36B"];if(hueShift===2)G=["#245A3A","#2F7A4C","#3E9A5E","#5DB87A","#8ED6A2"];
+    var TR="#5A3417",TR2="#7A4A24";
+    if(stage<0)return;
+    if(stage===0){rect(-1,0,3,1,"#6A4A31");px(0,-1,"#8B6243");return}
+    if(stage===1){rect(-2,0,5,1,"#6A4A31");rect(0,-3,1,3,G[1]);px(-1,-3,G[3]);px(1,-4,G[3]);px(-1,-4,G[2]);return}
+    if(stage===2){rect(0,-6,1,6,G[1]);[[-2,-4],[-1,-5],[1,-5],[2,-6],[-1,-7],[0,-8],[1,-7],[-2,-6]].forEach(function(p,i){px(p[0],p[1],G[2+(i%3)])});return}
+    var spec=[null,null,null,{tw:1,th:7,r:3},{tw:2,th:9,r:5},{tw:2,th:12,r:7},{tw:3,th:15,r:10}][stage];
+    c.fillStyle="rgba(0,0,0,.18)";c.fillRect(Math.round((x-spec.r)*P),Math.round((y)*P),(spec.r*2+1)*P,P);
+    rect(-Math.floor(spec.tw/2),-spec.th,spec.tw,spec.th,TR);rect(-Math.floor(spec.tw/2),-spec.th,1,spec.th,TR2);
+    var cy=-spec.th-spec.r+2,r=spec.r;
+    for(var dy=-r;dy<=r;dy++)for(var dx=-r;dx<=r;dx++){var d=dx*dx+dy*dy*1.1,edge=r*r+(rnd()-.5)*r*1.6;if(d>edge)continue;var l=(-dx-dy)/(r*1.4)+(rnd()-.5)*.5,ci=l>.55?4:l>.15?3:l>-.3?2:l>-.7?1:0;px(dx,cy+dy,G[ci])}
+    if(stage>=5)for(var k=0;k<3;k++){var fx=Math.round((rnd()-.5)*r),fy=Math.round(cy+(rnd()-.5)*r);px(fx,fy,"#F2D16B")}
+  }
+  function buildGrove(){
+    var dpr=Math.min(2,window.devicePixelRatio||1),W=window.innerWidth,H=window.innerHeight;gcv.width=Math.round(W*dpr);gcv.height=Math.round(H*dpr);gcv.style.width=W+"px";gcv.style.height=H+"px";
+    var P=Math.max(3,Math.round(Math.min(W,H)/150))*dpr,cw=Math.ceil(gcv.width/P),ch=Math.ceil(gcv.height/P),hz=Math.round(ch*.32);
+    var off=document.createElement("canvas");off.width=gcv.width;off.height=gcv.height;var c=off.getContext("2d");
+    var sk=c.createLinearGradient(0,0,0,hz*P);sk.addColorStop(0,"#5DB3EC");sk.addColorStop(1,"#BFE6FA");c.fillStyle=sk;c.fillRect(0,0,off.width,hz*P);
+    var r0=grng("ground"+START_KEY),GC=["#5E9E3A","#649F3C","#58953A","#6AA642","#53903A"];
+    for(var y=hz;y<ch;y++)for(var x=0;x<cw;x++){var t=r0();c.fillStyle=t<.62?GC[0]:t<.78?GC[1]:t<.9?GC[2]:t<.97?GC[3]:GC[4];c.fillRect(x*P,y*P,P,P)}
+    c.fillStyle="#7DBB55";c.fillRect(0,hz*P,off.width,P);
+    var gs=groveStats(),tot=gs.total,cx=Math.round(cw/2),cyy=Math.round(hz+(ch-hz)*.55);
+    if(tot<42){var pr=grng("plot"+START_KEY);for(var yy=-3;yy<=3;yy++)for(var xx=-7;xx<=7;xx++){if(xx*xx/49+yy*yy/9>1)continue;c.fillStyle=pr()<.5?"#79553A":"#8B6243";c.fillRect((cx+xx)*P,(cyy+yy)*P,P,P)}}
+    var rs=grng("slots"+START_KEY),slots=[],maxR=Math.min(cw*.48,(ch-hz)*1.4);
+    for(var i=0;i<400&&slots.length<70;i++){var a=rs()*Math.PI*2,rd=Math.sqrt(rs())*maxR,sx=Math.round(cx+Math.cos(a)*rd),sy=Math.round(cyy+Math.sin(a)*rd*.45);if(sy<hz+18||sy>ch-2||sx<4||sx>cw-4)continue;if(Math.abs(sx-cx)<9&&Math.abs(sy-cyy)<5)continue;if(slots.some(function(s){return Math.abs(s.x-sx)<7&&Math.abs(s.y-sy)<4}))continue;slots.push({x:sx,y:sy,d:Math.hypot(sx-cx,(sy-cyy)*2.2)})}
+    slots.sort(function(a,b){return a.d-b.d});
+    var plants=[{x:cx,y:cyy,age:tot,center:true,seed:"c"}],spawned=0;
+    slots.forEach(function(s,k){var sd=SPAWN0+k*SPAWNEVERY;if(tot>=sd){plants.push({x:s.x,y:s.y,age:tot-sd,center:false,seed:"p"+k});spawned++}});
+    var fr=grng("flowers"+START_KEY),FC=["#F7E26B","#F28AB0","#FFFFFF","#B48CF2","#FF9E4A"];
+    for(var f=0;f<Math.min(120,gs.gold*2);f++){var fx=Math.round(cx+(fr()-.5)*cw*.9),fy=Math.round(hz+4+fr()*(ch-hz-6));c.fillStyle=FC[Math.floor(fr()*FC.length)];c.fillRect(fx*P,fy*P,P,P);c.fillStyle="#3E8A2C";c.fillRect(fx*P,(fy+1)*P,P,P)}
+    plants.sort(function(a,b){return a.y-b.y}).forEach(function(pl){var r=grng(pl.seed+START_KEY);var hs=pl.center?0:(r()<.12?1:r()<.3?2:0);drawPlant(c,P,pl.x,pl.y,stageOf(pl.age,pl.center),r,hs)});
+    groveBase=off;
+    var trees=plants.filter(function(pl){return stageOf(pl.age,pl.center)>=4}).length,sprouts=plants.length-trees;
+    var nextSp=tot<SPAWN0?SPAWN0-tot:SPAWNEVERY-((tot-SPAWN0)%SPAWNEVERY);
+    groveGeo={P:P,cw:cw,hz:hz,clouds:[0,1,2,3].map(function(i){var rr=grng("cl"+i);return{x:rr()*cw,y:2+rr()*(hz-12),w:10+Math.floor(rr()*14),v:.4+rr()*.6}})};
+    var stg=["a seed","a sprout","a seedling","a sapling","a young tree","a tree","a great tree"][Math.max(0,stageOf(tot,true))];
+    document.getElementById("groveInfo").innerHTML='<div class="gtitle">Your grove</div><div class="gline">'+tot+' cleared day'+(tot===1?'':'s')+' \u00b7 '+(plants.length)+' plant'+(plants.length===1?'':'s')+(trees?' \u00b7 '+trees+' tree'+(trees===1?'':'s'):'')+(gs.gold?' \u00b7 '+Math.min(120,gs.gold*2)+' flowers':'')+'</div><div class="gline">The first plant is '+stg+'. '+(tot<365?'New seedling in '+nextSp+' cleared day'+(nextSp===1?'':'s')+'.':'A full forest. Well done.')+'</div><div class="gbar"><i style="width:'+Math.min(100,Math.round(tot/365*100))+'%"></i></div><div class="gline small">'+Math.min(tot,365)+' of 365 days toward a forest \u00b7 gold days grow flowers</div>';
+  }
+  function groveFrame(t){
+    if(!groveOpen)return;var g=groveGeo,c=gctx;c.drawImage(groveBase,0,0);
+    var reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches,P=g.P;
+    g.clouds.forEach(function(cl){var x=reduce?cl.x:((cl.x+t/1000*cl.v)%(g.cw+cl.w+10))-cl.w;c.fillStyle="#FFFFFF";c.fillRect(Math.round(x)*P,Math.round(cl.y)*P,cl.w*P,3*P);c.fillRect(Math.round(x+3)*P,Math.round(cl.y-2)*P,(cl.w-6)*P,2*P);c.fillStyle="#E4F2FA";c.fillRect(Math.round(x+1)*P,Math.round(cl.y+3)*P,(cl.w-2)*P,P)});
+    if(!reduce)groveRAF=setTimeout(function(){requestAnimationFrame(groveFrame)},66);
+  }
+  function openGrove(idle){
+    if(groveOpen){groveIdleMode=groveIdleMode&&idle;return}groveOpen=true;groveIdleMode=!!idle;closeQMenu&&closeQMenu();
+    groveEl.hidden=false;document.body.classList.add("grove-on");document.getElementById("groveHint").hidden=!idle;buildGrove();requestAnimationFrame(groveFrame);
+    if(!idle)document.getElementById("groveBack").focus();
+  }
+  function closeGrove(){if(!groveOpen)return;groveOpen=false;clearTimeout(groveRAF);groveEl.hidden=true;document.body.classList.remove("grove-on");idleReset()}
+  document.getElementById("groveBtn").addEventListener("click",function(){openGrove(false)});
+  document.getElementById("groveBack").addEventListener("click",closeGrove);
+  groveEl.addEventListener("click",function(e){if(groveIdleMode&&e.target!==document.getElementById("groveBack"))closeGrove()});
+  document.addEventListener("keydown",function(e){if(groveOpen&&(e.key==="Escape"||groveIdleMode))closeGrove()});
+  window.addEventListener("resize",function(){if(groveOpen)buildGrove()});
+  var idleT=0;
+  function idleMins(){var v=cfg().idleGrove;return v==null?3:+v}
+  function idleReset(){clearTimeout(idleT);var m=idleMins();if(!m)return;idleT=setTimeout(function(){var anyModal=!document.getElementById("gModal").hidden||!document.getElementById("nqModal").hidden||!document.getElementById("setDrawer").hidden;if(document.visibilityState==="visible"&&!anyModal&&!groveOpen&&!document.querySelector("#quests input:focus,#tdNew:focus,.t3i:focus"))openGrove(true);else idleReset()},m*60000)}
+  ["pointerdown","keydown","scroll","touchstart"].forEach(function(ev){window.addEventListener(ev,function(){if(!groveOpen)idleReset()},{passive:true})});
+  idleReset();
   /* ---- daily wrap-up ---- */
   var wrapBtn=document.getElementById("wrapBtn");
   function wrapDay(){var T=todayKey(),k=ro()?viewKey:(endedT()?T:add(T,-1));return k>=START_KEY&&(k<T||(k===T&&endedT()))?k:null}
