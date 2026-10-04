@@ -15,7 +15,7 @@ public/               copied as-is into dist/ (fonts, icons, vendor, manifest)
 tests/                Playwright tests (desktop, phone, rules, data)
 build.mjs             builds dist/
 capacitor.config.json Android wrapper (webDir: dist)
-scripts/add-permissions.js
+scripts/add-permissions.cjs
 assets/               source images for the Android icon
 ```
 
@@ -46,7 +46,7 @@ First time:
 ```
 npm run build
 npx cap add android
-node scripts/add-permissions.js
+node scripts/add-permissions.cjs
 npx @capacitor/assets generate --android
 npx cap sync android
 cd android
