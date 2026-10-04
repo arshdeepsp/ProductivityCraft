@@ -199,6 +199,64 @@ details.rules[open]>summary::after{content:"-"}
 .empty{font-size:20px;color:#3F3F3F;padding:8px 2px}
 .rules-empty{font-size:20px;color:var(--muted);text-shadow:2px 2px 0 #000;margin:18px 3px 0}
 .privacy{font-size:18px;color:var(--muted);text-shadow:2px 2px 0 #000;text-align:center;margin:0}
+/* ===== Just 5 in focus mode (all sizes) ===== */
+html body.focusview #sparkBar{display:flex!important}body.focusview #pickBtn,body.focusview #batchBtn{display:none!important}
+.qcount,.qsum,.donesep,.runbox,.tdtg{display:none}
+.dtl{display:grid;margin:2px 0 8px}.dt-r{display:flex;justify-content:space-between;align-items:baseline;gap:14px;border-bottom:2px solid #A6A6A6;padding:7px 0;font-size:18px}.dt-r span{color:#5A5A5A}.dt-r b{font-weight:400;text-align:right;color:#1E1E1E}
+/* ===== mobile quest list ===== */
+@media (max-width:720px){
+  #gui{padding:12px 10px}
+  #gui .gh{margin-bottom:8px}
+  .qcount{display:inline-block;font:9px var(--px);background:#3C8527;color:#fff;padding:4px 6px;margin-left:6px;vertical-align:middle;text-shadow:none}
+  #quests{display:flex;flex-direction:column;gap:6px}
+  #quests .q{grid-template-columns:22px 12px 28px minmax(0,1fr) auto!important;padding:8px 8px;gap:4px 8px;align-items:center;min-height:0}
+  #quests .q .req{display:none!important}
+  #quests .q .lbl{font-size:10px;line-height:1.35}
+  #quests .q:not(.colq) .ctl{grid-column:5!important;grid-row:1;justify-self:end}
+  #quests .q.colq .ctl{grid-column:1/-1!important;display:none!important}
+  #quests .q.colq.open .ctl,#quests .q.colq.running .ctl{display:flex!important}
+  #quests .q .qsum{display:block;grid-column:5;grid-row:1;font:17px var(--vt);color:#fff;background:#373737;border:2px solid #1E1E1E;padding:4px 8px;white-space:nowrap;cursor:pointer;text-shadow:none}
+  #quests .q.open .qsum{background:#3C8527}
+  #quests .q.running .qsum{display:none}
+  #quests .q .sjchip{margin-top:2px;font-size:14px;padding:0 5px}
+  #quests .q .stone.wkbtn,#quests .q .stone.tdbtn{font-size:8px;padding:8px 9px}
+  #quests .q .sw{width:64px;height:32px}
+  .donesep{display:block;order:2;width:100%;text-align:left;font:9px var(--px);color:#3F3F3F;background:#B5B5B5;border:2px solid #8B8B8B;padding:8px 10px;margin-top:2px;cursor:pointer}
+  #quests .q.indone{order:3}
+  #quests:not(.done-open) .q.indone{display:none!important}
+  #quests .q.indone .qgrip{visibility:hidden}
+  #quests .q.running{border-color:#FFD23F}
+  #quests .q.running .ctr,#quests .q.running .plan{display:none!important}
+  .runbox{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;flex:1;min-width:0}
+  .rb-t{font:20px var(--px);color:#FFFF55;text-shadow:2px 2px 0 #000}
+  .rb-s{grid-column:1;font:16px var(--vt);color:#fff}
+  .rb-b{grid-column:1/-1;height:8px;background:#1E1E1E;border:2px solid #000}.rb-b i{display:block;height:100%;background:#7FE05A}
+  .rb-f{grid-column:1/-1;font:15px var(--vt);color:#FFF3C4}.rb-f:empty{display:none}
+  #quests .q.running .ctl{align-items:center;gap:10px;flex-wrap:nowrap!important}
+  #quests .q.running .tmr{order:2;align-self:stretch;height:auto!important;min-height:44px;padding:0 14px}
+  #quests .q.running .tmr span{display:none}
+  .qtools{flex-wrap:wrap;gap:6px}.qtools .stone{font-size:8px;padding:9px 10px}
+  .tdtg{display:inline-block}
+  .qtools .lg{display:none}
+  html body.hide-grip #quests .q{grid-template-columns:0 12px 28px minmax(0,1fr) auto!important}
+  #tdRow{display:none}body.tdopen #tdRow{display:flex}
+  #gui .xp,#xpText{display:none!important}
+  #sparkBar{display:grid!important;grid-template-columns:1.3fr 1fr 1fr;gap:6px;margin-bottom:8px}#sparkBar[hidden]{display:none !important}#sparkBar .stone{font-size:7px;padding:9px 4px;white-space:nowrap}
+  html body.focusview #sparkBar{display:grid!important;grid-template-columns:1fr}
+  .qtools{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.qtools .stone{font-size:7px!important;padding:10px 2px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.qtools .stone[hidden]{display:none !important}
+  .gui-r{gap:6px}.gui-r .locks,#lockTxt{font-size:15px}
+}
+.subjcard,.sj-t,.sj-topics{min-width:0}
+.sj-t{grid-template-columns:auto minmax(0,1fr) auto!important}
+.sj-t .sj-l{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:right;justify-self:stretch}
+@media (max-width:720px){.subjgrid{grid-template-columns:minmax(0,1fr)!important}.pp{width:20px;height:20px}}
+.carrynote{margin:8px 0;padding:8px 10px;background:#D7F0EF;border:3px solid #2F7A7A;color:#1F4F4F;font-size:18px}
+.carrynote.hot{background:#FFE3DD;border-color:#B3261E;color:#7A1A12}
+.pendtag{display:inline-block;margin-top:4px;margin-left:6px;font:15px var(--vt);background:#7A4A12;color:#FFE6B3;border:2px solid #3A2408;padding:1px 6px;text-shadow:none}
+.goalcards{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%}
+.gcard{display:grid;gap:3px;text-align:left;background:#8B8B8B;color:#fff;border:3px solid;border-color:#373737 #fff #fff #373737;padding:8px;cursor:pointer;font:inherit}
+.gcard b{font:9px var(--px);font-weight:400}.gcard span{font:15px var(--vt);color:#EDEDED}
+.gcard.on{background:#3C8527;border-color:#2A5E1B #5DB33F #5DB33F #2A5E1B}
 @media (max-width:720px){#fx{top:var(--hdrH,0px)!important;bottom:var(--navH,0px)!important;height:auto!important}}
 /* ===== declutter ===== */
 .stone.focusb{font-size:8px;padding:7px 9px}.stone.focusb[aria-pressed="true"]{background:#3C8527;border-color:#2A5E1B #5DB33F #5DB33F #2A5E1B}
@@ -880,7 +938,7 @@ details.rules>summary h2{flex:1}
 
   <section class="gui dash-main" id="gui" aria-label="Daily quests">
     <div class="gui-h">
-      <h2 id="guiTitle">Today's quests</h2>
+      <h2 id="guiTitle"><span id="guiTitleT">Today's quests</span> <span class="qcount" id="qCount" hidden></span></h2>
       <div class="gui-r">
         <span class="lock px" id="lockIn"></span>
         <button type="button" class="stone focusb" id="focusBtn" aria-pressed="false" title="Hide the sidebar and extras">Focus</button>
@@ -893,7 +951,8 @@ details.rules>summary h2{flex:1}
       <div class="top3" id="top3"></div>
       <div class="sparkbar" id="sparkBar" hidden><button type="button" class="stone save" id="sp5Btn">&#9654; Just 5 minutes</button><button type="button" class="stone" id="pickBtn">Pick for me</button><button type="button" class="stone" id="batchBtn">Batch to-dos</button></div>
       <div class="quests" id="quests"></div>
-      <div class="qtools"><button type="button" class="stone save" id="nqBtn">+ New quest</button><button type="button" class="stone" id="spBtn">Sprint</button><button type="button" class="stone" id="shareBtn" hidden>Share week</button><button type="button" class="stone" id="qEditBtn">Edit quests</button></div>
+      <div class="qtools"><button type="button" class="stone save" id="nqBtn">+ <span class="lg">New </span>quest</button><button type="button" class="stone" id="spBtn">Sprint</button><button type="button" class="stone tdtg" id="tdToggle">+ To-do</button><button type="button" class="stone" id="shareBtn" hidden>Share week</button><button type="button" class="stone" id="qEditBtn">Edit<span class="lg"> quests</span></button></div>
+      <div class="carrynote" id="carryNote" hidden></div>
       <div class="parkbox" id="parkBox" hidden></div>
       <div class="tdrow" id="tdRow"><input id="tdNew" maxlength="60" placeholder="Add a to-do" aria-label="New to-do"><button type="button" class="stone" id="tdAdd">Add</button></div>
       <p class="paused" id="pausedNote" hidden></p>
@@ -964,7 +1023,7 @@ details.rules>summary h2{flex:1}
   function clone(x){return JSON.parse(JSON.stringify(x))}
   function cfg(){if(!S.cfg){S.cfg={quests:[],rules:null,start:START_AT.toISOString(),updated:""};cache()}if(!S.cfg.start)S.cfg.start=START_AT.toISOString();return S.cfg}
   function isPaused(q,k){return !!q.pausedUntil&&k<q.pausedUntil&&(!q.pausedFrom||k>=q.pausedFrom)}
-  function slim(q){var o={id:q.id,type:q.type,label:q.label};["min","max","from","to","unit","note","days","opt","ul","step","scale","total","due","roll","dl","subj","topic","fin"].forEach(function(f){if(q[f]!=null&&q[f]!=="")o[f]=q[f]});return o}
+  function slim(q){var o={id:q.id,type:q.type,label:q.label};["min","max","from","to","unit","note","days","opt","ul","step","scale","total","due","roll","dl","subj","topic","fin","lock","pending"].forEach(function(f){if(q[f]!=null&&q[f]!=="")o[f]=q[f]});return o}
   function scheduled(q,k){return !q.days||!q.days.length||q.days.indexOf(parse(k).getDay())>=0}
   function activeDefs(k){var vc=isVac(k),c0=cfg(),LD=(c0.lockDay&&c0.lockDay.date===k)?c0.lockDay.defs:null,src=c0.quests.map(function(q){return LD&&LD[q.id]?LD[q.id]:q});if(LD)Object.keys(LD).forEach(function(id){if(!c0.quests.some(function(q){return q.id===id}))src.push(LD[id])});return src.filter(function(q){if(q.completed&&q.completed.on<k)return false;if(q.type==="todo")return !q.doneOn||q.doneOn===k;if(q.dl&&(k>q.dl.due||k<q.dl.from))return false;return !isPaused(q,k)&&scheduled(q,k)}).map(function(q){var o=slim(q);if(q.dl){o.min=dlMin(q,k);if(!o.min)o.opt=true}if(vc)o.opt=true;return o})}
   function reqOf(d){return d.filter(function(q){return !q.opt&&q.type!=="weekly"&&q.type!=="todo"})}
@@ -1046,7 +1105,7 @@ details.rules>summary h2{flex:1}
   function buildQuests(defs){
     var sig=JSON.stringify(defs);if(sig===qSig)return;qSig=sig;qWrap.innerHTML="";qEls={};
     defs.forEach(function(q){
-      var row=document.createElement("div");row.className="q";
+      var row=document.createElement("div");row.className="q t-"+q.type;
       row.innerHTML='<button type="button" class="qgrip" aria-label="Drag to reorder '+q.label.replace(/"/g,"")+'" title="Drag to set priority"><i></i></button><i class="gem" aria-hidden="true"></i><button type="button" class="pzb" aria-haspopup="menu" aria-label="More options for '+q.label.replace(/"/g,"")+'">\u22ef</button><div><div class="lbl"></div><div class="req"></div></div><div class="ctl"></div>';
       var pz=row.querySelector(".pzb");pz.addEventListener("click",function(ev){ev.stopPropagation();openQMenu(q,pz)});
       row.querySelector(".lbl").textContent=q.label;row.querySelector(".req").textContent=reqText(q);
@@ -1182,6 +1241,7 @@ details.rules>summary h2{flex:1}
     info.textContent=parts.join(" \u00b7 ");render();
   });
   function render(fromClick){
+    try{if(S.cfg&&(S.cfg.quests||[]).some(function(q){return q.pending}))applyPending()}catch(x){}
     var st=compute(),T=todayKey(),k=dayKey(),e=S.days[k]||{};
     // HUD
     var r=RANKS[0];RANKS.forEach(function(x){if(st.streak>=x[0])r=x});
@@ -1208,9 +1268,9 @@ details.rules>summary h2{flex:1}
     // quests
     var past=ro()||endedT();document.getElementById("endBtn").hidden=past;
     var mbE=document.getElementById("mbEnd");mbE.disabled=past;mbE.querySelector("span").textContent=endedT()?"Ended":"End day";document.getElementById("mbNew").disabled=locked();
-    document.getElementById("gate").hidden=!st.gate||past;document.getElementById("questsWrap").hidden=(!!st.gate&&!past)||mgrOpen;if(ro()&&mgrOpen){mgrOpen=false;qmgr.hidden=true}document.getElementById("qEditBtn").disabled=ro();document.getElementById("nqBtn").disabled=locked();document.getElementById("qEditBtn").textContent=mgrOpen?"Close editor":"Edit quests";
+    document.getElementById("gate").hidden=!st.gate||past;document.getElementById("questsWrap").hidden=(!!st.gate&&!past)||mgrOpen;if(ro()&&mgrOpen){mgrOpen=false;qmgr.hidden=true}document.getElementById("qEditBtn").disabled=ro();document.getElementById("nqBtn").disabled=locked();document.getElementById("qEditBtn").innerHTML=mgrOpen?"Close<span class=\"lg\"> editor</span>":"Edit<span class=\"lg\"> quests</span>";
     document.getElementById("gui").classList.toggle("ro",past);document.getElementById("gui").classList.toggle("noplan",!cfg().showPlan);
-    document.getElementById("guiTitle").textContent=ro()?parse(viewKey).toLocaleDateString("en-CA",{weekday:"short",month:"short",day:"numeric"}):"Today's quests";
+    document.getElementById("guiTitleT").textContent=ro()?parse(viewKey).toLocaleDateString("en-CA",{weekday:"short",month:"short",day:"numeric"}):"Today's quests";
     document.getElementById("backToday").hidden=!ro();lockIn();if(typeof wrapLabel==="function"&&wrapBtn)wrapLabel();
     var defs=(k===T&&!endedT())?activeDefs(T):defsOf(e);buildQuests(defs);
     if(k===T&&!endedT()&&S.days[T]&&JSON.stringify(S.days[T].q)!==JSON.stringify(defs)){S.days[T]=Object.assign({},S.days[T],{q:defs});dirty[T]=true;cache();clearTimeout(timer);timer=setTimeout(flush,700)}
@@ -1227,11 +1287,11 @@ details.rules>summary h2{flex:1}
     });
     defs.forEach(function(q){var el=qEls[q.id];if(!el)return;var pj=el.row.querySelector(".proj");if(pj&&q.total){var sm=projSum(q.id,k),pc=Math.min(100,Math.round(sm/q.total*100));pj.querySelector("i").style.width=pc+"%";pj.querySelector("span").textContent="Project: "+(q.type==="time"?hm(sm)+" / "+hm(q.total):sm+" / "+num(q.total)+(q.ul?" "+q.ul:""))+" ("+pc+"%)"}});
     var cf=cfg();document.getElementById("sparkBar").hidden=!cf.sparkTools||past;document.getElementById("shareBtn").hidden=!cf.addShare;document.getElementById("trendsBtn").hidden=!cf.addTrends;
-    if(!past)checkFinish();
+    if(!past)checkFinish();renderCarryNote();
     var cqm={};cfg().quests.forEach(function(q){cqm[q.id]=q});
     defs.forEach(function(q){var el=qEls[q.id];if(!el)return;var ch=el.row.querySelector(".sjchip");if(ch){var sj=subjById(q.subj);if(sj){var due=(sj.topics||[]).some(function(t){return topicStats(t).due});ch.innerHTML=esc(sj.name)+((sj.topics||[]).length?' \u00b7 '+LV[Math.max(1,Math.round(avgProf(sj)))]:'')+(due?'<i class="rdot"></i>':'');ch.hidden=false}else ch.hidden=true}
-      var cq=cqm[q.id];el.row.classList.toggle("doneq",!!(cq&&cq.completed));});
-    timerTick();renderHudExtras(T);renderShelf();notifSync();applyHide();renderPark();renderHeat();
+      var cq=cqm[q.id];el.row.classList.toggle("doneq",!!(cq&&cq.completed));var pt=el.row.querySelector(".pendtag");if(cq&&cq.pending){if(!pt){pt=document.createElement("span");pt.className="pendtag";el.row.children[3].appendChild(pt)}pt.textContent=pendText(cq.pending)+" scheduled for "+fmtD(cq.pending.due)}else if(pt)pt.remove();});
+    timerTick();renderHudExtras(T);renderShelf();notifSync();applyHide();mobileList(defs,e,past);renderPark();renderHeat();
     defs.forEach(function(q){var el=qEls[q.id];if(!el||q.type!=="time")return;var rq=el.row.querySelector(".req"),base=reqText(q),xtra="";
       if(q.roll){var rk=k,rs=rollSum(q.id,rk),rn=rollNeed(q,rk),df=rs-rn;xtra=" \u00b7 7-day: "+hm(rs)+" / "+hm(rn)+(df===0?" \u00b7 on pace":df>0?" \u00b7 ahead "+hm(df):" \u00b7 behind "+hm(-df))}else if(cfg().bank){var cv=(bankCov.get(e)||{})[q.id]||0,bk=bankNow[q.id]||0;if(cv)xtra=" \u00b7 +"+hm(cv)+" from bank";else if(bk)xtra=" \u00b7 bank "+hm(bk)}
       rq.textContent=base+xtra});if(gEl)maybeGateModal(st);document.getElementById("tdRow").hidden=past;
@@ -1684,12 +1744,12 @@ details.rules>summary h2{flex:1}
   function closeQMenu(){if(qmenu){qmenu.remove();qmenu=null}}
   document.addEventListener("click",function(e){if(qmenu&&!qmenu.contains(e.target))closeQMenu()});
   document.addEventListener("keydown",function(e){if(e.key==="Escape")closeQMenu()});
-  function pauseQuest(q){var T=todayKey(),c6=clone(cfg()),oldQ=clone(c6.quests),qs=c6.quests,t=qs.filter(function(x){return x.id===q.id})[0];if(!t)return;var inf0=easeInfo();t.pausedFrom=inf0.setup?T:add(T,1);t.pausedUntil=add(t.pausedFrom,7);var g=guardEasing(c6,oldQ,[q.id]);if(!g.ok){setSync(g.msg);return}saveCfg(c6);if(g.eased){qSig="";render();setSync(q.label+" will be paused from tomorrow for 7 days ("+g.left+"/"+EASE_BUDGET+" easing changes left this week).");return}if(S.days[T]&&!S.days[T].ended){S.days[T]=Object.assign({},S.days[T],{q:activeDefs(T)});dirty[T]=true;cache();clearTimeout(timer);timer=setTimeout(flush,300)}qSig="";render();setSync(q.label+" paused until "+fmtD(add(T,6)))}
+  function pauseQuest(q){var cq=cfg().quests.filter(function(x){return x.id===q.id})[0];if(cq&&lockOf(cq)==="fortnight"&&!easeInfo().setup){var d1=queueChange(q.id,"pause");render();setSync(q.label+" is locked. Pause scheduled for "+fmtD(d1)+".");return}var T=todayKey(),c6=clone(cfg()),oldQ=clone(c6.quests),qs=c6.quests,t=qs.filter(function(x){return x.id===q.id})[0];if(!t)return;var inf0=easeInfo();t.pausedFrom=inf0.setup?T:add(T,1);t.pausedUntil=add(t.pausedFrom,7);var g=guardEasing(c6,oldQ,[q.id]);if(!g.ok){setSync(g.msg);return}saveCfg(c6);if(g.eased){qSig="";render();setSync(q.label+" will be paused from tomorrow for 7 days ("+g.left+"/"+EASE_BUDGET+" easing changes left this week).");return}if(S.days[T]&&!S.days[T].ended){S.days[T]=Object.assign({},S.days[T],{q:activeDefs(T)});dirty[T]=true;cache();clearTimeout(timer);timer=setTimeout(flush,300)}qSig="";render();setSync(q.label+" paused until "+fmtD(add(T,6)))}
   function deleteTodo(q){var c=clone(cfg());c.quests=c.quests.filter(function(x){return x.id!==q.id});saveCfg(c);var T=todayKey();if(S.days[T]&&!S.days[T].ended){var e=Object.assign({},S.days[T]);delete e[q.id];e.q=activeDefs(T);S.days[T]=e;dirty[T]=true;cache();clearTimeout(timer);timer=setTimeout(flush,300)}qSig="";render();setSync("To-do deleted")}
   function openQMenu(q,btn){
     closeQMenu();if(locked())return;
     var m=document.createElement("div");m.className="qmenu";m.setAttribute("role","menu");
-    var items=q.type==="todo"?[["Delete to-do",function(){deleteTodo(q)}]]:[["Pause for 7 days",function(){pauseQuest(q)}],["Edit quests",function(){openMgr()}]];if(q.type==="time"&&!(S.timer&&S.timer.id===q.id))items.unshift(["Just 5 minutes on this",function(){start5(q)}]);if(q.type!=="todo"){var cq0=cfg().quests.filter(function(z){return z.id===q.id})[0];if(cq0&&!cq0.completed)items.splice(items.length,0,["Mark complete",function(){markCompleteManual(q)}])}
+    var items=q.type==="todo"?[["View details",function(){openDetails(q)}],["Delete to-do",function(){deleteTodo(q)}]]:[["Pause for 7 days",function(){pauseQuest(q)}],["Edit quests",function(){openMgr()}]];if(q.type==="time"&&!(S.timer&&S.timer.id===q.id))items.unshift(["Just 5 minutes on this",function(){start5(q)}]);if(q.type!=="todo")items.unshift(["View details",function(){openDetails(q)}]);if(q.type!=="todo"){var cq0=cfg().quests.filter(function(z){return z.id===q.id})[0];if(cq0&&!cq0.completed)items.splice(items.length,0,["Mark complete",function(){markCompleteManual(q)}]);if(cq0&&cq0.pending)items.unshift(["Cancel scheduled "+pendText(cq0.pending).toLowerCase(),function(){cancelPending(q.id)}])}
     items.push(["Cancel",function(){}]);
     m.innerHTML=items.map(function(it,i){return '<button type="button" role="menuitem" data-mi="'+i+'">'+it[0]+'</button>'}).join("");
     document.body.appendChild(m);var r=btn.getBoundingClientRect();m.style.top=(window.scrollY+r.bottom+6)+"px";m.style.left=Math.max(8,Math.min(window.scrollX+r.left,window.scrollX+document.documentElement.clientWidth-m.offsetWidth-8))+"px";
@@ -1728,7 +1788,7 @@ details.rules>summary h2{flex:1}
     if(hit){cache();sfx("chime");try{if(navigator.vibrate)navigator.vibrate([120,60,120,60,200])}catch(x){}setSync(hit+". Keep going or stop the timer to log it.")}
     var el=qEls[t.id];if(el&&el.tmr){el.tmr.classList.toggle("hit",!!t.minHit&&tot>=q.min);el.tmr.classList.toggle("gold",!!t.planHit&&pl>q.min&&tot>=pl)}
   }
-  function timerTick(){timerGoals();Object.keys(qEls).forEach(function(id){var el=qEls[id];if(!el||!el.tmr)return;var on=S.timer&&S.timer.id===id;el.tmr.classList.toggle("on",!!on);el.tmr.querySelector("span").textContent=on?fmtT(Date.now()-S.timer.start):"";el.tmr.setAttribute("aria-label",(on?"Stop":"Start")+" focus timer")})}
+  function timerTick(){timerGoals();Object.keys(qEls).forEach(function(id){runBox(id);var el=qEls[id];if(!el||!el.tmr)return;var on=S.timer&&S.timer.id===id;el.tmr.classList.toggle("on",!!on);el.tmr.querySelector("span").textContent=on?fmtT(Date.now()-S.timer.start):"";el.tmr.setAttribute("aria-label",(on?"Stop":"Start")+" focus timer")})}
   setInterval(function(){if(S.timer)timerTick();renderHeat()},1000);
   function renderHeat(){var el=document.getElementById("heatBar");if(!el)return;var h=heat(),pc=Math.round(h/180*100),lab=h>=120?"On fire":h>=60?"Hot":h>=20?"Warm":"Cold";el.querySelector("i").style.width=pc+"%";el.className="heat "+(h>=120?"h3":h>=60?"h2":h>=20?"h1":"h0");document.getElementById("heatLab").textContent="Momentum: "+lab}
   /* ---- to-dos ---- */
@@ -1922,7 +1982,7 @@ details.rules>summary h2{flex:1}
   function easeInfo(){var T=todayKey(),c=cfg(),setupEnd=add(START_KEY,7),setup=T<setupEnd,ws=weekStart(T),used=(c.easeLog||[]).filter(function(x){return x.date>=ws&&x.date<=T}).reduce(function(a,x){return a+(x.n||0)},0);return{T:T,setup:setup,setupEnd:setupEnd,used:used,left:Math.max(0,EASE_BUDGET-used)}}
   function allDays(q){return q.days&&q.days.length?q.days:[0,1,2,3,4,5,6]}
   function isEasier(o,n,T){
-    if(n.type!==o.type)return true;if(!o.opt&&n.opt)return true;
+    if(n.type!==o.type)return true;if(!o.opt&&n.opt)return true;var LR={free:0,flex:1,fortnight:2};if((LR[n.lock||"flex"])<(LR[o.lock||"flex"]))return true;
     if(n.pausedUntil&&n.pausedUntil!==o.pausedUntil&&isPaused(n,add(T,1)))return true;
     var nd=allDays(n);if(allDays(o).some(function(d){return nd.indexOf(d)<0}))return true;
     if((o.type==="time"||o.type==="target"||o.type==="weekly"||o.type==="scale")&&num(n.min)<num(o.min))return true;
@@ -2160,7 +2220,7 @@ details.rules>summary h2{flex:1}
   var finChecking=false;
   function checkFinish(){if(finChecking||locked())return;finChecking=true;try{cfg().quests.forEach(function(q){if(q.completed||q.type==="todo")return;var m=finishMet(q);if(m)completeQuest(q.id,m)})}finally{finChecking=false}}
   function completionXP(){return cfg().quests.reduce(function(a,q){return a+(q.completed?(q.completed.how==="archived"?0:q.completed.how==="manual"?25:100):0)},0)}
-  function markCompleteManual(q){
+  function markCompleteManual(q){var cq=cfg().quests.filter(function(x){return x.id===q.id})[0];if(cq&&lockOf(cq)==="fortnight"&&!easeInfo().setup&&!finishMet(q)){var d2=queueChange(q.id,"complete");render();setSync(q.label+" is locked. Completion scheduled for "+fmtD(d2)+".");return}
     var met=finishMet(q);if(met){completeQuest(q.id,met);render();return}
     openG("Mark quest complete?",function(b){var inf=easeInfo();
       b.innerHTML='<p class="mhead">Finish \u201c'+esc(q.label)+'\u201d?</p><p class="help">It stays on today\u2019s list, then moves to Badges \u203a Completed from tomorrow. Its history is kept.</p>'+(inf.setup?'':'<p class="help">This counts as one easing change ('+inf.left+'/'+EASE_BUDGET+' left this week).</p>')+'<div class="edrow end"><button type="button" class="stone" id="mcNo">Cancel</button><button type="button" class="stone save" id="mcGo">Mark complete</button></div>';
@@ -2192,6 +2252,7 @@ details.rules>summary h2{flex:1}
     for(var i=0;i<7;i++){var k=add(T,i),today=i===0;
       if(n.checkin&&!(today&&ended)){var left=today?reqOf(activeDefs(T)).filter(function(q){return q.type!=="limit"&&!metQ(q,e)}).length:null;if(!today||left>0)push(2000+i,"Evening check-in",today?left+" quest"+(left===1?"":"s")+" left today. Still time.":"How\u2019s today going? Open your quests.",atTime(k,n.checkinAt))}
       if(n.endday&&!(today&&ended)){var endAt=parse(add(k,1));endAt.setHours(de,0,0,0);push(2100+i,"End your day","Lock in today and get your wrap-up before it closes.",endAt.getTime()-60*60000)}}
+    var cr=carriedRun(add(T,-1));if(n.risk&&cr>=1&&!ended&&!hasEntry(e))push(2300,cr>=2?"Empty today = a miss":"Carried day 1 of 2",cr>=2?"You\u2019ve had two carried days. Log something today or it counts as a miss.":"Yesterday was carried. If today stays empty too, tomorrow an empty day is a miss.",atTime(T,"18:00"));
     if(n.risk&&st.miss===1&&!ended&&!ok(e))push(2200,"Streak at risk","You missed yesterday. Clear today to keep your "+st.streak+"-day streak.",atTime(T,"12:00"));
     if(n.dl)(cfg().deadlines||[]).forEach(function(d,i){var dk=add(d.date,-1);if(dk>=T)push(3000+i,"Tomorrow: "+d.title,"Your deadline is tomorrow. Plan today\u2019s work around it.",atTime(dk,"18:00"))});
     if(n.review){var due=allTopics().filter(function(o){return topicStats(o.t).due}).length;if(due){var sun=add(weekStart(T),6);push(4001,"Topics due for review",due+" topic"+(due===1?"":"s")+" untouched for 2+ weeks. Pick for me can suggest one.",atTime(sun>=T?sun:add(sun,7),"10:00"))}}
@@ -2210,9 +2271,25 @@ details.rules>summary h2{flex:1}
       el.querySelector("#nfT60").addEventListener("click",function(){var at=new Date(Date.now()+60000);ensureChannels().then(function(){return ln.schedule({notifications:[{id:4998,title:"Timing test",body:"Scheduled for "+at.toLocaleTimeString([],{hour:"numeric",minute:"2-digit",second:"2-digit"})+". Compare with the time it arrived.",channelId:"pc_alerts",schedule:{at:at,allowWhileIdle:true}}]})}).then(function(){el.querySelector("#nfT60s").textContent="Lock the phone now. Due at "+at.toLocaleTimeString([],{hour:"numeric",minute:"2-digit",second:"2-digit"})})})
     })}
   function notifTest(){var ln=LN();if(!ln){setSync("Notifications work in the Android app build.");return}ensureChannels().then(function(){return ln.schedule({notifications:[{id:4999,title:"ProductivityCraft",body:"Notifications are working.",channelId:"pc_alerts",schedule:{at:new Date(Date.now()+3000),allowWhileIdle:true}}]})}).then(function(){setSync("Test notification in 3 seconds.")})}
+  /* ---- per-quest change rules (flexible / fortnight lock / free) ---- */
+  var LOCKS=[["flex","Flexible","Weekly easing budget (3/week), changes start tomorrow"],["fortnight","Locked for a fortnight","Easing changes are scheduled for the end of each 14-day cycle"],["free","Free","No limits, for quests you\u2019re still trying out"]];
+  function lockOf(q){return q.lock||"flex"}
+  function cycleDue(q,T){var st=q.lockFrom||T,n=Math.floor(daysBetween(st,T)/14)+1;return add(st,14*n)}
+  function pendText(p){return p.op==="delete"?"Delete":p.op==="pause"?"Pause":p.op==="complete"?"Complete":"Changes"}
+  function queueChange(id,op,newQ){var c=clone(cfg()),q=c.quests.filter(function(x){return x.id===id})[0];if(!q)return null;var due=cycleDue(q,todayKey());q.pending={op:op,due:due};if(newQ){var nq=clone(newQ);delete nq.pending;q.pending.q=nq}saveCfg(c);qSig="";return due}
+  function applyPending(){var T=todayKey(),c=clone(cfg()),changed=false,out=[];c.quests.forEach(function(q){var p=q.pending;if(!p||p.due>T){out.push(q);return}changed=true;
+      if(p.op==="delete")return;if(p.op==="pause"){delete q.pending;q.pausedFrom=T;q.pausedUntil=add(T,7);out.push(q);return}if(p.op==="complete"){delete q.pending;q.completed={on:T,how:"manual"};out.push(q);return}
+      var nq=Object.assign({},p.q||q);delete nq.pending;nq.id=q.id;if(nq.lock&&nq.lock!==q.lock)nq.lockFrom=T;out.push(nq)});
+    if(changed){c.quests=out;saveCfg(c);qSig="";setSync("Scheduled quest changes applied")}}
+  function cancelPending(id){var c=clone(cfg()),q=c.quests.filter(function(x){return x.id===id})[0];if(!q||!q.pending)return;delete q.pending;saveCfg(c);qSig="";render();setSync("Scheduled change cancelled")}
+  /* ---- carried-day warnings ---- */
+  function carriedRun(k){var st=lastSt||compute(),n=0;for(var d=k;d>=START_KEY&&st.marks[d]==="carried";d=add(d,-1))n++;return n}
+  function renderCarryNote(){var el=document.getElementById("carryNote");if(!el)return;var T=todayKey(),e=S.days[T]||{},n=carriedRun(add(T,-1));
+    if(!n||e.ended||hasEntry(e)){el.hidden=true;return}el.hidden=false;
+    el.textContent=n>=2?"Two carried days in a row. If today stays empty it counts as a miss, so log something today.":"Yesterday was carried by your rolling totals (1 of 2). Log something today to stay safe.";el.className="carrynote"+(n>=2?" hot":"")}
   /* quest manager */
   var qmgr=document.getElementById("qmgr"),qDraft=null,mgrOpen=false;
-  function openMgr(){if(ro())return;mgrOpen=true;qDraft=clone(cfg().quests);drawMgr();document.getElementById("questsWrap").hidden=true;qmgr.hidden=false;document.getElementById("qEditBtn").textContent="Close editor";qmgr.scrollIntoView({block:"nearest"})}
+  function openMgr(){if(ro())return;mgrOpen=true;qDraft=clone(cfg().quests);drawMgr();document.getElementById("questsWrap").hidden=true;qmgr.hidden=false;document.getElementById("qEditBtn").innerHTML="Close<span class=\"lg\"> editor</span>";qmgr.scrollIntoView({block:"nearest"})}
   function closeMgr(){mgrOpen=false;qmgr.hidden=true;qDraft=null;render()}
   var TN={time:"Time",target:"Target",limit:"Limit",check:"Check",todo:"To-do",weekly:"Weekly",wake:"Clock time",scale:"Rating"};
   var LIB=[
@@ -2241,6 +2318,7 @@ details.rules>summary h2{flex:1}
       var sjs=subjList(),sjo=q.subj?subjById(q.subj):null,linkH='';
       if(q.type!=="todo"){linkH='<div class="edrow"><label>Feeds subject<select data-p="subj" data-i="'+i+'"><option value="">None</option>'+sjs.map(function(sj){return '<option value="'+sj.id+'"'+(q.subj===sj.id?" selected":"")+'>'+esc(sj.name)+'</option>'}).join("")+'</select></label>'+(sjo?'<label>Default topic<select data-p="topic" data-i="'+i+'"><option value="">Ask each time</option>'+(sjo.topics||[]).map(function(t){return '<option value="'+t.id+'"'+(q.topic===t.id?" selected":"")+'>'+esc(t.name)+'</option>'}).join("")+'</select></label>':'')+
         (q.dl?'<p class="help">Completes when its deadline target is met or the deadline passes.</p>':'<label>Done when<select data-p="fin" data-i="'+i+'"><option value="">Ongoing (no finish line)</option>'+((q.type==="time"||q.type==="target")?'<option value="total"'+(q.fin&&q.fin.t==="total"?" selected":"")+'>Project total reached</option>':'')+(sjo?'<option value="subject"'+(q.fin&&q.fin.t==="subject"?" selected":"")+'>Subject reaches a level</option>':'')+(sjo&&q.topic?'<option value="topic"'+(q.fin&&q.fin.t==="topic"?" selected":"")+'>Topic reaches a level</option>':'')+'</select></label>'+(q.fin&&(q.fin.t==="subject"||q.fin.t==="topic")?'<label>Level<select data-p="finlvl" data-i="'+i+'">'+[2,3,4,5].map(function(v){return '<option value="'+v+'"'+((q.fin.lvl||4)===v?" selected":"")+'>'+LV[v]+'</option>'}).join("")+'</select></label>':'')+(q.fin&&q.fin.t==="total"&&!q.total?'<span class="pz">Set a project total above</span>':''))+'</div>'}
+      if(q.type!=="todo")linkH+='<div class="edrow"><label>Change rules<select data-p="lock" data-i="'+i+'">'+LOCKS.map(function(L){return '<option value="'+L[0]+'"'+(lockOf(q)===L[0]?" selected":"")+'>'+L[1]+'</option>'}).join("")+'</select></label><span class="pz">'+(LOCKS.filter(function(L){return L[0]===lockOf(q)})[0]||LOCKS[0])[2]+'</span></div>'+(q.pending?'<p class="help warnc">Scheduled: '+pendText(q.pending)+' on '+fmtD(q.pending.due)+'</p>':'');
       h+='<div class="mq'+(p?' paused':'')+'" data-idx="'+i+'"><div class="edrow"><button type="button" class="dragh" data-drag="'+i+'" aria-label="Drag to reorder '+esc(q.label)+'" title="Drag to reorder (or use arrow keys)"><i></i></button><input data-p="label" data-i="'+i+'" value="'+esc(q.label)+'" aria-label="Quest name"><span class="ty">'+TN[q.type]+'</span></div><div class="edrow">'+par+'<label class="grow">Note<input data-p="note" data-i="'+i+'" value="'+esc(q.note||"")+'"></label></div>'+linkH+'<div class="edrow">'+(q.type==="todo"?'<p class="help">A one-off task. It stays on your list until you mark it done, then disappears the next day. It never affects the streak.</p>':q.type==="weekly"?'<p class="help">Tap "Done today" on any day you do it. Weekly goals never fail a day or affect the streak; hitting the target earns bonus XP.</p>':dh+'<button type="button" class="stone mini'+(q.opt?' on':'')+'" data-opt="'+i+'" aria-pressed="'+!!q.opt+'">Optional</button>')+'</div><div class="edrow end">'+(p?'<span class="pz">Paused until '+fmtD(add(q.pausedUntil,-1))+'</span>':'')+'<button type="button" class="stone del" data-del="'+i+'">Delete</button></div></div>';
     });
     h+='<div class="mq add"><p class="help">To add a quest, close the editor and use + New quest.</p></div>';
@@ -2249,6 +2327,7 @@ details.rules>summary h2{flex:1}
     qmgr.querySelectorAll("[data-p]").forEach(function(x){x.addEventListener(x.tagName==="SELECT"?"change":"input",function(){var q=qDraft[+x.getAttribute("data-i")],f=x.getAttribute("data-p"),v=x.value;
       if(f==="unit"){if(v)q.unit=v;else delete q.unit;drawMgr();return}
       if(f==="scale"){q.scale=+v;if(q.min>q.scale)q.min=q.scale;drawMgr();return}
+      if(f==="lock"){q.lock=v;drawMgr();return}
       if(f==="subj"){if(v)q.subj=v;else{delete q.subj;delete q.topic;if(q.fin&&q.fin.t!=="total")delete q.fin}drawMgr();return}
       if(f==="topic"){if(v)q.topic=v;else{delete q.topic;if(q.fin&&q.fin.t==="topic")delete q.fin}drawMgr();return}
       if(f==="fin"){if(v)q.fin={t:v,lvl:(q.fin&&q.fin.lvl)||4};else delete q.fin;drawMgr();return}
@@ -2285,10 +2364,15 @@ details.rules>summary h2{flex:1}
       var bad=qDraft.filter(function(q){return !(q.label||"").trim()||((q.type==="time"||q.type==="weekly")&&!(q.min>0))||(q.type==="target"&&!(q.min>0&&(+q.step||1)>0))||(q.type==="limit"&&!(q.max>=0))||(q.type==="scale"&&!(q.min>=1&&q.min<=(q.scale||5)))||(q.type==="wake"&&!(q.from&&q.to&&q.from<q.to))||(q.days&&!q.days.length)})[0];
       if(bad){drawMgr("Check "+(bad.label||"a quest")+": it needs a name and valid values.");return}
       qDraft.forEach(function(q){if(q.type==="weekly"||q.type==="todo"){delete q.days;delete q.opt}if(q.type==="todo"&&!q.due)delete q.due;q.label=q.label.trim();if(q.note!=null&&!String(q.note).trim())delete q.note});
-      var c5=clone(cfg()),oldQ=clone(c5.quests),ids=easedIds(oldQ,qDraft,T),g=guardEasing(c5,oldQ,ids);if(!g.ok){drawMgr(g.msg);return}
-      c5.quests=qDraft;saveCfg(c5);
+      var c5=clone(cfg()),oldQ=clone(c5.quests),ids=easedIds(oldQ,qDraft,T),om={};oldQ.forEach(function(q){om[q.id]=q});
+      var queued=[],flexIds=[];ids.forEach(function(id){var o=om[id],lk=o?lockOf(o):"flex";if(easeInfo().setup||lk==="free")return;if(lk==="fortnight")queued.push(id);else flexIds.push(id)});
+      var g=guardEasing(c5,oldQ,flexIds);if(!g.ok){drawMgr(g.msg);return}
+      var nm={};qDraft.forEach(function(q){nm[q.id]=q});var due0=null;
+      var finalQ=qDraft.map(function(q){if(queued.indexOf(q.id)<0){if(q.lock==="fortnight"&&(!om[q.id]||lockOf(om[q.id])!=="fortnight"))q.lockFrom=T;return q}var o=clone(om[q.id]);o.pending={op:"replace",due:cycleDue(o,T),q:(function(){var x=clone(q);delete x.pending;return x})()};due0=o.pending.due;return o});
+      queued.forEach(function(id){if(!nm[id]){var o=clone(om[id]);o.pending={op:"delete",due:cycleDue(o,T)};due0=o.pending.due;var idx=oldQ.findIndex(function(z){return z.id===id});finalQ.splice(Math.min(idx,finalQ.length),0,o)}});
+      c5.quests=finalQ;saveCfg(c5);
       if(S.days[T]&&!S.days[T].ended){S.days[T]=Object.assign({},S.days[T],{q:activeDefs(T)});dirty[T]=true;cache();clearTimeout(timer);timer=setTimeout(flush,300)}
-      qSig="";closeMgr();setSync(g.eased?"Saved. "+g.eased+" easing change"+(g.eased===1?"":"s")+" take"+(g.eased===1?"s":"")+" effect tomorrow ("+g.left+"/"+EASE_BUDGET+" left this week).":"Quests saved");
+      qSig="";closeMgr();if(queued.length){setSync(queued.length+" locked quest change"+(queued.length===1?"":"s")+" scheduled for "+fmtD(due0)+".");return}setSync(g.eased?"Saved. "+g.eased+" easing change"+(g.eased===1?"":"s")+" take"+(g.eased===1?"s":"")+" effect tomorrow ("+g.left+"/"+EASE_BUDGET+" left this week).":"Quests saved");
     }
   }
   document.getElementById("qEditBtn").addEventListener("click",function(){mgrOpen?closeMgr():openMgr()});
@@ -2302,7 +2386,7 @@ details.rules>summary h2{flex:1}
     document.addEventListener("keydown",function(e){if(e.key==="Escape"&&!dr.hidden)close_()});
   })();
   /* ---- new quest modal ---- */
-  var TDESC={time:"Minutes toward a daily minimum",target:"Count up to a number (steps, pages, glasses)",limit:"Stay under a maximum (screen time, snacks)",check:"A daily yes/no habit",todo:"A one-off task that disappears once done",weekly:"X times a week, on any days",wake:"Log a time that must fall in a window",scale:"Rate something 1-5 or 1-10"};
+  var TDESC={time:"Minutes per day, or a weekly total",target:"Count up to a number (steps, pages, glasses)",limit:"Stay under a maximum (screen time, snacks)",check:"A daily yes/no habit",todo:"A one-off task that disappears once done",weekly:"X times a week, on any days",wake:"Log a time that must fall in a window",scale:"Rate something 1-5 or 1-10"};
   var nqEl=document.getElementById("nqModal"),nqB=document.getElementById("nqBody"),nqS=document.getElementById("modalScrim"),NQ=null,nqLast=null;
   function nqDefaults(t,label){var q={type:t,label:label||""};if(t==="time"){q.min=30;if(cfg().rollDefault)q.roll=420}if(t==="limit")q.max=3;if(t==="wake"){q.from="06:00";q.to="08:00"}if(t==="target"){q.min=10;q.step=1}if(t==="scale"){q.scale=5;q.min=3}if(t==="weekly")q.min=3;return q}
   function openNQ(){if(locked()){setSync("This day is locked. New quests can be added tomorrow.");return}nqLast=document.activeElement;NQ=nqDefaults("check","");drawNQ();nqEl.hidden=false;nqS.hidden=false;var f=nqB.querySelector("#nqName");if(f)f.focus()}
@@ -2314,7 +2398,7 @@ details.rules>summary h2{flex:1}
     h+='<p class="help">Or build your own:</p><div class="tgrid" role="radiogroup" aria-label="Quest type">'+PRI.concat(showAll?Object.keys(TN).filter(function(t){return PRI.indexOf(t)<0}):[]).map(function(t){return '<button type="button" class="tcard'+(q.type===t?' on':'')+'" role="radio" aria-checked="'+(q.type===t)+'" data-t="'+t+'"><b>'+TN[t]+'</b><span>'+TDESC[t]+'</span></button>'}).join("")+'</div>'+(showAll?'':'<button type="button" class="stone mini" id="nqMore">More types (target, limit, weekly, clock time, rating)</button>');
     h+='<label>Name<input id="nqName" maxlength="40" value="'+esc(q.label)+'" placeholder="'+({time:"Study",target:"Drink water",limit:"Screen time",check:"Journal",todo:"Email advisor",weekly:"Gym",wake:"Wake up on time",scale:"Mood"}[q.type])+'"></label>';
     var p='';
-    if(q.type==="time")p='<label>Goal type<select id="nqRoll"><option value=""'+(q.roll?"":" selected")+'>Daily minimum</option><option value="1"'+(q.roll?" selected":"")+'>Rolling weekly total</option></select></label>'+(q.roll?'<label>Weekly total (hours)<input type="number" id="nqRollH" min="0.5" step="0.5" value="'+num(q.roll/60)+'"></label>':'<label>Daily minimum (minutes)<input type="number" data-n="min" min="10" step="10" value="'+q.min+'"></label>');
+    if(q.type==="time")p='<div class="goalcards" role="radiogroup" aria-label="Goal type"><button type="button" class="gcard'+(q.roll?'':' on')+'" data-goal="" role="radio" aria-checked="'+!q.roll+'"><b>Daily minimum</b><span>Same amount every day</span></button><button type="button" class="gcard'+(q.roll?' on':'')+'" data-goal="1" role="radio" aria-checked="'+!!q.roll+'"><b>Weekly total</b><span>Rolling 7 days, uneven days are fine</span></button></div>'+(q.roll?'<label>Weekly total (hours)<input type="number" id="nqRollH" min="0.5" step="0.5" value="'+num(q.roll/60)+'"></label>':'<label>Daily minimum (minutes)<input type="number" data-n="min" min="10" step="10" value="'+q.min+'"></label>');
     else if(q.type==="target")p='<label>Goal<input type="number" data-n="min" min="0" step="any" value="'+q.min+'"></label><label>Unit<input data-s="ul" value="'+esc(q.ul||"")+'" placeholder="glasses"></label><label>Step<input type="number" data-n="step" min="0" step="any" value="'+(q.step||1)+'"></label>';
     else if(q.type==="limit")p='<label>Maximum<input type="number" data-n="max" min="0" step="1" value="'+q.max+'"></label><label>Counts<select data-s="unit"><option value=""'+(q.unit==="min"?"":" selected")+'>number</option><option value="min"'+(q.unit==="min"?" selected":"")+'>minutes</option></select></label>';
     else if(q.type==="wake")p='<label>From<input type="time" data-s="from" value="'+q.from+'"></label><label>To<input type="time" data-s="to" value="'+q.to+'"></label>';
@@ -2322,6 +2406,7 @@ details.rules>summary h2{flex:1}
     else if(q.type==="weekly")p='<label>Times per week<input type="number" data-n="min" min="1" max="7" value="'+q.min+'"></label>';
     else if(q.type==="todo")p='<label>Due (optional)<input type="date" data-s="due" value="'+esc(q.due||"")+'"></label>';
     if(p)h+='<div class="edrow">'+p+'</div>';
+    if(q.type!=="todo")h+='<div class="edrow"><label>Change rules<select id="nqLock">'+LOCKS.map(function(L){return '<option value="'+L[0]+'"'+((q.lock||"flex")===L[0]?" selected":"")+'>'+L[1]+'</option>'}).join("")+'</select></label></div>';
     if(q.type!=="todo"&&subjList().length)h+='<div class="edrow"><label>Feeds subject (optional)<select id="nqSubj"><option value="">None</option>'+subjList().map(function(sj){return '<option value="'+sj.id+'"'+(q.subj===sj.id?" selected":"")+'>'+esc(sj.name)+'</option>'}).join("")+'</select></label></div>';
     if(q.type!=="weekly"&&q.type!=="todo"){var days=q.days&&q.days.length?q.days:[0,1,2,3,4,5,6];h+='<div class="edrow"><div class="days" role="group" aria-label="Days">'+[1,2,3,4,5,6,0].map(function(d){return '<button type="button" class="stone mini'+(days.indexOf(d)>=0?' on':'')+'" data-d="'+d+'" aria-pressed="'+(days.indexOf(d)>=0)+'">'+DN[d].slice(0,2)+'</button>'}).join("")+'</div><button type="button" class="stone mini'+(q.opt?' on':'')+'" id="nqOpt" aria-pressed="'+!!q.opt+'">Optional</button></div>'}
     h+='<p class="cmsg2">'+esc(msg||"")+'</p><div class="edrow end"><button type="button" class="stone" id="nqCancel">Cancel</button><button type="button" class="stone save" id="nqSave">Add quest</button></div></div>';
@@ -2331,7 +2416,8 @@ details.rules>summary h2{flex:1}
     nqB.querySelectorAll(".tcard").forEach(function(b){b.addEventListener("click",function(){var nm=NQ.label,al=NQ._all;NQ=nqDefaults(b.getAttribute("data-t"),nm);if(al)NQ._all=true;drawNQ();var c=nqB.querySelector('.tcard[data-t="'+NQ.type+'"]');if(c)c.focus()})});
     nqB.querySelector("#nqName").addEventListener("input",function(){NQ.label=this.value});
     var nsj=nqB.querySelector("#nqSubj");if(nsj)nsj.addEventListener("change",function(){if(this.value)NQ.subj=this.value;else delete NQ.subj});
-    var nr=nqB.querySelector("#nqRoll");if(nr)nr.addEventListener("change",function(){if(this.value)NQ.roll=NQ.roll||420;else delete NQ.roll;drawNQ()});
+    nqB.querySelectorAll("[data-goal]").forEach(function(x){x.addEventListener("click",function(){if(x.getAttribute("data-goal"))NQ.roll=NQ.roll||420;else delete NQ.roll;drawNQ()})});
+    var nlk=nqB.querySelector("#nqLock");if(nlk)nlk.addEventListener("change",function(){NQ.lock=this.value});
     var nrh=nqB.querySelector("#nqRollH");if(nrh)nrh.addEventListener("input",function(){var v=num(this.value);if(v>0)NQ.roll=Math.round(v*60)});
     nqB.querySelectorAll("[data-n]").forEach(function(x){x.addEventListener(x.tagName==="SELECT"?"change":"input",function(){var f=x.getAttribute("data-n");NQ[f]=num(x.value);if(f==="scale"){if(NQ.min>NQ.scale)NQ.min=NQ.scale;drawNQ()}})});
     nqB.querySelectorAll("[data-s]").forEach(function(x){x.addEventListener(x.tagName==="SELECT"?"change":"input",function(){var f=x.getAttribute("data-s");if(x.value)NQ[f]=x.value;else delete NQ[f];if(f==="unit")drawNQ()})});
@@ -2339,7 +2425,7 @@ details.rules>summary h2{flex:1}
     var ob=nqB.querySelector("#nqOpt");if(ob)ob.addEventListener("click",function(){if(NQ.opt)delete NQ.opt;else NQ.opt=true;drawNQ()});
     nqB.querySelector("#nqCancel").addEventListener("click",closeNQ);
     nqB.querySelector("#nqSave").addEventListener("click",function(){
-      var q=NQ;q.label=(q.label||"").trim();if(q.type!=="todo"&&atCap(1)){drawNQ(capMsg());return}
+      var q=NQ;q.label=(q.label||"").trim();if(q.lock==="fortnight")q.lockFrom=todayKey();if(q.lock==="flex")delete q.lock;if(q.type!=="todo"&&atCap(1)){drawNQ(capMsg());return}
       if(!q.label){drawNQ("Give the quest a name.");return}
       if(((q.type==="time"||q.type==="weekly"||q.type==="target")&&!(q.min>0))||(q.type==="scale"&&!(q.min>=1&&q.min<=(q.scale||5)))||(q.type==="wake"&&!(q.from&&q.to&&q.from<q.to))||(q.type==="limit"&&!(q.max>=0))||(q.days&&!q.days.length)){drawNQ("Check the values: something is missing or out of range.");return}
       delete q._all;if(q.type==="weekly"||q.type==="todo"){delete q.days;delete q.opt}
@@ -2632,10 +2718,52 @@ details.rules>summary h2{flex:1}
     if(r.style.getPropertyValue("--hdrH")!==h+"px"||r.style.getPropertyValue("--navH")!==n+"px"){r.style.setProperty("--hdrH",h+"px");r.style.setProperty("--navH",n+"px");if(typeof updateSky==="function")updateSky()}}
   window.addEventListener("resize",measureBars);window.addEventListener("orientationchange",function(){setTimeout(measureBars,200)});
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(measureBars);setTimeout(measureBars,0);setTimeout(measureBars,1500);
+  /* ---- mobile quest list: compact rows, details sheet, run view ---- */
+  var COLQ={time:1,target:1,limit:1,wake:1,scale:1};
+  function qSummary(q,e){var v=e[q.id];
+    if(q.type==="time"){var d=+v||0;return q.roll?hm(rollSum(q.id,todayKey()))+"/"+hm(rollNeed(q,todayKey()))+" wk":hm(d)+" / "+hm(q.min)}
+    if(q.type==="target")return num(v||0)+" / "+num(q.min)+(q.ul?" "+q.ul:"");
+    if(q.type==="limit")return (q.unit==="min"?hm(+v||0):num(v||0))+" / "+(q.unit==="min"?hm(q.max):num(q.max));
+    if(q.type==="wake")return v?String(v):"--:--";
+    if(q.type==="scale")return v?v+" / "+(q.scale||5):"\u2014";
+    return ""}
+  function openDetails(q){var T=todayKey(),e=S.days[T]||{},cq=cfg().quests.filter(function(x){return x.id===q.id})[0]||q,sj=q.subj?subjById(q.subj):null,DN=["Su","Mo","Tu","We","Th","Fr","Sa"];
+    openG(q.label,function(b){var rows=[];function r(k,v){rows.push('<div class="dt-r"><span>'+k+'</span><b>'+v+'</b></div>')}
+      r("Goal",esc(reqText(q)));if(q.type==="time"&&q.roll){var rs=rollSum(q.id,T),rn=rollNeed(q,T);r("This week",hm(rs)+" of "+hm(rn)+(rs>=rn?" \u00b7 ahead "+hm(rs-rn):" \u00b7 behind "+hm(rn-rs)))}
+      if(q.type==="time"&&!q.roll&&cfg().bank&&bankNow[q.id])r("Bank",hm(bankNow[q.id]));
+      if(q.total)r("Project total",(q.type==="time"?hm(projSum(q.id)):num(projSum(q.id)))+" of "+(q.type==="time"?hm(q.total):num(q.total)));
+      if(q.note)r("Note",esc(q.note));
+      r("Days",q.days&&q.days.length&&q.days.length<7?q.days.map(function(d){return DN[d]}).join(" "):"Every day");
+      if(q.opt)r("Optional","Yes");
+      if(sj)r("Subject",esc(sj.name)+(q.topic?" \u203a "+esc(topicName(q.topic)):""));
+      if(cq.fin)r("Done when",cq.fin.t==="total"?"Project total reached":(cq.fin.t==="topic"?"Topic reaches ":"Subject reaches ")+LV[cq.fin.lvl||4]);
+      if(q.dl)r("Deadline",num(q.dl.total)+(q.ul?" "+esc(q.ul):"")+" by "+fmtD(q.dl.due));
+      if(q.type!=="todo")r("Change rules",(LOCKS.filter(function(L){return L[0]===lockOf(cq)})[0]||LOCKS[0])[1]);
+      if(cq.pending)r("Scheduled",pendText(cq.pending)+" on "+fmtD(cq.pending.due));
+      b.innerHTML='<div class="dtl">'+rows.join("")+'</div><div class="edrow end"><button type="button" class="stone" id="dtEdit">Edit quests</button><button type="button" class="stone save" id="dtOk">Close</button></div>';
+      b.querySelector("#dtOk").addEventListener("click",closeG);b.querySelector("#dtEdit").addEventListener("click",function(){closeG();openMgr()})})}
+  var doneOpen=false;try{doneOpen=localStorage.getItem("pc-doneopen")==="1"}catch(x){}
+  function mobileList(defs,e,past){
+    var sep=document.getElementById("doneSep");if(!sep){sep=document.createElement("button");sep.type="button";sep.id="doneSep";sep.className="donesep";sep.addEventListener("click",function(){doneOpen=!doneOpen;try{localStorage.setItem("pc-doneopen",doneOpen?"1":"0")}catch(x){}mobileList(defs,S.days[todayKey()]||{},ro())})}
+    if(sep.parentNode!==qWrap)qWrap.appendChild(sep);
+    var nDone=0;defs.forEach(function(q){var el=qEls[q.id];if(!el)return;var row=el.row,isDone=row.classList.contains("met")&&q.type!=="limit"&&!(S.timer&&S.timer.id===q.id);row.classList.toggle("indone",isDone);if(isDone)nDone++;
+      row.classList.toggle("colq",!!COLQ[q.type]);var sm=row.querySelector(".qsum");if(COLQ[q.type]){if(!sm){sm=document.createElement("button");sm.type="button";sm.className="qsum";sm.addEventListener("click",function(){row.classList.toggle("open")});row.appendChild(sm)}sm.textContent=qSummary(q,e)}});
+    sep.hidden=!nDone;sep.textContent="Done today ("+nDone+") "+(doneOpen?"\u25b4":"\u25be");qWrap.classList.toggle("done-open",doneOpen);
+    var dc=document.getElementById("qCount"),rq=reqOf(defs).filter(function(q){return q.type!=="limit"});if(dc){dc.textContent=rq.filter(function(q){return metQ(q,e)}).length+"/"+rq.length;dc.hidden=!rq.length}}
+  function runBox(id){var el=qEls[id];if(!el)return;var row=el.row,on=S.timer&&S.timer.id===id;row.classList.toggle("running",!!on);var rb=row.querySelector(".runbox");
+    if(!on){if(rb)rb.remove();return}
+    var q=activeDefs(todayKey()).filter(function(x){return x.id===id})[0];if(!q)return;
+    if(!rb){rb=document.createElement("div");rb.className="runbox";rb.innerHTML='<div class="rb-t"></div><div class="rb-s"></div><div class="rb-b"><i></i></div><div class="rb-f"></div>';el.tmr.parentNode.insertBefore(rb,el.tmr)}
+    var e=S.days[todayKey()]||{},el2=Date.now()-S.timer.start,mins=Math.floor(el2/60000),lg=+e[q.id]||0,tg=S.timer.commit&&!S.timer.c5?S.timer.commit:(q.roll?0:q.min),tot=lg+mins;
+    rb.querySelector(".rb-t").textContent=fmtT(el2);
+    rb.querySelector(".rb-s").textContent=S.timer.commit&&!S.timer.c5?"Just 5 minutes \u00b7 "+Math.max(0,5-mins)+" min to go":tg?hm(tot)+" of "+hm(tg)+(tot>=tg?" \u2714":""):hm(tot)+" today";
+    rb.querySelector(".rb-b i").style.width=Math.min(100,tg?Math.round((S.timer.commit&&!S.timer.c5?mins/5:tot/tg)*100):100)+"%";
+    rb.querySelector(".rb-f").textContent=S.timer.first?"First: "+S.timer.first:"";}
   /* ---- today-page declutter ---- */
   function hideOpts(){return [["req", "Quest descriptions"], ["grip", "Drag handles"], ["chip", "Subject chips"], ["heat", "Momentum meter"], ["note", "Next-rank hint"], ["todo", "To-do box"], ["prog", "Progress bar"]]}
   var focusView=false;try{focusView=localStorage.getItem("pc-focusview")==="1"}catch(x){}
   function applyHide(){var h=cfg().hide||{},b=document.body;hideOpts().forEach(function(o){b.classList.toggle("hide-"+o[0],!!h[o[0]])});b.classList.toggle("focusview",focusView);var fb=document.getElementById("focusBtn");if(fb){fb.setAttribute("aria-pressed",focusView);fb.textContent=focusView?"Show all":"Focus"}}
+  document.getElementById("tdToggle").addEventListener("click",function(){var on=!document.body.classList.contains("tdopen");document.body.classList.toggle("tdopen",on);if(on)setTimeout(function(){var i=document.getElementById("tdNew");if(i)i.focus()},50)});
   document.getElementById("focusBtn").addEventListener("click",function(){focusView=!focusView;try{localStorage.setItem("pc-focusview",focusView?"1":"0")}catch(x){}applyHide();haptic("light")});
   /* ---- daily wrap-up ---- */
   var wrapBtn=document.getElementById("wrapBtn");
