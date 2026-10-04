@@ -69,7 +69,7 @@ test("an older weekly quest is prorated from the first day it appeared", async (
   await openApp(page, { now: "2026-11-08T05:00:00-05:00", cfg: { quests: W }, days });
   await page.locator("#quests .q", { hasText: "Weekly reading" }).locator(".pzb").click();
   await page.click(".qmenu button:has-text('View details')");
-  const row = await page.locator("#gBody .dt-r", { hasText: "This week" }).textContent();
+  const row = await page.locator("#gBody .dt-r").filter({ has: page.locator("span", { hasText: /^This week$/ }) }).textContent();
   expect(row).toContain("2h of 3h");
   expect(row).toContain("1h more today keeps you on pace");
 });

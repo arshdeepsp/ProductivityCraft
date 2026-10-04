@@ -28,6 +28,8 @@ test("leftover to-dos from yesterday are reviewed once when the app opens", asyn
   await page.clock.runFor(1500);
   await expect(page.locator("#gTitle")).toHaveText("Still need these to-dos?");
   await page.click("#tdrGo");
+  await expect(page.locator("#gModal")).toBeHidden();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("pc-todoreview"))).toBe("2026-11-02");
   await page.reload();
   await page.clock.runFor(1500);
   await expect(page.locator("#gModal")).toBeHidden();

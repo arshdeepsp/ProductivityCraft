@@ -15,11 +15,13 @@
   /* Weekly totals run on a fixed Mon–Sun week. */
   function rollSum(id,k){var s=0,ws=weekStart(k);for(var d=ws;d<=k;d=add(d,1)){if(d<START_KEY)continue;s+=(S.days[d]||{})[id]|0}return s}
   function weekFrom(q,k){var ws=weekStart(k),f=rollFrom(q);return f>ws?f:ws}
-  function weekTarget(q,k){var ws=weekStart(k),f=weekFrom(q,k),days=daysBetween(f,add(ws,6))+1;return Math.round(q.roll*Math.max(0,days)/7)}
+  function workDaysIn(q,a,b){var n=0;for(var d=a;d<=b;d=add(d,1))if(scheduled(q,d))n++;return n}
+  function weekWorkDays(q){return q.days&&q.days.length?q.days.length:7}
+  function weekTarget(q,k){var ws=weekStart(k),f=weekFrom(q,k);return Math.round(q.roll*workDaysIn(q,f,add(ws,6))/weekWorkDays(q))}
   var firstSeenCache={},firstSeenSig="";
   function firstSeen(id){var sig=Object.keys(S.days).length+"";if(sig!==firstSeenSig){firstSeenCache={};firstSeenSig=sig}if(id in firstSeenCache)return firstSeenCache[id];var best=null;Object.keys(S.days).forEach(function(d){if(best&&d>=best)return;var e=S.days[d];if(e&&defsOf(e).some(function(q){return q.id===id}))best=d});return (firstSeenCache[id]=best)}
   function rollFrom(q){var f=q.startOn||q.addedOn||firstSeen(q.id)||START_KEY;return f>START_KEY?f:START_KEY}
-  function rollNeed(q,k){var n=Math.min(7,Math.max(1,daysBetween(weekFrom(q,k),k)+1));return Math.round(q.roll*n/7)}
+  function rollNeed(q,k){return Math.round(q.roll*workDaysIn(q,weekFrom(q,k),k)/weekWorkDays(q))}
   function timeMet(q,e){var v=e[q.id]|0;if(q.roll){var k=eKey.get(e);if(!k)return false;return rollSum(q.id,k)>=rollNeed(q,k)}var c=(bankCov.get(e)||{})[q.id]||0;return v+c>=q.min}
   function addSession(T,id,start,end){var e=Object.assign({},S.days[T]||{}),ss=(e.sess||[]).slice(),m=Math.round((end-start)/60000);if(m<1)return;var last=ss[ss.length-1];
     if(last&&last.id===id&&start-last.e<120000){last=Object.assign({},last,{e:end,m:last.m+m});ss[ss.length-1]=last}else ss.push({id:id,s:start,e:end,m:m});e.sess=ss;S.days[T]=e;dirty[T]=true;cache()}

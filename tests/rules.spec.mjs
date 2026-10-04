@@ -36,7 +36,7 @@ test("weekly totals reset on Monday and need a share of the week so far", async 
   await openApp(page, { now: "2026-11-10T09:00:00-05:00", cfg: { quests: RQ2 }, days: { ...days, "2026-11-09": { cs: 60, q: RQ2, ended: true } } });
   await page.locator("#quests .q", { hasText: "CS work" }).locator(".pzb").click();
   await page.click(".qmenu button:has-text('View details')");
-  const row = await page.locator("#gBody .dt-r", { hasText: "This week" }).textContent();
+  const row = await page.locator("#gBody .dt-r").filter({ has: page.locator("span", { hasText: /^This week$/ }) }).textContent();
   expect(row).toContain("1h of 7h");
   expect(row).toContain("need 2h by today");
 });
@@ -50,4 +50,38 @@ test("switching a daily quest to a weekly total starts tomorrow", async ({ page 
   await page.click("#mgrSaveTop");
   await expect(page.locator("#sync")).toContainText("tomorrow");
   await expect(page.locator("#quests .q .req")).toHaveText("min 1 hour");
+});
+
+test("a weekly quest that started mid-week explains its smaller first-week target", async ({ page }) => {
+  const W = [{ id: "w", type: "time", label: "Deep work", min: 90, roll: 420, addedOn: "2026-11-05" }];
+  await openApp(page, { now: "2026-11-08T09:00:00-05:00", cfg: { quests: W, start: "2026-11-05T05:00:00.000Z" }, days: { "2026-11-05": { w: 90, q: W, ended: true }, "2026-11-06": { w: 90, q: W, ended: true }, "2026-11-07": { w: 90, q: W, ended: true } } });
+  await expect(page.locator("#quests .q .req")).toContainText("4h this week (started");
+  await page.locator("#quests .q .pzb").click();
+  await page.click(".qmenu button:has-text('View details')");
+  await expect(page.locator("#gBody .dt-r", { hasText: "This week’s target" })).toContainText("4 of 7 work days");
+});
+
+const MWF = [{ id: "w", type: "time", label: "Deep work", min: 60, roll: 360, days: [1, 3, 5], addedOn: "2026-10-01" }];
+
+test("weekly totals pace by work days only", async ({ page }) => {
+  await openApp(page, { now: "2026-11-10T09:00:00-05:00", cfg: { quests: MWF }, days: { "2026-11-09": { w: 120, q: MWF, ended: true } } });
+  await page.locator("#quests .q", { hasText: "Deep work" }).locator(".pzb").click();
+  await page.click(".qmenu button:has-text('View details')");
+  const row = await page.locator("#gBody .dt-r").filter({ has: page.locator("span", { hasText: /^This week$/ }) }).textContent();
+  expect(row).toContain("2h of 6h");
+  expect(row).toContain("need 2h by today");
+});
+
+test("on an off day the weekly quest is visible but optional", async ({ page }) => {
+  await openApp(page, { now: "2026-11-10T09:00:00-05:00", cfg: { quests: MWF }, days: { "2026-11-09": { w: 120, q: MWF, ended: true } } });
+  await expect(page.locator("#quests .q", { hasText: "Deep work" }).locator(".req")).toContainText("off day");
+  await expect(page.locator("#qCount")).toBeHidden();
+});
+
+test("first-week target counts remaining work days", async ({ page }) => {
+  const Q = [{ ...MWF[0], addedOn: "2026-11-11" }];
+  await openApp(page, { now: "2026-11-11T09:00:00-05:00", cfg: { quests: Q } });
+  await page.locator("#quests .q", { hasText: "Deep work" }).locator(".pzb").click();
+  await page.click(".qmenu button:has-text('View details')");
+  await expect(page.locator("#gBody .dt-r", { hasText: "This week’s target" })).toContainText("4h (started Nov 11, so 2 of 3 work days)");
 });
