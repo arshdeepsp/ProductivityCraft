@@ -43,6 +43,6 @@
     var sig=t?[t,b,when,down].join("|"):"";if(sig===ongoingSig)return;ongoingSig=sig;
     function legacy(){var ln=LN();if(!ln)return;ln.cancel({notifications:[{id:900}]}).catch(function(){}).then(function(){if(!t)return;return ensureChannels().then(function(){return ln.schedule({notifications:[{id:900,title:t,body:b,ongoing:true,autoCancel:false,channelId:"pc_focus",schedule:{at:new Date(Date.now()+400)}}]})})}).catch(function(){})}
     var FN=capPlugin("FocusNotify");
-    if(FN&&FN.show){(t?FN.show({title:t,body:b,when:when,countdown:down,chrono:chrono}):FN.hide()).catch(legacy);return}
+    if(FN&&FN.show){(t?FN.show({title:t,body:b,when:when==null?null:Math.round(when),countdown:down,chrono:chrono}):FN.hide()).catch(legacy);return}
     legacy()}
   setInterval(focusSync,3000);document.addEventListener("visibilitychange",function(){wakeOn=!wakeOn&&false;focusSync()});

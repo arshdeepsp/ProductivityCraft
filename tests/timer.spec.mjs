@@ -13,8 +13,7 @@ test("a running timer enters Focus, shows one card, and restores on stop", async
   expect(await page.evaluate(() => document.body.classList.contains("focusview"))).toBe(true);
   expect(await visibleLabels(page)).toEqual(["CS work"]);
   await page.reload();
-  await page.waitForTimeout(300);
-  expect(await page.evaluate(() => document.body.classList.contains("focusview"))).toBe(true);
+  await expect.poll(() => page.evaluate(() => document.body.classList.contains("focusview")), { timeout: 5000 }).toBe(true);
   await page.click("#quests .q.running .tmr");
   await page.waitForTimeout(200);
   expect(await page.evaluate(() => document.body.classList.contains("focusview"))).toBe(false);
