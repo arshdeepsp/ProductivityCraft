@@ -1,12 +1,24 @@
   /* ---- quest <-> subject links, finish lines, cap ---- */
   var LV=["","Novice","Beginner","Intermediate","Advanced","Expert"];
   function subjById(id){return subjList().filter(function(s){return s.id===id})[0]}
-  function subjMinutes(sid){var t=0;Object.keys(S.days).forEach(function(d){var e=S.days[d];if(!e)return;defsOf(e).forEach(function(q){if(q.subj===sid&&q.type==="time")t+=e[q.id]|0})});return t}
+  function qSubjs(q){var L=q&&q.subjs&&q.subjs.length?q.subjs.slice():(q&&q.subj?[q.subj]:[]);return L.filter(function(id){return subjById(id)})}
+  function setSubjs(q,L){L=(L||[]).filter(function(x,i,a){return x&&a.indexOf(x)===i});if(L.length){q.subjs=L;q.subj=L[0]}else{delete q.subjs;delete q.subj;delete q.topic;if(q.fin&&q.fin.t!=="total")delete q.fin}}
+  function openSubjPick(q){var L=qSubjs(q);if(L.length===1){jumpSubj(L[0]);return}openG(q.label+" feeds",function(b){b.innerHTML='<div class="addsheet">'+L.map(function(id){var sj=subjById(id);return '<button type="button" class="addopt" data-js="'+id+'"><b>'+esc(sj.name)+'</b><span>'+((sj.topics||[]).length?LV[Math.max(1,Math.round(avgProf(sj)))]:"No topics yet")+'</span></button>'}).join("")+'</div>';b.querySelectorAll("[data-js]").forEach(function(x){x.addEventListener("click",function(){closeG();jumpSubj(x.getAttribute("data-js"))})})})}
+  function jumpSubj(id){go("subjects");setTimeout(function(){var c=document.querySelector('.subjcard[data-sid="'+id+'"]');if(c){c.scrollIntoView({block:"center"});c.classList.add("flash");setTimeout(function(){c.classList.remove("flash")},1500)}},50)}
+  function subjChips(name,sel){var L=subjList();if(!L.length)return "";return '<div class="sjpick" role="group" aria-label="Feeds subjects">'+L.map(function(sj){var on=sel.indexOf(sj.id)>=0;return '<button type="button" class="stone mini'+(on?' on':'')+'" '+name+'="'+sj.id+'" aria-pressed="'+on+'">'+esc(sj.name)+'</button>'}).join("")+'</div>'}
+  function subjMinutes(sid){var t=0;Object.keys(S.days).forEach(function(d){var e=S.days[d];if(!e)return;defsOf(e).forEach(function(q){if(q.type==="time"&&qSubjs(q).indexOf(sid)>=0)t+=e[q.id]|0})});return t}
   function capOf(){return cfg().cap||10}
   function activeCount(L){return (L||cfg().quests).filter(function(q){return q.type!=="todo"&&!q.completed}).length}
   function capLockedUntil(){var c=cfg();return strictOn()&&c.capSet?add(c.capSet,30):null}
-  function atCap(extra){return activeCount()+(extra||0)>capOf()}
-  function capMsg(){return "You\u2019re at your limit of "+capOf()+" active quests. Complete or archive one first (Badges \u203a Completed), or raise the limit in Settings."}
+  var WDN=["Sundays","Mondays","Tuesdays","Wednesdays","Thursdays","Fridays","Saturdays"],WDS=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  function countsOnDay(q){return q&&q.type!=="todo"&&q.type!=="weekly"&&!q.completed&&!q.opt}
+  function dayLoad(L){var c=[0,0,0,0,0,0,0];(L||cfg().quests).forEach(function(q){if(!countsOnDay(q))return;var d=q.days&&q.days.length?q.days:[0,1,2,3,4,5,6];d.forEach(function(w){c[w]++})});return c}
+  function overDays(L,cap){var c=dayLoad(L),k=cap||capOf(),out=[];c.forEach(function(n,w){if(n>k)out.push({w:w,n:n})});return out}
+  function busiest(L){var c=dayLoad(L),m=0,w=1;c.forEach(function(n,i){if(n>m){m=n;w=i}});return{w:w,n:m}}
+  function overMsg(ov,cap){return ov.map(function(o){return WDN[o.w]+" would have "+o.n}).join(", ")+" quests (limit "+(cap||capOf())+" per day). Untick some days, make one optional, or complete one first."}
+  function wouldExceed(newQ){var L=cfg().quests.concat([newQ]);return overDays(L)}
+  function atCap(extra){return false}
+  function capMsgOld(){return "You\u2019re at your limit of "+capOf()+" active quests. Complete or archive one first (Badges \u203a Completed), or raise the limit in Settings."}
   function finishMet(q){var f=q.fin;if(q.dl){var s=0,T=todayKey();for(var d=q.dl.from;d<=T;d=add(d,1))s+=+((S.days[d]||{})[q.id])||0;if(s>=q.dl.total)return "target met";if(T>q.dl.due)return "deadline passed";return null}
     if(!f)return null;
     if(f.t==="total"&&q.total&&projSum(q.id)>=q.total)return "project total reached";
@@ -34,7 +46,7 @@
       draw()})}
   function renderShelf(){var el=document.getElementById("shelf");if(!el)return;var L=cfg().quests.filter(function(q){return q.completed});el.hidden=!L.length;if(!L.length){el.innerHTML="";return}
     el.innerHTML='<h3 class="ach-sub">Completed quests</h3><div class="shelf">'+L.slice().sort(function(a,b){return a.completed.on<b.completed.on?1:-1}).map(function(q){var ar=q.completed.how==="archived";return '<div class="shelf-r'+(ar?' ar':'')+'"><span class="ml">'+(ar?'':'\u2713 ')+esc(q.label)+'</span><span class="mv">'+(ar?'Archived':'Done')+' '+fmtD(q.completed.on)+(ar||q.completed.how==="manual"?'':' \u00b7 '+esc(q.completed.how))+'</span>'+(ar?'<button type="button" class="stone mini" data-restore="'+q.id+'">Restore</button>':'')+'</div>'}).join("")+'</div>';
-    el.querySelectorAll("[data-restore]").forEach(function(x){x.addEventListener("click",function(){if(atCap(1)){setSync(capMsg());return}var c=clone(cfg()),q=c.quests.filter(function(z){return z.id===x.getAttribute("data-restore")})[0];if(!q)return;delete q.completed;saveCfg(c);qSig="";render();renderShelf();setSync(q.label+" restored")})})}
+    el.querySelectorAll("[data-restore]").forEach(function(x){x.addEventListener("click",function(){var c=clone(cfg()),q=c.quests.filter(function(z){return z.id===x.getAttribute("data-restore")})[0];if(!q)return;var tq=clone(q);delete tq.completed;var ov0=overDays(c.quests.filter(function(z){return z!==q}).concat([tq]));if(ov0.length){setSync(overMsg(ov0));return}delete q.completed;saveCfg(c);qSig="";render();renderShelf();setSync(q.label+" restored")})})}
   /* ---- notifications (native app via Capacitor; inert in the browser) ---- */
   function nativeApp(){try{return !!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())}catch(x){return false}}
   var LNp=null;function LN(){if(LNp)return LNp;try{if(!nativeApp())return null;LNp=window.Capacitor.Plugins&&window.Capacitor.Plugins.LocalNotifications||(window.Capacitor.registerPlugin?window.Capacitor.registerPlugin("LocalNotifications"):null)}catch(x){LNp=null}return LNp}
