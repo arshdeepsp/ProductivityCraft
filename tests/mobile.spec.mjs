@@ -75,3 +75,10 @@ test("typing hides the tab bar and + button so the field sits above the keyboard
   await page.waitForTimeout(200);
   expect(await page.evaluate(() => document.body.classList.contains("typing"))).toBe(false);
 });
+
+test("long quest names wrap instead of hiding under the time chip", async ({ page }) => {
+  const LQ = [{ id: "a", type: "target", label: "Microservices observability readings", min: 10, ul: "pages" }];
+  await openApp(page, { cfg: { quests: LQ } });
+  const gap = await page.evaluate(() => { const r = document.querySelector("#quests .q"); return r.querySelector(".qsum").getBoundingClientRect().left - r.querySelector(".lbl").getBoundingClientRect().right; });
+  expect(gap).toBeGreaterThanOrEqual(0);
+});

@@ -23,9 +23,16 @@
   function clone(x){return JSON.parse(JSON.stringify(x))}
   function cfg(){if(!S.cfg){S.cfg={quests:[],rules:null,start:START_AT.toISOString(),updated:""};cache()}if(!S.cfg.start)S.cfg.start=START_AT.toISOString();return S.cfg}
   function isPaused(q,k){return !!q.pausedUntil&&k<q.pausedUntil&&(!q.pausedFrom||k>=q.pausedFrom)}
-  function slim(q){var o={id:q.id,type:q.type,label:q.label};["min","max","from","to","unit","note","days","opt","ul","step","scale","total","due","roll","dl","subj","subjs","topic","fin","lock","pending","addedOn"].forEach(function(f){if(q[f]!=null&&q[f]!=="")o[f]=q[f]});return o}
+  function slim(q){var o={id:q.id,type:q.type,label:q.label};["min","max","from","to","unit","note","days","opt","ul","step","scale","total","due","roll","dl","subj","subjs","topic","fin","lock","pending","addedOn","addedMin"].forEach(function(f){if(q[f]!=null&&q[f]!=="")o[f]=q[f]});return o}
   function scheduled(q,k){return !q.days||!q.days.length||q.days.indexOf(parse(k).getDay())>=0}
-  function activeDefs(k){var vc=isVac(k),c0=cfg(),LD=(c0.lockDay&&c0.lockDay.date===k)?c0.lockDay.defs:null,src=c0.quests.map(function(q){return LD&&LD[q.id]?LD[q.id]:q});if(LD)Object.keys(LD).forEach(function(id){if(!c0.quests.some(function(q){return q.id===id}))src.push(LD[id])});return src.filter(function(q){if(q.completed&&q.completed.on<k)return false;if(q.type==="todo")return !q.doneOn||q.doneOn===k;if(q.dl&&(k>q.dl.due||k<q.dl.from))return false;return !isPaused(q,k)&&scheduled(q,k)}).map(function(q){var o=slim(q);if(q.dl){o.min=dlMin(q,k);if(!o.min)o.opt=true}if(vc)o.opt=true;return o})}
+  function activeDefs(k){var vc=isVac(k),c0=cfg(),LD=(c0.lockDay&&c0.lockDay.date===k)?c0.lockDay.defs:null,src=c0.quests.map(function(q){return LD&&LD[q.id]?LD[q.id]:q});if(LD)Object.keys(LD).forEach(function(id){if(!c0.quests.some(function(q){return q.id===id}))src.push(LD[id])});return src.filter(function(q){if(q.completed&&q.completed.on<k)return false;if(q.type==="todo")return !q.doneOn||q.doneOn===k;if(q.dl&&(k>q.dl.due||k<q.dl.from))return false;return !isPaused(q,k)&&scheduled(q,k)}).map(function(q){var o=slim(q);if(q.dl){o.min=dlMin(q,k);if(!o.min)o.opt=true}if(vc)o.opt=true;if(lateStart(q,k))o.opt=true;return o})}
+  function localKey(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+  function nowMinInDay(){var d=new Date(),T=todayKey(),m=d.getHours()*60+d.getMinutes();if(localKey(d)!==T)m+=1440;return m}
+  function dayMidMin(k){var start=7*60,wk=(cfg().quests||[]).filter(function(q){return q.type==="wake"&&q.from})[0];if(wk){var a=wk.from.split(":");start=+a[0]*60+(+a[1])}var end=(dayEnd()||24)*60;if(end<=start)end+=1440;return Math.round((start+end)/2)}
+  function stampAdded(q){q.addedOn=todayKey();q.addedMin=nowMinInDay();return q}
+  function lateStart(q,k){if(!q.addedOn||q.type==="todo"||q.type==="weekly")return false;
+    if(q.type==="time"&&q.roll){var ws=weekStart(q.addedOn),dIdx=daysBetween(ws,q.addedOn),late=dIdx>3||(dIdx===3&&(q.addedMin||0)>=720);return late&&k>=q.addedOn&&k<=add(ws,6)}
+    return k===q.addedOn&&(q.addedMin||0)>=dayMidMin(k)}
   function reqOf(d){return d.filter(function(q){return !q.opt&&q.type!=="weekly"&&q.type!=="todo"})}
   function reqDefsFor(k){if(isVac(k))return [];var e=S.days[k];return reqOf((e&&e.q)?e.q:(hasEntry(e)?LEGACY:activeDefs(k)))}
   function num(v){return Math.round((+v||0)*100)/100}

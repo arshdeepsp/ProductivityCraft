@@ -83,7 +83,8 @@
     timerTick();renderHudExtras(T);renderShelf();notifSync();applyHide();mobileList(defs,e,past);renderPark();renderHeat();
     defs.forEach(function(q){var el=qEls[q.id];if(!el||q.type!=="time")return;var rq=el.row.querySelector(".req"),base=reqText(q),xtra="";
       if(q.roll){var rk=k,rs=rollSum(q.id,rk),rn=rollNeed(q,rk),df=rs-rn;xtra=" \u00b7 7-day: "+hm(rs)+" / "+hm(rn)+(df===0?" \u00b7 on pace":df>0?" \u00b7 ahead "+hm(df):" \u00b7 behind "+hm(-df))}else if(cfg().bank){var cv=(bankCov.get(e)||{})[q.id]||0,bk=bankNow[q.id]||0;if(cv)xtra=" \u00b7 +"+hm(cv)+" from bank";else if(bk)xtra=" \u00b7 bank "+hm(bk)}
-      rq.textContent=base});if(gEl)maybeGateModal(st);document.getElementById("tdRow").hidden=past;
+      rq.textContent=base});
+    defs.forEach(function(q){var el=qEls[q.id];if(!el||!lateStart(q,k))return;var rq=el.row.querySelector(".req");if(rq&&rq.textContent.indexOf("counts from")<0)rq.textContent+=" \u00b7 counts from "+(q.type==="time"&&q.roll?"next week":"tomorrow")});if(gEl)maybeGateModal(st);document.getElementById("tdRow").hidden=past;
     var pn=document.getElementById("pausedNote"),pq=(k===T)?cfg().quests.filter(function(q){return isPaused(q,T)}):[],uq=(k===T)?cfg().quests.filter(function(q){return !isPaused(q,T)&&!scheduled(q,T)}):[];
     var pt=[];if(pq.length)pt.push("Paused: "+pq.map(function(q){return q.label+" (until "+fmtD(add(q.pausedUntil,-1))+")"}).join(", "));if(uq.length)pt.push("Not scheduled today: "+uq.map(function(q){return q.label}).join(", "));if(k===T&&isVac(T))pt.push("Vacation: everything is optional today.");else if(k===T&&!reqOf(defs).length&&cfg().quests.length)pt.push("Rest day: nothing required today.");
     pn.textContent=pt.join(" \u00b7 ");pn.hidden=!pt.length;
