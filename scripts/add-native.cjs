@@ -9,11 +9,15 @@ if (!fs.existsSync("android")) {
 
 const javaDir = path.join("android", "app", "src", "main", "java", ...pkg.split("."));
 const resDir = path.join("android", "app", "src", "main", "res", "drawable");
+const layoutDir = path.join("android", "app", "src", "main", "res", "layout");
 fs.mkdirSync(javaDir, { recursive: true });
 fs.mkdirSync(resDir, { recursive: true });
+fs.mkdirSync(layoutDir, { recursive: true });
 
 fs.copyFileSync(path.join("native", "android", "FocusNotifyPlugin.java"), path.join(javaDir, "FocusNotifyPlugin.java"));
 fs.copyFileSync(path.join("native", "android", "ic_stat_focus.xml"), path.join(resDir, "ic_stat_focus.xml"));
+fs.copyFileSync(path.join("native", "android", "notif_focus.xml"), path.join(layoutDir, "notif_focus.xml"));
+fs.copyFileSync(path.join("native", "android", "notif_focus_small.xml"), path.join(layoutDir, "notif_focus_small.xml"));
 
 fs.writeFileSync(path.join(javaDir, "MainActivity.java"), `package ${pkg};
 
