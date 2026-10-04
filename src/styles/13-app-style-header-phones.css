@@ -3,8 +3,8 @@
 .appico,.vtitle{display:none}
 .titlebar .ttl{min-width:0}
 @media (max-width:720px){
-  .top{padding-top:0}
-  .titlebar{position:sticky;top:0;z-index:26;margin:0 -10px;padding:calc(8px + var(--sat)) 12px 8px;background:#212121;border-bottom:4px solid #000;box-shadow:0 3px 0 rgba(0,0,0,.3),inset 0 -3px 0 #3A3A3A;justify-content:flex-start;gap:10px}
+  .top{padding-top:var(--hdrH,58px)}
+  .titlebar{position:fixed;top:0;left:0;right:0;z-index:26;margin:0;padding:calc(8px + var(--sat)) 12px 8px;background:#212121;border-bottom:4px solid #000;box-shadow:0 3px 0 rgba(0,0,0,.3),inset 0 -3px 0 #3A3A3A;justify-content:flex-start;gap:10px}
   .appico{display:block;width:30px;height:30px;flex:none;border:3px solid #000;box-shadow:inset 0 0 0 2px rgba(255,255,255,.25)}
   .appico svg{width:100%;height:100%;display:block}
   .titlebar .ttl{flex:1;display:flex;flex-direction:column;gap:3px}

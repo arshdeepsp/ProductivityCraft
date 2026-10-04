@@ -27,3 +27,17 @@ test("the + button adds a to-do", async ({ page }) => {
   await page.keyboard.press("Escape");
   await expect(page.locator("#quests .lbl", { hasText: "Buy groceries" })).toBeVisible();
 });
+
+test("the app header stays pinned while scrolling every tab", async ({ page }) => {
+  const SUBJ = [...Array(5)].map((_, i) => ({ id: "s" + i, name: "Subject " + i, topics: [...Array(4)].map((_, j) => ({ id: `t${i}${j}`, name: "Topic " + j, p: 2, hist: [] })) }));
+  await openApp(page, { cfg: { quests: Q, subjects: SUBJ } });
+  for (const v of ["subjects", "rules", "achievements"]) {
+    await page.evaluate((h) => (location.hash = "#" + h), v);
+    await page.waitForTimeout(150);
+    for (const y of [600, 200, 0]) {
+      await page.evaluate((y) => window.scrollTo(0, y), y);
+      await page.waitForTimeout(80);
+      expect(await page.evaluate(() => Math.round(document.querySelector(".titlebar").getBoundingClientRect().top)), `${v} at ${y}`).toBe(0);
+    }
+  }
+});
