@@ -1,7 +1,7 @@
   /* ---- today-page declutter ---- */
   function hideOpts(){return [["req", "Quest descriptions"], ["grip", "Drag handles"], ["chip", "Subject chips"], ["heat", "Momentum meter"], ["note", "Next-rank hint"], ["todo", "To-do box"], ["prog", "Progress bar"]]}
   var focusView=false;try{focusView=localStorage.getItem("pc-focusview")==="1"}catch(x){}
-  function applyHide(){if(S.timer&&!focusView)focusView=true;var h=cfg().hide||{},b=document.body;hideOpts().forEach(function(o){b.classList.toggle("hide-"+o[0],!!h[o[0]])});b.classList.toggle("focusview",focusView);if(focusView&&typeof curView!=="undefined"&&curView!=="today"&&typeof go==="function")setTimeout(function(){go("today")},0);var fb=document.getElementById("focusBtn");if(fb){fb.setAttribute("aria-pressed",focusView);fb.textContent=focusView?(window.innerWidth<=720?"All":"Show all"):"Focus"}}
+  function applyHide(){if(S.timer&&!focusView)focusView=true;var h=cfg().hide||{},b=document.body;hideOpts().forEach(function(o){b.classList.toggle("hide-"+o[0],!!h[o[0]])});b.classList.toggle("focusview",focusView);if(typeof measureBars==="function")setTimeout(measureBars,0);if(focusView&&typeof curView!=="undefined"&&curView!=="today"&&typeof go==="function")setTimeout(function(){go("today")},0);var fb=document.getElementById("focusBtn");if(fb){fb.setAttribute("aria-pressed",focusView);fb.textContent=focusView?(window.innerWidth<=720?"All":"Show all"):"Focus"}}
   document.getElementById("spBtn2").addEventListener("click",function(){openSprintSetup()});
   document.getElementById("hdrEdit").addEventListener("click",function(){document.getElementById("qEditBtn").click()});
   function openAddSheet(){if(locked())return;openG("Add",function(b){

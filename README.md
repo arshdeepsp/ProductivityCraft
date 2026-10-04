@@ -49,11 +49,16 @@ npx cap add android
 node scripts/add-permissions.cjs
 npx @capacitor/assets generate --android
 npx cap sync android
+node scripts/add-native.cjs
 cd android
 ./gradlew assembleDebug
 ```
 
-After that, `npm run android:apk` rebuilds the web app, syncs and builds. The APK is at `android/app/build/outputs/apk/debug/app-debug.apk`. Installing over an older build keeps data as long as the `appId` and the debug signing key (on this machine) stay the same.
+After that, `npm run android:apk` rebuilds the web app, syncs, re-adds the native plugin and builds.
+
+`native/android/` holds the one piece of native code: `FocusNotifyPlugin`, which shows a live ticking timer in the notification shade and on the lock screen while you focus. `scripts/add-native.cjs` copies it into the generated `android/` project and registers it in `MainActivity`.
+
+The APK is at `android/app/build/outputs/apk/debug/app-debug.apk`. Installing over an older build keeps data as long as the `appId` and the debug signing key (on this machine) stay the same.
 
 ## Data and schema
 

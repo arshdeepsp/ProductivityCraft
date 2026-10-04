@@ -35,10 +35,14 @@
     if(want!==wakeOn){wakeOn=want;var KA=capPlugin("KeepAwake");
       if(KA){(want?KA.keepAwake():KA.allowSleep()).catch(function(){})}
       else if(navigator.wakeLock){if(want)navigator.wakeLock.request("screen").then(function(l){wakeLockObj=l}).catch(function(){wakeOn=false});else if(wakeLockObj){wakeLockObj.release().catch(function(){});wakeLockObj=null}}}
-    var ln=LN();if(!ln)return;var n=nf(),t=null,b=null;
-    if(n.on&&n.timer){if(S.timer){t="Focusing: "+S.timer.label;b="Since "+new Date(S.timer.start).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})+" \u00b7 tap to return"}
-      else if(S.sprint&&S.sprint.phase==="focus"){t="Sprint: "+spLabel(S.sprint.cur);b=S.sprint.paused?"Paused":"Block "+S.sprint.block+" ends "+new Date(S.sprint.end).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}
-      else if(S.sprint&&S.sprint.phase==="break"){t="Sprint break";b=S.sprint.breakDone?"Break over \u2014 start your next block":"Next block from "+new Date(S.sprint.bend).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}}
-    var sig=t?t+"|"+b:"";if(sig===ongoingSig)return;ongoingSig=sig;
-    ln.cancel({notifications:[{id:900}]}).catch(function(){}).then(function(){if(!t)return;return ensureChannels().then(function(){return ln.schedule({notifications:[{id:900,title:t,body:b,ongoing:true,autoCancel:false,channelId:"pc_focus",schedule:{at:new Date(Date.now()+400)}}]})})}).catch(function(){})}
+    var n=nf(),t=null,b=null,when=null,down=false,chrono=false;
+    if(n.on&&n.timer){
+      if(S.timer){var c5=S.timer.commit&&!S.timer.c5;t=(c5?"Just 5 minutes: ":"Focusing: ")+S.timer.label;b=S.timer.first?"First: "+S.timer.first:"Tap to return";chrono=true;down=!!c5;when=c5?S.timer.start+S.timer.commit*60000:S.timer.start}
+      else if(S.sprint&&S.sprint.phase==="focus"){t="Sprint: "+spLabel(S.sprint.cur);if(S.sprint.paused)b="Paused";else{b="Block "+S.sprint.block+(S.sprint.rounds?" of "+S.sprint.rounds:"");chrono=true;down=true;when=S.sprint.end}}
+      else if(S.sprint&&S.sprint.phase==="break"){t=S.sprint.long?"Long break":"Decision break";if(S.sprint.breakDone)b="Break over \u2014 start your next block";else{b="Next block when this reaches zero";chrono=true;down=true;when=S.sprint.bend}}}
+    var sig=t?[t,b,when,down].join("|"):"";if(sig===ongoingSig)return;ongoingSig=sig;
+    function legacy(){var ln=LN();if(!ln)return;ln.cancel({notifications:[{id:900}]}).catch(function(){}).then(function(){if(!t)return;return ensureChannels().then(function(){return ln.schedule({notifications:[{id:900,title:t,body:b,ongoing:true,autoCancel:false,channelId:"pc_focus",schedule:{at:new Date(Date.now()+400)}}]})})}).catch(function(){})}
+    var FN=capPlugin("FocusNotify");
+    if(FN&&FN.show){(t?FN.show({title:t,body:b,when:when,countdown:down,chrono:chrono}):FN.hide()).catch(legacy);return}
+    legacy()}
   setInterval(focusSync,3000);document.addEventListener("visibilitychange",function(){wakeOn=!wakeOn&&false;focusSync()});
