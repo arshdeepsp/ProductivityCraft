@@ -50,7 +50,7 @@
   /* ---- notifications (native app via Capacitor; inert in the browser) ---- */
   function nativeApp(){try{return !!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())}catch(x){return false}}
   var LNp=null;function LN(){if(LNp)return LNp;try{if(!nativeApp())return null;LNp=window.Capacitor.Plugins&&window.Capacitor.Plugins.LocalNotifications||(window.Capacitor.registerPlugin?window.Capacitor.registerPlugin("LocalNotifications"):null)}catch(x){LNp=null}return LNp}
-  var NF_DEF={on:false,timer:true,checkin:true,checkinAt:"19:00",endday:true,risk:true,dl:true,review:true};
+  var NF_DEF={on:false,timer:true,checkin:true,checkinAt:"19:00",endday:true,risk:true,dl:true,review:true,pace:true};
   function nf(){return Object.assign({},NF_DEF,cfg().nf||{})}
   function atTime(k,hhmm){var p=parse(k),a=hhmm.split(":");p.setHours(+a[0],+a[1],0,0);return p}
   function nfPlan(){
@@ -61,9 +61,19 @@
     var de=dayEnd(),ended=!!e.ended;
     for(var i=0;i<7;i++){var k=add(T,i),today=i===0;
       if(n.checkin&&!(today&&ended)){var left=today?reqOf(activeDefs(T)).filter(function(q){return q.type!=="limit"&&!metQ(q,e)}).length:null;if(!today||left>0)push(2000+i,"Evening check-in",today?left+" quest"+(left===1?"":"s")+" left today. Still time.":"How\u2019s today going? Open your quests.",atTime(k,n.checkinAt))}
+      if(today&&n.endday&&!ended){var otd=openTodos().length;if(otd){var tdAt=parse(add(k,1));tdAt.setHours(de,0,0,0);push(2400,"To-dos still open",otd+" to-do"+(otd===1?"":"s")+" not done today. Keep or clear them?",tdAt.getTime()-30*60000)}}
       if(n.endday&&!(today&&ended)){var endAt=parse(add(k,1));endAt.setHours(de,0,0,0);push(2100+i,"End your day","Lock in today and get your wrap-up before it closes.",endAt.getTime()-60*60000)}}
     var cov=emptyCover(T);if(n.risk&&cov!=null&&cov<=1&&!ended&&!hasEntry(e))push(2300,cov===0?"Empty today = a miss":"Covered today, not tomorrow",cov===0?"Your weekly totals don\u2019t cover an empty day today. Log something before the day ends.":"Today is covered by your weekly totals. Tomorrow an empty day would be a miss.",atTime(T,"18:00"));
     if(n.risk&&st.miss===1&&!ended&&!ok(e))push(2200,"Streak at risk","You missed yesterday. Clear today to keep your "+st.streak+"-day streak.",atTime(T,"12:00"));
+    if(n.pace&&!ended){
+      var tq=activeDefs(T).filter(function(q){return q.type==="time"&&!q.opt});
+      var dayStart=7*60,wk=activeDefs(T).filter(function(q){return q.type==="wake"&&q.from})[0];if(wk){var wa=wk.from.split(":");dayStart=+wa[0]*60+(+wa[1])}
+      var dayEndMin=(de||24)*60;if(dayEndMin<=dayStart)dayEndMin+=24*60;var mid=Math.round((dayStart+dayEndMin)/2),midAt=parse(T);midAt.setHours(0,mid,0,0);
+      var dq=tq.filter(function(q){return !q.roll&&q.min>0}),dDone=0,dNeed=0;dq.forEach(function(q){dDone+=e[q.id]|0;dNeed+=q.min});
+      if(dNeed&&dDone<dNeed/2)push(2500,"Halfway through the day",hm(dDone)+" of "+hm(dNeed)+" done across your daily time quests.",midAt);
+      var ws=weekStart(T),thu=add(ws,3);
+      if(T<=thu){var wq=tq.filter(function(q){return q.roll}),wDone=0,wNeed=0;wq.forEach(function(q){wNeed+=q.roll;for(var d=ws;d<=T;d=add(d,1))wDone+=(S.days[d]||{})[q.id]|0});
+        if(wNeed&&wDone<wNeed/2)push(2600,"Halfway through the week",hm(wDone)+" of "+hm(wNeed)+" done across your weekly time quests.",atTime(thu,"09:00"))}}
     if(n.dl)(cfg().deadlines||[]).forEach(function(d,i){var dk=add(d.date,-1);if(dk>=T)push(3000+i,"Tomorrow: "+d.title,"Your deadline is tomorrow. Plan today\u2019s work around it.",atTime(dk,"18:00"))});
     if(n.review){var due=allTopics().filter(function(o){return topicStats(o.t).due}).length;if(due){var sun=add(weekStart(T),6);push(4001,"Topics due for review",due+" topic"+(due===1?"":"s")+" untouched for 2+ weeks. Pick for me can suggest one.",atTime(sun>=T?sun:add(sun,7),"10:00"))}}
     return out}
