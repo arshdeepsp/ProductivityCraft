@@ -778,7 +778,7 @@ details.rules>summary h2{flex:1}
 .ctl:has(.wk){display:flex;align-items:center}
 .packs{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 4px}
 .packs .stone{font-size:9px;padding:9px 11px}
-.strip i.frozen{background:#6FC3E8}
+.strip i.frozen{background:#6FC3E8}i.carried{background:repeating-linear-gradient(45deg,#2F7A7A 0 4px,#3A8C8C 4px 8px)}
 #settingsSec{margin-top:18px}
 .scale{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
 .stone.sc{width:32px;height:32px;padding:0;font-size:10px}
@@ -1006,9 +1006,12 @@ details.rules>summary h2{flex:1}
     var T=asOf?add(asOf,1):todayKey(),Y=add(T,-1),st={fz:0,streak:0,best:0,total:0,miss:0,rebase:false,rc:0,resets:[],start:null,marks:{}};
     function success(k){st.streak++;st.total++;st.miss=0;if(st.streak%14===0)st.fz=Math.min(fzCap(),st.fz+1);if(st.streak===1)st.start=k;if(st.rebase){st.rc++;if(st.rc>=3){st.rebase=false;st.rc=0}}st.best=Math.max(st.best,st.streak);st.marks[k]="ok"}
     function reset(k){st.resets.push(k);st.streak=0;st.start=null;st.rebase=true;st.rc=0;st.miss=0}
+    st.carry=0;
     if(T<START_KEY)return st;
     for(var k=START_KEY;k<T;k=add(k,1)){
       if(!reqDefsFor(k).length){st.marks[k]="rest";continue}
+      if(!hasEntry(S.days[k])&&st.carry<2&&carriedOK(k)){st.carry++;st.marks[k]="carried";continue}
+      st.carry=0;
       if(ok(S.days[k])){success(k);continue}
       st.miss++;
       if(st.rebase){if(st.streak>0||st.rc>0){st.marks[k]="miss";reset(k)}else st.marks[k]="miss";st.rc=0}
@@ -1172,7 +1175,7 @@ details.rules>summary h2{flex:1}
   document.getElementById("strip").addEventListener("click",function(ev){
     var k=ev.target&&ev.target.getAttribute&&ev.target.getAttribute("data-k");if(!k)return;
     selDay=k;viewKey=null;if(k>=START_KEY&&(k<todayKey()||(k===todayKey()&&endedT())))setTimeout(function(){openDayModal(k)},0);var info=document.getElementById("dayInfo"),m=k>todayKey()?"future":k<START_KEY?"pre":(lastSt.marks[k]||"pend"),e=S.days[k]||{};
-    var label={frozen:"Missed (saved by a streak freeze)",rest:isVac(k)?"Vacation day":"Rest day (nothing required)",ok:gold(e)?"Cleared (gold day)":"Cleared",miss:"Missed",grace:"Missed (grace day)",pend:k===todayKey()?"In progress":"Not started",pre:"No data",future:"Coming up"}[m];
+    var label={carried:"Carried by your rolling totals (streak held, no XP)",frozen:"Missed (saved by a streak freeze)",rest:isVac(k)?"Vacation day":"Rest day (nothing required)",ok:gold(e)?"Cleared (gold day)":"Cleared",miss:"Missed",grace:"Missed (grace day)",pend:k===todayKey()?"In progress":"Not started",pre:"No data",future:"Coming up"}[m];
     var parts=m==="future"?[label,parse(k).toLocaleDateString("en-CA",{weekday:"short",month:"short",day:"numeric"})]:[parse(k).toLocaleDateString("en-CA",{weekday:"short",month:"short",day:"numeric"}),label];
     if(m!=="pre"&&m!=="future"&&(m!=="pend"||k===todayKey())){var dq=defsOf(e);parts.push(bases(e)+"/"+reqOf(dq).length+" done");
       var d=[];dq.forEach(function(q){var v=e[q.id];if(v==null||v===""||v===0||v===false)return;d.push(q.type==="wake"?q.label+" "+v:q.type==="time"?q.label+" "+hm(v):q.type==="check"?q.label:q.type==="scale"?q.label+" "+v+"/"+(q.scale||5):q.label+" "+(q.unit==="min"?hm(v):num(v)))});if(d.length)parts.push(d.join(", "))}
@@ -1230,7 +1233,7 @@ details.rules>summary h2{flex:1}
       var cq=cqm[q.id];el.row.classList.toggle("doneq",!!(cq&&cq.completed));});
     timerTick();renderHudExtras(T);renderShelf();notifSync();applyHide();renderPark();renderHeat();
     defs.forEach(function(q){var el=qEls[q.id];if(!el||q.type!=="time")return;var rq=el.row.querySelector(".req"),base=reqText(q),xtra="";
-      if(q.roll){var rk=k;xtra=" \u00b7 7-day: "+hm(rollSum(q.id,rk))+" / "+hm(rollNeed(q,rk))}else if(cfg().bank){var cv=(bankCov.get(e)||{})[q.id]||0,bk=bankNow[q.id]||0;if(cv)xtra=" \u00b7 +"+hm(cv)+" from bank";else if(bk)xtra=" \u00b7 bank "+hm(bk)}
+      if(q.roll){var rk=k,rs=rollSum(q.id,rk),rn=rollNeed(q,rk),df=rs-rn;xtra=" \u00b7 7-day: "+hm(rs)+" / "+hm(rn)+(df===0?" \u00b7 on pace":df>0?" \u00b7 ahead "+hm(df):" \u00b7 behind "+hm(-df))}else if(cfg().bank){var cv=(bankCov.get(e)||{})[q.id]||0,bk=bankNow[q.id]||0;if(cv)xtra=" \u00b7 +"+hm(cv)+" from bank";else if(bk)xtra=" \u00b7 bank "+hm(bk)}
       rq.textContent=base+xtra});if(gEl)maybeGateModal(st);document.getElementById("tdRow").hidden=past;
     var pn=document.getElementById("pausedNote"),pq=(k===T)?cfg().quests.filter(function(q){return isPaused(q,T)}):[],uq=(k===T)?cfg().quests.filter(function(q){return !isPaused(q,T)&&!scheduled(q,T)}):[];
     var pt=[];if(pq.length)pt.push("Paused: "+pq.map(function(q){return q.label+" (until "+fmtD(add(q.pausedUntil,-1))+")"}).join(", "));if(uq.length)pt.push("Not scheduled today: "+uq.map(function(q){return q.label}).join(", "));if(k===T&&isVac(T))pt.push("Vacation: everything is optional today.");else if(k===T&&!reqOf(defs).length&&cfg().quests.length)pt.push("Rest day: nothing required today.");
@@ -1826,9 +1829,9 @@ details.rules>summary h2{flex:1}
   /* 2. past day modal */
   function openDayModal(k){
     var e=S.days[k]||{},st=lastSt||compute(),m=st.marks[k]||"miss",defs=defsOf(e);
-    var label={frozen:"Missed, saved by a streak freeze",rest:isVac(k)?"Vacation day":"Rest day",ok:gold(e)?"Gold day":"Cleared",miss:"Missed",grace:"Missed (grace day)",pend:"Not logged"}[m]||"Missed";
+    var label={carried:"Carried (streak held, no XP)",frozen:"Missed, saved by a streak freeze",rest:isVac(k)?"Vacation day":"Rest day",ok:gold(e)?"Gold day":"Cleared",miss:"Missed",grace:"Missed (grace day)",pend:"Not logged"}[m]||"Missed";
     openG(parse(k).toLocaleDateString("en-CA",{weekday:"long",month:"long",day:"numeric"}),function(b){
-      var h='<p class="mhead '+(m==="ok"?"good":(m==="rest"||m==="frozen")?"":"bad")+'">'+label+(m!=="rest"?' \u00b7 '+bases(e)+'/'+reqOf(defs).length+' done':'')+' \u00b7 +'+dayXP(e)+' XP</p>';
+      var h='<p class="mhead '+(m==="ok"?"good":(m==="rest"||m==="frozen"||m==="carried")?"":"bad")+'">'+label+(m!=="rest"?' \u00b7 '+bases(e)+'/'+reqOf(defs).length+' done':'')+' \u00b7 +'+dayXP(e)+' XP</p>';
       if(!hasEntry(e))h+='<p class="help">Nothing was logged this day.</p>';else h+=qList(e,defs);
       var tp=[];if(tp.length)h+='<p class="sh2">Top 3</p><ul class="ul">'+tp.map(function(x){return '<li>'+(x.d?"\u2713 ":"\u2717 ")+esc(x.t)+'</li>'}).join("")+'</ul>';
       if(S.refl[k])h+='<p class="sh2">Reflection</p><p class="help">'+esc(S.refl[k].text||"")+'</p>';
@@ -1949,6 +1952,7 @@ details.rules>summary h2{flex:1}
       bankCov.set(e,cov)});
     bankNow=bal;
   }
+  function carriedOK(k){var rq=reqDefsFor(k);if(!rq.length)return false;var anyRoll=false;for(var i=0;i<rq.length;i++){var q=rq[i];if(q.type==="limit")continue;if(q.type==="time"&&q.roll){anyRoll=true;if(rollSum(q.id,k)<rollNeed(q,k))return false;continue}return false}return anyRoll}
   function rollSum(id,k){var s=0;for(var i=0;i<7;i++){var d=add(k,-i);if(d<START_KEY)break;s+=(S.days[d]||{})[id]|0}return s}
   function rollNeed(q,k){var n=Math.min(7,daysBetween(START_KEY,k)+1);return Math.round(q.roll*n/7)}
   function timeMet(q,e){var v=e[q.id]|0;if(q.roll){var k=eKey.get(e);if(!k)return false;return rollSum(q.id,k)>=rollNeed(q,k)}var c=(bankCov.get(e)||{})[q.id]||0;return v+c>=q.min}
@@ -2017,7 +2021,7 @@ details.rules>summary h2{flex:1}
     function panel(x,y,w,h){g.fillStyle="#000";g.fillRect(x-8,y-8,w+16,h+16);g.fillStyle="#555";g.fillRect(x-4,y-4,w+8,h+8);g.fillStyle="#212121";g.fillRect(x,y,w,h)}
     g.textAlign="left";g.fillStyle="#FFFFFF";g.font="40px "+PX;g.fillText("ProductivityCraft",70,120);g.fillStyle="#FFFF55";g.font="26px "+PX;g.fillText("My week",70,175);g.fillStyle="#C3CBD6";g.font="40px "+VT;g.fillText(fmtD(from)+" \u2013 "+fmtD(T),70,225);
     panel(70,270,W-140,250);[["Days cleared",cleared+"/7"],["Streak",st.streak+"d"],["Focus",hm(tot)]].forEach(function(s,i){var cx=110+i*((W-220)/3);g.fillStyle="#BDBDBD";g.font="20px "+PX;g.fillText(s[0],cx,340);g.fillStyle=i===0?"#7FE05A":"#FFFFFF";g.font="58px "+PX;g.fillText(s[1],cx,440)});
-    var sq=(W-140-6*14)/7;days.forEach(function(d,i){var m=st.marks[d],col=d<START_KEY?"#2A2A2A":m==="ok"?(gold(S.days[d])?"#C99A1E":"#3C8527"):m==="grace"?"#B57A12":m==="rest"?"#2C3E66":m==="frozen"?"#6FC3E8":d===T?"#555":"#9E2A1F";g.fillStyle=col;g.fillRect(70+i*(sq+14),570,sq,70)});
+    var sq=(W-140-6*14)/7;days.forEach(function(d,i){var m=st.marks[d],col=d<START_KEY?"#2A2A2A":m==="ok"?(gold(S.days[d])?"#C99A1E":"#3C8527"):m==="grace"?"#B57A12":m==="rest"?"#2C3E66":m==="frozen"?"#6FC3E8":m==="carried"?"#3A8C8C":d===T?"#555":"#9E2A1F";g.fillStyle=col;g.fillRect(70+i*(sq+14),570,sq,70)});
     panel(70,700,W-140,ids.length?100+ids.length*85:160);g.fillStyle="#FFFF55";g.font="22px "+PX;g.fillText("Time by quest",110,760);
     if(!ids.length){g.fillStyle="#BDBDBD";g.font="36px "+VT;g.fillText("No timed work logged this week.",110,830)}
     ids.forEach(function(k,i){var y=820+i*85;g.fillStyle="#FFFFFF";g.font="34px "+VT;g.fillText(labels[k].slice(0,26),110,y);g.textAlign="right";g.fillText(hm(mins[k]),W-110,y);g.textAlign="left";g.fillStyle="#1E1E1E";g.fillRect(110,y+14,W-220,20);g.fillStyle="#7FE05A";g.fillRect(110,y+14,Math.round((W-220)*mins[k]/mx),20)});
