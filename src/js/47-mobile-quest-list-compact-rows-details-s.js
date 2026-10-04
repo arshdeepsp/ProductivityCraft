@@ -15,7 +15,7 @@
       if(q.note)r("Note",esc(q.note));
       r("Days",q.days&&q.days.length&&q.days.length<7?q.days.map(function(d){return DN[d]}).join(" "):"Every day");
       if(q.opt)r("Optional","Yes");
-      if(sj)r("Subject",esc(sj.name)+(q.topic?" \u203a "+esc(topicName(q.topic)):""));
+      var SLd=qSubjs(q);if(SLd.length)r(SLd.length>1?"Subjects":"Subject",SLd.map(function(id){return esc(subjById(id).name)}).join(", ")+(q.topic?" \u203a "+esc(topicName(q.topic)):""));
       if(cq.fin)r("Done when",cq.fin.t==="total"?"Project total reached":(cq.fin.t==="topic"?"Topic reaches ":"Subject reaches ")+LV[cq.fin.lvl||4]);
       if(q.dl)r("Deadline",num(q.dl.total)+(q.ul?" "+esc(q.ul):"")+" by "+fmtD(q.dl.due));
       if(q.type!=="todo"&&strictOn())r("Change rules",(LOCKS.filter(function(L){return L[0]===lockOf(cq)})[0]||LOCKS[0])[1]);

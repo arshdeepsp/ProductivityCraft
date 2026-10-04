@@ -38,7 +38,7 @@
     var ob=nqB.querySelector("#nqOpt");if(ob)ob.addEventListener("click",function(){if(NQ.opt)delete NQ.opt;else NQ.opt=true;drawNQ()});
     nqB.querySelector("#nqCancel").addEventListener("click",closeNQ);
     nqB.querySelector("#nqSave").addEventListener("click",function(){
-      var q=NQ;q.label=(q.label||"").trim();if(q.lock==="fortnight")q.lockFrom=todayKey();if(q.lock==="flex")delete q.lock;if(countsOnDay(q)){var ovq=wouldExceed(q);if(ovq.length){drawNQ(overMsg(ovq));return}}
+      var q=NQ;q.label=(q.label||"").trim();if(q.type==="todo")q.addedOn=todayKey();if(q.lock==="fortnight")q.lockFrom=todayKey();if(q.lock==="flex")delete q.lock;if(countsOnDay(q)){var ovq=wouldExceed(q);if(ovq.length){drawNQ(overMsg(ovq));return}}
       if(!q.label){drawNQ("Give the quest a name.");return}
       if(((q.type==="time"||q.type==="weekly"||q.type==="target")&&!(q.min>0))||(q.type==="scale"&&!(q.min>=1&&q.min<=(q.scale||5)))||(q.type==="wake"&&!(q.from&&q.to&&q.from<q.to))||(q.type==="limit"&&!(q.max>=0))||(q.days&&!q.days.length)){drawNQ("Check the values: something is missing or out of range.");return}
       delete q._all;if(q.type==="weekly"||q.type==="todo"){delete q.days;delete q.opt}

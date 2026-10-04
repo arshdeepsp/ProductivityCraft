@@ -1,0 +1,21 @@
+/* ===== multiple subjects per quest ===== */
+.sjfield{display:grid;gap:6px;margin:4px 0 8px}
+.sjlab{font:8px var(--px);color:#3F3F3F}
+.mgr .sjlab,#qmgr .sjlab{color:inherit}
+.sjpick{display:flex;flex-wrap:wrap;gap:6px}
+.sjpick .stone{font-size:8px;padding:7px 9px}
+.sjchip{display:inline-flex!important;align-items:center;flex-wrap:nowrap;white-space:nowrap;max-width:100%;min-width:0;overflow:hidden}
+.sjchip .sjlv{flex:none}
+.sjchip .sjn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px}
+.sjchip .sjmore{font-weight:400;background:#5A5AA0;color:#fff;padding:0 4px;margin-left:2px}
+/* ===== typing on phones: keep the field above the keyboard ===== */
+@media (max-width:720px){
+  .sjchip .sjlv{display:none}
+  .sjchip .sjn{max-width:190px}
+  body.typing #mainnav,body.typing .fab{display:none!important}
+  body.typing{padding-bottom:16px!important}
+  input,textarea,select{scroll-margin-bottom:24px;scroll-margin-top:72px}
+}
+/* ===== to-do review ===== */
+.tdrev{align-items:center}.tdrev span{min-width:0;overflow-wrap:anywhere}.tdrev em{font-style:normal;color:#9E2A1F;font-size:15px}
+.tdrev .stone{flex:none;min-width:74px}

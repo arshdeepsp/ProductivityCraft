@@ -24,3 +24,18 @@
 .trcard .sh2{color:#FFFF55;margin:0 0 8px}
 .tchart{width:100%;height:auto;display:block}.tchart .tv{font:13px var(--vt);fill:#fff}.tchart .tl{font:14px var(--vt);fill:#BDBDBD}
 @media (max-width:720px){.stylegrid{grid-template-columns:1fr}.mainnav button span{font-size:6px}}
+
+@media (max-width:720px){
+  .tgrid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px}
+  .ttile{grid-template-columns:1fr;position:relative;padding:10px 10px 12px;min-width:0;overflow:hidden}
+  .tt-i{position:absolute;top:8px;right:8px;width:30px;height:30px;border-width:2px;opacity:.9}
+  .tt-i svg{width:20px;height:20px}
+  .tt-b{min-width:0;padding-right:34px}
+  .tt-l{font-size:7px;line-height:1.5;min-height:21px}
+  .tt-v{font-size:16px;margin:6px 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tt-s{font-size:15px;line-height:1.1}
+  .tsec-h{font-size:10px}
+  .tcharts{grid-template-columns:minmax(0,1fr)!important}
+  .subjt{grid-template-columns:minmax(0,1fr)!important}
+  .sjt,.trcard{min-width:0}
+}

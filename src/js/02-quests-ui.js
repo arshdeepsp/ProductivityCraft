@@ -24,7 +24,7 @@
       row.innerHTML='<button type="button" class="qgrip" aria-label="Drag to reorder '+q.label.replace(/"/g,"")+'" title="Drag to set priority"><i></i></button><i class="gem" aria-hidden="true"></i><button type="button" class="pzb" aria-haspopup="menu" aria-label="More options for '+q.label.replace(/"/g,"")+'">\u22ef</button><div><div class="lbl"></div><div class="req"></div></div><div class="ctl"></div>';
       var pz=row.querySelector(".pzb");pz.addEventListener("click",function(ev){ev.stopPropagation();openQMenu(q,pz)});
       row.querySelector(".lbl").textContent=q.label;row.querySelector(".req").textContent=reqText(q);
-      if(q.subj){var ch=document.createElement("button");ch.type="button";ch.className="sjchip";ch.addEventListener("click",function(){go("subjects");setTimeout(function(){var c=document.querySelector('.subjcard[data-sid="'+q.subj+'"]');if(c){c.scrollIntoView({block:"center"});c.classList.add("flash");setTimeout(function(){c.classList.remove("flash")},1500)}},50)});row.children[3].appendChild(ch)}
+      if(q.subj||(q.subjs&&q.subjs.length)){var ch=document.createElement("button");ch.type="button";ch.className="sjchip";ch.addEventListener("click",function(){openSubjPick(q)});row.children[3].appendChild(ch)}
       if(q.total&&(q.type==="time"||q.type==="target")){var pj=document.createElement("div");pj.className="proj";pj.innerHTML='<div class="pbar"><i></i></div><span></span>';row.children[3].appendChild(pj)}
       var ctl=row.querySelector(".ctl"),lab=q.label.replace(/"/g,"");
       if(q.type==="wake"){

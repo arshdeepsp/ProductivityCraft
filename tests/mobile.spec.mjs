@@ -64,3 +64,14 @@ test("the on/off switch knob stays inside its track", async ({ page }) => {
   await page.waitForTimeout(200);
   expect(await inside()).toBe(true);
 });
+
+test("typing hides the tab bar and + button so the field sits above the keyboard", async ({ page }) => {
+  await openApp(page, { cfg: { quests: Q } });
+  await page.tap("#fabAdd");
+  await page.click("#aoTd");
+  expect(await page.evaluate(() => document.body.classList.contains("typing"))).toBe(true);
+  await expect(page.locator("#mainnav")).toBeHidden();
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
+  expect(await page.evaluate(() => document.body.classList.contains("typing"))).toBe(false);
+});
