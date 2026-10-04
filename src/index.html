@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ProductivityCraft">
+<meta name="theme-color" content="#5E9E3A" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#2F5A22" media="(prefers-color-scheme: dark)">
+<title>ProductivityCraft</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="64x64" href="icons/favicon-64.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="description" content="A pixel-art habit game: daily quests, streaks, achievements and wrap-ups. Your data stays on your device.">
+<style>/*@inject:css*/</style>
+</head>
+<body>
+<div class="scrim" id="setScrim" hidden></div>
+<aside class="drawer" id="setDrawer" role="dialog" aria-modal="true" aria-labelledby="setTitle" hidden><div class="drawer-h"><h2 id="setTitle">Settings</h2><button type="button" class="stone" id="setClose" aria-label="Close settings">Close</button></div><div class="drawer-b" id="settingsBody"></div></aside>
+<div class="grove" id="grove" role="dialog" aria-modal="true" aria-label="Your grove" hidden><canvas id="groveCanvas"></canvas><div class="ginfo" id="groveInfo"></div><button type="button" class="stone ginfo-tg" id="groveInfoTg" aria-expanded="true">Hide info</button><button type="button" class="stone gback" id="groveBack">Back to game</button><div class="ghint" id="groveHint" hidden>Tap anywhere to return</div></div>
+<div class="sprint" id="sprint" role="dialog" aria-modal="true" aria-label="Sprint" hidden><div class="sp-card" id="spBody"></div></div>
+<button type="button" class="sp-pill" id="spPill" hidden></button>
+<button type="button" class="fab" id="fabAdd" aria-label="New quest">+</button>
+<div class="mgrsheet" id="mgrSheet" role="dialog" aria-modal="true" aria-label="Edit quests" hidden><div class="mgr-card"><div class="drawer-h mgr-h"><h2>Edit quests</h2><span class="mgr-hb"><button type="button" class="stone" id="mgrCancelTop">Cancel</button><button type="button" class="stone save" id="mgrSaveTop">Save</button></span></div><div class="mgr-body" id="mgrBody"></div></div></div>
+<div class="scrim" id="modalScrim" hidden></div>
+<div class="modal" id="gModal" role="dialog" aria-modal="true" aria-labelledby="gTitle" hidden><div class="modal-card"><div class="drawer-h"><h2 id="gTitle"></h2><button type="button" class="stone" id="gClose" aria-label="Close">Close</button></div><div class="modal-b" id="gBody"></div></div></div>
+<div class="modal" id="nqModal" role="dialog" aria-modal="true" aria-labelledby="nqTitle" hidden><div class="modal-card"><div class="drawer-h"><h2 id="nqTitle">New quest</h2><button type="button" class="stone" id="nqClose" aria-label="Close">Close</button></div><div class="modal-b" id="nqBody"></div></div></div>
+<div id="fx" aria-hidden="true"><div class="stars"></div><div class="l1"></div><div class="l2"></div><div class="l3"></div><div class="l4"></div><div class="l5"></div><div class="moon"></div><div class="sun"></div><div class="mill"><i></i></div></div>
+<div class="wrap">
+
+<header class="top">
+  <div class="titlebar"><span class="appico" aria-hidden="true"><svg viewBox="0 0 16 16" shape-rendering="crispEdges"><rect x="0" y="0" width="16" height="16" fill="#5E9E3A"/><rect x="0" y="5" width="16" height="11" fill="#79553A"/><rect x="2" y="7" width="3" height="2" fill="#6A4A31"/><rect x="10" y="11" width="3" height="2" fill="#8B6243"/><rect x="7" y="3" width="2" height="6" fill="#2F6B22"/><rect x="4" y="2" width="3" height="2" fill="#7CC24E"/><rect x="9" y="1" width="4" height="3" fill="#56A63A"/></svg></span><div class="ttl"><h1>ProductivityCraft</h1><span class="vtitle" id="viewTitle">Today</span></div><span class="tbtns"><button type="button" class="stone gearbtn" id="groveBtn" aria-label="Open your grove"><svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><rect x="5" y="2" width="6" height="2" fill="#7CC24E"/><rect x="3" y="4" width="10" height="5" fill="#56A63A"/><rect x="4" y="9" width="8" height="2" fill="#3E8A2C"/><rect x="5" y="4" width="3" height="2" fill="#A6DB72"/><rect x="7" y="11" width="2" height="4" fill="#7A4A24"/></svg><span>Grove</span></button><button type="button" class="stone gearbtn" id="trendsBtn" aria-label="Trends" title="Trends" hidden><svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><rect x="1" y="9" width="3" height="6" fill="#fff"/><rect x="6" y="5" width="3" height="10" fill="#fff"/><rect x="11" y="2" width="3" height="13" fill="#fff"/></svg></button><button type="button" class="stone gearbtn helpbtn" id="helpBtn" aria-label="How it works">?</button><button type="button" class="stone gearbtn" id="setBtn" aria-label="Open settings" aria-expanded="false"><svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><path fill="#fff" d="M7 1h2v2h2V2h2v2h-1v2h2v2h-2v2h1v2h-2v-1h-2v2H9v1H7v-1H5v1H3v-2h1V9H2V7h2V5H3V3h2v1h2z"/><rect x="6" y="6" width="4" height="4" fill="#6A6A6A"/></svg><span>Settings</span></button></span></div>
+  <div class="timeline"><span class="tl-from" id="tlFrom"></span><span class="tl-for" id="elapsed"></span></div>
+
+  <nav class="mainnav" id="mainnav" aria-label="Main"><button type="button" data-go="today"><svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><rect x="2" y="2" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"/><rect x="5" y="5" width="2" height="2" fill="currentColor"/><rect x="5" y="9" width="2" height="2" fill="currentColor"/><rect x="8" y="5" width="3" height="2" fill="currentColor"/><rect x="8" y="9" width="3" height="2" fill="currentColor"/></svg><span>Today</span></button><button type="button" data-go="subjects"><svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><rect x="1" y="3" width="6" height="11" fill="none" stroke="currentColor" stroke-width="2"/><rect x="9" y="3" width="6" height="11" fill="none" stroke="currentColor" stroke-width="2"/><rect x="7" y="4" width="2" height="9" fill="currentColor"/></svg><span>Subjects</span></button><button type="button" data-go="rules"><svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><rect x="3" y="1" width="10" height="14" fill="none" stroke="currentColor" stroke-width="2"/><rect x="6" y="4" width="5" height="2" fill="currentColor"/><rect x="6" y="8" width="5" height="2" fill="currentColor"/><rect x="6" y="12" width="3" height="1" fill="currentColor"/></svg><span>Rules</span></button><button type="button" data-go="achievements"><svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><rect x="4" y="1" width="8" height="2" fill="currentColor"/><rect x="3" y="3" width="10" height="5" fill="currentColor"/><rect x="5" y="8" width="6" height="2" fill="currentColor"/><rect x="7" y="10" width="2" height="2" fill="currentColor"/><rect x="5" y="12" width="6" height="3" fill="currentColor"/><rect x="1" y="3" width="2" height="3" fill="currentColor"/><rect x="13" y="3" width="2" height="3" fill="currentColor"/></svg><span>Badges</span></button><button type="button" data-go="grove"><svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><rect x="5" y="1" width="6" height="2" fill="currentColor"/><rect x="3" y="3" width="10" height="6" fill="currentColor"/><rect x="5" y="9" width="6" height="1" fill="currentColor"/><rect x="7" y="10" width="2" height="5" fill="currentColor"/></svg><span>Grove</span></button></nav>
+  <div class="dash" data-view="today">
+  <aside class="dash-side">
+  <div class="hud px" aria-live="polite">
+    <div class="slot" id="rankIcon"></div>
+    <div class="hudbody">
+      <button type="button" class="hudline" id="hudLine" aria-expanded="false" aria-label="Show progress details"></button>
+      <div class="rank" id="rankName">Apprentice</div>
+      <div class="stats"><span>Streak <b id="stStreak">0</b></span><span class="morestats" id="moreStats" hidden><span>Best <b id="stBest">0</b></span><span>Cleared <b id="stTotal">0</b></span><span>Freezes <b id="stFz">0</b></span></span><button type="button" class="statsbtn" id="statsToggle" aria-controls="moreStats" aria-expanded="false">More</button><span class="term" id="termTxt" hidden></span></div>
+      <div class="dlrow" id="dlRow" hidden></div>
+      <div class="heatw"><div class="heat h0" id="heatBar"><i></i></div><span id="heatLab">Momentum: Cold</span></div>
+      <div class="lvl"><div class="lvlrow"><span class="lvn" id="lvlNum">Lv 1</span><span id="lvlText">0 / 300 XP</span></div><div class="xpb"><i id="xpFill"></i></div></div>
+      <div class="note" id="hudNote"></div>
+      <div class="stripnav">
+        <button type="button" class="stone arrow" id="stripPrev" aria-label="Earlier days">&lt;</button>
+        <span id="stripRange"></span>
+        <button type="button" class="stone arrow" id="stripNext" aria-label="Later days">&gt;</button>
+      </div>
+      <div class="strip" id="strip" aria-label="Day history"></div>
+      <div class="dayinfo" id="dayInfo" aria-live="polite"></div>
+    </div>
+  </div>
+  <div class="sideach px" id="sideAch"></div>
+  </aside>
+
+  <section class="gui dash-main" id="gui" aria-label="Daily quests">
+    <div class="gui-h">
+      <h2 id="guiTitle"><span id="guiTitleT">Today's quests</span> <span class="qcount" id="qCount" hidden></span></h2>
+      <div class="gui-r">
+        <span class="lock px" id="lockIn"></span>
+        <button type="button" class="stone save hdradd" id="hdrAdd">+ Add</button>
+        <button type="button" class="stone hdricon" id="hdrEdit" aria-label="Edit quests" title="Edit quests"><svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><rect x="10" y="1" width="3" height="3" fill="#fff"/><rect x="8" y="3" width="3" height="3" fill="#fff"/><rect x="6" y="5" width="3" height="3" fill="#fff"/><rect x="4" y="7" width="3" height="3" fill="#fff"/><rect x="2" y="9" width="3" height="3" fill="#FFD23F"/><rect x="1" y="12" width="3" height="3" fill="#3F3F3F"/></svg></button>
+        <button type="button" class="stone focusb" id="focusBtn" aria-pressed="false" title="Hide the sidebar and extras">Focus</button>
+        <button type="button" class="stone endb" id="endBtn">End day</button>
+        <button type="button" class="stone" id="backToday" hidden>Back to today</button>
+        <button type="button" class="stone sfx" id="sndBtn" aria-pressed="true" hidden>SFX on</button>
+      </div>
+    </div>
+    <div id="questsWrap">
+      <div class="top3" id="top3"></div>
+      <div class="sparkbar" id="sparkBar" hidden><button type="button" class="stone save" id="sp5Btn">&#9654; Just 5<span class="m-hide"> minutes</span></button><button type="button" class="stone msprint" id="spBtn2">Sprint</button><button type="button" class="stone" id="pickBtn">Pick<span class="m-hide"> for me</span></button><button type="button" class="stone" id="batchBtn">Batch<span class="m-hide"> to-dos</span></button></div>
+      <div class="quests" id="quests"></div>
+      <div class="qtools"><button type="button" class="stone save" id="nqBtn">+ <span class="lg">New </span><span class="sm">Quest</span><span class="lg">quest</span></button><button type="button" class="stone" id="spBtn">Sprint</button><button type="button" class="stone tdtg" id="tdToggle">+ To-do</button><button type="button" class="stone" id="shareBtn" hidden>Share week</button><button type="button" class="stone" id="qEditBtn">Edit<span class="lg"> quests</span></button></div>
+      <div class="carrynote" id="carryNote" hidden></div>
+      <div class="parkbox" id="parkBox" hidden></div>
+      <div class="tdrow" id="tdRow"><input id="tdNew" maxlength="60" placeholder="Add a to-do" aria-label="New to-do"><button type="button" class="stone" id="tdAdd">Add</button></div>
+      <p class="paused" id="pausedNote" hidden></p>
+      <div class="xp">
+        <div class="xpbar" id="xpbar"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="xpl"><span id="xpText">2/7 bases</span><span id="cleared"></span></div>
+      </div>
+    </div>
+    <div id="qmgr" class="ed mgr" hidden></div>
+    <div class="gate" id="gate" hidden>
+      <div class="big">Streak lost</div>
+      <p>Two missed days in a row. Before the quests unlock, write down what broke it.</p>
+      <textarea id="gateText" maxlength="500" placeholder="What broke it, and what changes tomorrow?"></textarea>
+      <button type="button" class="stone" id="gateGo" disabled>Start rebase</button>
+    </div>
+    <div class="backup" hidden>
+      <button type="button" class="stone" id="expBtn">Export backup</button>
+      <button type="button" class="stone" id="impBtn">Import backup</button>
+      <button type="button" class="stone" id="wrapBtn">Daily wrap-up</button>
+      <input type="file" id="impFile" class="vh" tabindex="-1" aria-hidden="true">
+    </div>
+    <div class="bknudge" id="bkNudge" hidden><span>It’s been a while since your last backup. Your data lives only on this device.</span><span class="bkb"><button type="button" class="stone save" id="bkNow">Export backup</button><button type="button" class="stone" id="bkLater">Later</button></span></div>
+    <p class="sync" id="sync"></p>
+  </section>
+  </div>
+</header>
+
+
+<section class="view" data-view="subjects" hidden><h2 class="viewh">Subjects</h2><div id="subjBody"></div></section>
+<section class="view" data-view="rules" hidden><h2 class="viewh">Rulebook</h2><div id="rules"></div></section>
+
+<section class="ach-sec view" id="achievements" data-view="achievements" hidden>
+  <h2>Achievements</h2>
+  <div class="ach-grid" id="achGrid"></div>
+  <div class="ach-more"><button type="button" class="stone" id="achMore">Show all achievements</button></div>
+  <div class="ach-more"><button type="button" class="stone" id="caNewBtn">+ Custom achievement</button></div>
+  <div id="shelf" hidden></div>
+  <div id="achCustomWrap" hidden><h3 class="ach-sub">Custom</h3><div class="ach-grid" id="achCustom"></div></div>
+  <p class="ach-note" id="achNote"></p>
+</section>
+<section class="view" data-view="trends" hidden><h2 class="viewh">Trends</h2><div class="trends" id="trendsBody"></div></section>
+<section class="view" data-view="settings" hidden><h2 class="viewh">Settings</h2><div class="setpage gui" id="setPage"></div></section>
+
+<nav class="mbar" aria-label="Quick actions"><button type="button" class="stone save" id="mbNew"><b>+</b><span>Quest</span></button><button type="button" class="stone" id="mbSprint"><b>&#9654;</b><span>Sprint</span></button><button type="button" class="stone del" id="mbEnd"><b>&#9632;</b><span>End day</span></button><button type="button" class="stone" id="mbGrove"><svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><rect x="5" y="2" width="6" height="2" fill="#7CC24E"/><rect x="3" y="4" width="10" height="5" fill="#56A63A"/><rect x="4" y="9" width="8" height="2" fill="#3E8A2C"/><rect x="5" y="4" width="3" height="2" fill="#A6DB72"/><rect x="7" y="11" width="2" height="4" fill="#7A4A24"/></svg><span>Grove</span></button></nav>
+<footer><p class="privacy">Your data stays on this device. Nothing is sent anywhere. Use Export backup to move it to another device.</p></footer>
+</div>
+<div class="toast" id="toast" aria-live="polite"></div>
+<script type="application/json" id="achData">/*@inject:ach*/</script>
+<script>/*@inject:js*/</script>
+</body>
+</html>

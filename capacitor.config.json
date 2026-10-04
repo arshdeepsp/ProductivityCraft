@@ -1,0 +1,10 @@
+{
+  "appId": "com.arsh.productivitycraft",
+  "appName": "ProductivityCraft",
+  "webDir": "dist",
+  "android": { "backgroundColor": "#212121" },
+  "plugins": {
+    "SystemBars": { "insetsHandling": "css", "style": "DARK" },
+    "LocalNotifications": { "iconColor": "#5E9E3A" }
+  }
+}

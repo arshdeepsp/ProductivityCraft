@@ -1,0 +1,12 @@
+  /* ---- topic time + review ---- */
+  function allTopics(){var out=[];subjList().forEach(function(s){(s.topics||[]).forEach(function(t){out.push({sid:s.id,sname:s.name,t:t})})});return out}
+  function topicName(tid){var x=allTopics().filter(function(o){return o.t.id===tid})[0];return x?x.t.name:""}
+  function addTopicTime(T,tid,m){if(!tid||m<1)return;if(S.days[T]&&S.days[T].ended)return;var e=Object.assign({},S.days[T]||{});e.tt=Object.assign({},e.tt||{});e.tt[tid]=(e.tt[tid]||0)+m;S.days[T]=e;dirty[T]=true;cache();clearTimeout(timer);timer=setTimeout(flush,300)}
+  function topicStats(t){var tot=0,mo=0,last=null,T=todayKey(),m30=add(T,-29);Object.keys(S.days).forEach(function(d){var v=((S.days[d]||{}).tt||{})[t.id]||0;if(!v)return;tot+=v;if(d>=m30)mo+=v;if(!last||d>last)last=d});(t.hist||[]).forEach(function(h){if(!last||h.d>last)last=h.d});
+    var age=last?daysBetween(last,T):(t.created?daysBetween(t.created,T):0);return{tot:tot,mo:mo,last:last,due:age>=14}}
+  function topicSelect(id,sel){var A=allTopics();if(!A.length)return "";return '<label class="tpk">Topic (optional)<select id="'+id+'"><option value="">No topic</option>'+A.map(function(o){return '<option value="'+o.t.id+'"'+(o.t.id===sel?" selected":"")+'>'+esc(o.sname)+' \u203a '+esc(o.t.name)+'</option>'}).join("")+'</select></label>'}
+  function askTopic(q){if(!S.timer||!q||!q.subj)return;var sj=subjById(q.subj);if(!sj||!(sj.topics||[]).length)return;if(q.topic&&(sj.topics||[]).some(function(t){return t.id===q.topic})){S.timer.topic=q.topic;cache();setSync("Timer started on "+topicName(q.topic));return}openG("What are you working on?",function(b){
+    var A=(sj.topics||[]).map(function(t){return{sid:sj.id,sname:sj.name,t:t}}),due=A.filter(function(o){return topicStats(o.t).due}).map(function(o){return o.t.id});
+    b.innerHTML='<p class="help">Optional: tag this timer with a topic so its time counts toward that topic.</p><div class="tpick">'+A.map(function(o){return '<button type="button" class="stone mini" data-tk="'+o.t.id+'">'+esc(o.sname)+' \u203a '+esc(o.t.name)+(due.indexOf(o.t.id)>=0?' <em>review</em>':'')+'</button>'}).join("")+'</div><div class="edrow end"><button type="button" class="stone" id="tkSkip">No topic</button></div>';
+    b.querySelectorAll("[data-tk]").forEach(function(x){x.addEventListener("click",function(){if(S.timer){S.timer.topic=x.getAttribute("data-tk");cache();setSync("Tagged: "+topicName(S.timer.topic))}closeG()})});
+    b.querySelector("#tkSkip").addEventListener("click",closeG)})}

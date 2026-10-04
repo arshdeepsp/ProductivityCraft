@@ -1,0 +1,150 @@
+  /* ---- render ---- */
+  var statsOpen=false;try{statsOpen=localStorage.getItem("pc-stats")==="1"}catch(x){}document.getElementById("statsToggle").addEventListener("click",function(){statsOpen=!statsOpen;try{localStorage.setItem("pc-stats",statsOpen?"1":"0")}catch(x){}render()});
+  var hudOpen=false;try{hudOpen=localStorage.getItem("pc-hudopen")==="1"}catch(x){}
+  (function(){var hd=document.querySelector(".hud"),hl=document.getElementById("hudLine");function upd(){hd.classList.toggle("hud-open",hudOpen);hl.setAttribute("aria-expanded",hudOpen)}upd();hl.addEventListener("click",function(){hudOpen=!hudOpen;try{localStorage.setItem("pc-hudopen",hudOpen?"1":"0")}catch(x){}upd()})})();
+  document.getElementById("mbNew").addEventListener("click",function(){document.getElementById("nqBtn").click()});
+  document.getElementById("mbEnd").addEventListener("click",function(){openEndModal()});
+  document.getElementById("mbGrove").addEventListener("click",function(){openGrove(false)});
+  document.getElementById("mbSprint").addEventListener("click",function(){openSprintSetup()});
+  (function(){var st=document.getElementById("strip"),x0=null,y0=null;st.addEventListener("touchstart",function(e){var t=e.touches[0];x0=t.clientX;y0=t.clientY},{passive:true});st.addEventListener("touchend",function(e){if(x0==null)return;var t=e.changedTouches[0],dx=t.clientX-x0,dy=t.clientY-y0;x0=null;if(Math.abs(dx)>40&&Math.abs(dx)>Math.abs(dy)*1.5){var b=document.getElementById(dx>0?"stripPrev":"stripNext");if(!b.disabled)b.click()}},{passive:true})})();
+  var achOpen=false;document.getElementById("achMore").addEventListener("click",function(){achOpen=!achOpen;render()});
+  var lastEval={set:false},lastCleared=null,page=0,selDay=null,lastSt=null;
+  function fmtD(k){return parse(k).toLocaleDateString("en-CA",{month:"short",day:"numeric"})}
+  var endBtn=document.getElementById("endBtn"),endArm=null;
+  endBtn.addEventListener("click",function(){openEndModal()});
+
+  var sndBtn=document.getElementById("sndBtn");
+  function sndLabel(){sndBtn.textContent=sfxOn?"SFX on":"SFX off";sndBtn.setAttribute("aria-pressed",sfxOn)}
+  sndLabel();sndBtn.addEventListener("click",function(){sfxOn=!sfxOn;try{localStorage.setItem("pc-sfx",sfxOn?"on":"off")}catch(e){}sndLabel();if(sfxOn)sfx("base")});
+  document.getElementById("backToday").addEventListener("click",function(){viewKey=null;selDay=null;document.getElementById("dayInfo").textContent="";render()});
+  document.getElementById("stripPrev").addEventListener("click",function(){page++;render()});
+  document.getElementById("stripNext").addEventListener("click",function(){if(page>0)page--;render()});
+  document.getElementById("strip").addEventListener("click",function(ev){
+    var k=ev.target&&ev.target.getAttribute&&ev.target.getAttribute("data-k");if(!k)return;
+    selDay=k;viewKey=null;if(k>=START_KEY&&(k<todayKey()||(k===todayKey()&&endedT())))setTimeout(function(){openDayModal(k)},0);var info=document.getElementById("dayInfo"),m=k>todayKey()?"future":k<START_KEY?"pre":(lastSt.marks[k]||"pend"),e=S.days[k]||{};
+    var label={carried:"Carried: no work logged, but your weekly total covered it (streak held, no XP)",frozen:"Missed (saved by a streak freeze)",rest:isVac(k)?"Vacation day":"Rest day (nothing required)",ok:gold(e)?"Cleared (gold day)":"Cleared",miss:"Missed",grace:"Missed (grace day)",pend:k===todayKey()?"In progress":"Not started",pre:"No data",future:"Coming up"}[m];
+    var parts=m==="future"?[label,parse(k).toLocaleDateString("en-CA",{weekday:"short",month:"short",day:"numeric"})]:[parse(k).toLocaleDateString("en-CA",{weekday:"short",month:"short",day:"numeric"}),label];
+    if(m!=="pre"&&m!=="future"&&(m!=="pend"||k===todayKey())){var dq=defsOf(e);parts.push(bases(e)+"/"+reqOf(dq).length+" done");
+      var d=[];dq.forEach(function(q){var v=e[q.id];if(v==null||v===""||v===0||v===false)return;d.push(q.type==="wake"?q.label+" "+v:q.type==="time"?q.label+" "+hm(v):q.type==="check"?q.label:q.type==="scale"?q.label+" "+v+"/"+(q.scale||5):q.label+" "+(q.unit==="min"?hm(v):num(v)))});if(d.length)parts.push(d.join(", "))}
+    info.textContent=parts.join(" \u00b7 ");render();
+  });
+  function render(fromClick){
+    try{if(S.cfg&&(S.cfg.quests||[]).some(function(q){return q.pending}))applyPending()}catch(x){}
+    var st=compute(),T=todayKey(),k=dayKey(),e=S.days[k]||{};
+    // HUD
+    var r=RANKS[0];RANKS.forEach(function(x){if(st.streak>=x[0])r=x});
+    var rn=document.getElementById("rankName"),ri=document.getElementById("rankIcon");
+    rn.textContent=st.rebase?"Rebasing":r[1];ri.innerHTML=svg(st.rebase?"sprout":r[2]);ri.firstChild.style.filter=st.rebase?"grayscale(1)":"";
+    document.getElementById("stStreak").textContent=st.streak+(st.streak===1?" day":" days");
+    document.getElementById("stBest").textContent=st.best;
+    document.getElementById("stTotal").textContent=st.total;var ms=document.getElementById("moreStats"),stb=document.getElementById("statsToggle");ms.hidden=!statsOpen;stb.textContent=statsOpen?"Less":"More";stb.setAttribute("aria-expanded",statsOpen);document.getElementById("stFz").textContent=st.fz;
+    var note=document.getElementById("hudNote"),nx=null;
+    RANKS.forEach(function(x){if(!nx&&x[0]>st.streak)nx=x});
+    note.className="note";
+    if(st.gate){note.textContent="Streak lost. Log what broke it to unlock the quests.";note.className="note warn"}
+    else if(st.rebase){note.textContent="Rebase: "+st.rc+"/3 clean days in a row. No grace day until then.";note.className="note warn"}
+    else if(st.miss===1){note.textContent="Grace day used. Clear "+(endedT()?"tomorrow":"today")+" to keep the streak.";note.className="note warn"}
+    else note.textContent=nx?"Next rank: "+nx[1]+" in "+(nx[0]-st.streak)+" clean days":"Top rank reached.";
+    // strip
+    var strip=document.getElementById("strip"),h="",T0=add(T,-14*page),first=add(T0,-13);
+    if(first<START_KEY){first=START_KEY;T0=add(START_KEY,13)}
+    for(var i=13;i>=0;i--){var dk=add(T0,-i),m=dk>T?"future":dk<START_KEY?"pre":(st.marks[dk]||"pend");h+='<i class="'+m+(m==="ok"&&gold(S.days[dk])?" gold":"")+(dk===T?" today":"")+(dk===selDay?" sel":"")+'" data-k="'+dk+'" title="'+dk+'"></i>'}
+    strip.innerHTML=h;lastSt=st;
+    document.getElementById("stripRange").textContent=fmtD(first)+" - "+fmtD(T0);if(T<START_KEY)document.getElementById("stripRange").textContent="Starts "+fmtD(START_KEY);else if(T0>T)document.getElementById("stripRange").textContent="Day "+(daysBetween(START_KEY,T)+1)+" of your first 14";
+    document.getElementById("stripPrev").disabled=first<=START_KEY;
+    document.getElementById("stripNext").disabled=page===0;
+    // quests
+    var past=ro()||endedT();document.getElementById("endBtn").hidden=past;
+    var mbE=document.getElementById("mbEnd");mbE.disabled=past;mbE.querySelector("span").textContent=endedT()?"Ended":"End day";document.getElementById("mbNew").disabled=locked();
+    document.getElementById("gate").hidden=!st.gate||past;document.getElementById("questsWrap").hidden=(!!st.gate&&!past);if(ro()&&mgrOpen){mgrOpen=false;qmgr.hidden=true}document.getElementById("qEditBtn").disabled=ro();document.getElementById("nqBtn").disabled=locked();document.getElementById("qEditBtn").innerHTML=mgrOpen?"Close<span class=\"lg\"> editor</span>":"Edit<span class=\"lg\"> quests</span>";
+    document.getElementById("gui").classList.toggle("ro",past);document.getElementById("gui").classList.toggle("noplan",!cfg().showPlan);
+    document.getElementById("guiTitleT").textContent=ro()?parse(viewKey).toLocaleDateString("en-CA",{weekday:"short",month:"short",day:"numeric"}):"Today's quests";
+    document.getElementById("backToday").hidden=!ro();lockIn();if(typeof wrapLabel==="function"&&wrapBtn)wrapLabel();
+    var defs=(k===T&&!endedT())?activeDefs(T):defsOf(e);buildQuests(defs);
+    if(k===T&&!endedT()&&S.days[T]&&JSON.stringify(S.days[T].q)!==JSON.stringify(defs)){S.days[T]=Object.assign({},S.days[T],{q:defs});dirty[T]=true;cache();clearTimeout(timer);timer=setTimeout(flush,700)}
+    defs.forEach(function(q){
+      var el=qEls[q.id];if(!el)return;var v=e[q.id];
+      if(q.type==="wake"){if(document.activeElement!==el.inp)el.inp.value=v||"";var w=metQ(q,e);el.row.classList.toggle("met",w);el.row.classList.toggle("fail",!!v&&!w)}
+      else if(q.type==="todo"){el.row.querySelector(".req").textContent=reqText(q);el.td.setAttribute("aria-pressed",!!v);el.td.textContent=v?"Done \u2713":"Mark done";el.row.classList.toggle("met",!!v);el.row.classList.toggle("tddone",!!v);var od=q.due&&!v&&q.due<T;el.row.classList.toggle("fail",!!od)}
+      else if(q.type==="weekly"){var wc=weekCount(q.id,k),pp="";for(var z=0;z<Math.max(q.min,wc);z++)pp+='<i class="'+(z<wc?"on":"")+'"></i>';el.pips.innerHTML=pp;el.wk.textContent=wc+"/"+q.min+" this week";el.wb.setAttribute("aria-pressed",!!v);el.wb.textContent=v?"Done today \u2713":"Done today";el.row.classList.toggle("met",!!v||wc>=q.min)}
+      else if(q.type==="check"){el.sw.setAttribute("aria-checked",!!v);el.row.classList.toggle("met",!!v)}
+      else if(q.type==="scale"){el.sc.forEach(function(bt){bt.setAttribute("aria-pressed",+bt.getAttribute("data-v")===v)});el.row.classList.toggle("met",metQ(q,e));el.row.classList.toggle("fail",!!v&&!metQ(q,e))}
+      else if(q.type==="target"){el.out.textContent=num(v)+" / "+num(q.min);el.minus.disabled=!(num(v)>0);el.row.classList.toggle("met",metQ(q,e))}
+      else if(q.type==="limit"){var over=overQ(q,e);el.out.textContent=(q.unit==="min"?hm(v)+" / "+q.max+"m":(v|0)+" / "+q.max);el.minus.disabled=!(v>0);el.row.classList.remove("met");el.row.classList.toggle("limok",!over);el.row.classList.toggle("fail",over)}
+      else{el.out.textContent=hm(v);el.minus.disabled=!(v>0);el.row.classList.toggle("met",metQ(q,e));var pv=planOf(q,e);el.pout.textContent=hm(pv);el.pminus.disabled=pv<=q.min}
+    });
+    defs.forEach(function(q){var el=qEls[q.id];if(!el)return;var pj=el.row.querySelector(".proj");if(pj&&q.total){var sm=projSum(q.id,k),pc=Math.min(100,Math.round(sm/q.total*100));pj.querySelector("i").style.width=pc+"%";pj.querySelector("span").textContent="Project: "+(q.type==="time"?hm(sm)+" / "+hm(q.total):sm+" / "+num(q.total)+(q.ul?" "+q.ul:""))+" ("+pc+"%)"}});
+    var cf=cfg();document.getElementById("sparkBar").hidden=!cf.sparkTools||past;document.getElementById("shareBtn").hidden=!cf.addShare;document.getElementById("trendsBtn").hidden=!cf.addTrends;
+    if(!past)checkFinish();renderCarryNote();
+    var cqm={};cfg().quests.forEach(function(q){cqm[q.id]=q});
+    defs.forEach(function(q){var el=qEls[q.id];if(!el)return;var ch=el.row.querySelector(".sjchip");if(ch){var sj=subjById(q.subj);if(sj){var due=(sj.topics||[]).some(function(t){return topicStats(t).due});ch.innerHTML=esc(sj.name)+((sj.topics||[]).length?' \u00b7 '+LV[Math.max(1,Math.round(avgProf(sj)))]:'')+(due?'<i class="rdot"></i>':'');ch.hidden=false}else ch.hidden=true}
+      var cq=cqm[q.id];el.row.classList.toggle("doneq",!!(cq&&cq.completed));var pt=el.row.querySelector(".pendtag");if(cq&&cq.pending){if(!pt){pt=document.createElement("span");pt.className="pendtag";el.row.children[3].appendChild(pt)}pt.textContent=pendText(cq.pending)+" scheduled for "+fmtD(cq.pending.due)}else if(pt)pt.remove();});
+    timerTick();renderHudExtras(T);renderShelf();notifSync();applyHide();mobileList(defs,e,past);renderPark();renderHeat();
+    defs.forEach(function(q){var el=qEls[q.id];if(!el||q.type!=="time")return;var rq=el.row.querySelector(".req"),base=reqText(q),xtra="";
+      if(q.roll){var rk=k,rs=rollSum(q.id,rk),rn=rollNeed(q,rk),df=rs-rn;xtra=" \u00b7 7-day: "+hm(rs)+" / "+hm(rn)+(df===0?" \u00b7 on pace":df>0?" \u00b7 ahead "+hm(df):" \u00b7 behind "+hm(-df))}else if(cfg().bank){var cv=(bankCov.get(e)||{})[q.id]||0,bk=bankNow[q.id]||0;if(cv)xtra=" \u00b7 +"+hm(cv)+" from bank";else if(bk)xtra=" \u00b7 bank "+hm(bk)}
+      rq.textContent=base});if(gEl)maybeGateModal(st);document.getElementById("tdRow").hidden=past;
+    var pn=document.getElementById("pausedNote"),pq=(k===T)?cfg().quests.filter(function(q){return isPaused(q,T)}):[],uq=(k===T)?cfg().quests.filter(function(q){return !isPaused(q,T)&&!scheduled(q,T)}):[];
+    var pt=[];if(pq.length)pt.push("Paused: "+pq.map(function(q){return q.label+" (until "+fmtD(add(q.pausedUntil,-1))+")"}).join(", "));if(uq.length)pt.push("Not scheduled today: "+uq.map(function(q){return q.label}).join(", "));if(k===T&&isVac(T))pt.push("Vacation: everything is optional today.");else if(k===T&&!reqOf(defs).length&&cfg().quests.length)pt.push("Rest day: nothing required today.");
+    pn.textContent=pt.join(" \u00b7 ");pn.hidden=!pt.length;
+    qWrap.querySelectorAll("button,input").forEach(function(x){var minus=(x.getAttribute("aria-label")||"").indexOf("Less ")===0;if(past)x.disabled=true;else if(!minus)x.disabled=false});
+    var nreq=reqOf(defs).filter(function(q){return q.type!=="limit"}),n=nreq.filter(function(q){return metQ(q,e)}).length,lb=reqOf(defs).filter(function(q){return overQ(q,e)}).length;
+    document.querySelectorAll("#xpbar i").forEach(function(x,i){x.classList.toggle("on",i<n)});
+    document.getElementById("xpText").textContent=(nreq.length?"Today: "+n+" of "+nreq.length+" done":"Nothing required today")+(lb?" \u00b7 "+lb+" limit"+(lb===1?"":"s")+" broken":"");
+    var cl=document.getElementById("cleared");
+    var isGold=gold(e),isOk=ok(e),isLim=limBroken(e);
+    if(isOk){cl.textContent=isGold?"Gold day!":"Day cleared!";cl.className="cleared"+(isGold?" gold":"")+(fromClick&&(lastCleared===false||(isGold&&!lastEval.gold))?" pop":"")}
+    else if(isLim){cl.textContent="Limit broken: day failed";cl.className="failtxt"}
+    else{cl.textContent="";cl.className=""}
+    lastCleared=isOk;
+    var xp=totalXP(),lv=level(xp);
+    document.getElementById("lvlNum").textContent="Lv "+lv.l;document.getElementById("hudLine").innerHTML='<span class="hl-r">'+esc(document.getElementById("rankName").textContent)+'</span><span>Streak <b>'+st.streak+'</b></span><span>Lv <b>'+lv.l+'</b></span><i class="hl-c" aria-hidden="true"></i>';
+    document.getElementById("lvlText").textContent=lv.cur+" / "+lv.need+" XP";
+    document.getElementById("xpFill").style.width=Math.round(lv.cur/lv.need*100)+"%";
+    if(fromClick&&!past&&lastEval.set){
+      if(lv.l>lastEval.lvl){sfx("level");toast.innerHTML='<div class="ach px"><div class="slot">'+svg("trophy")+'</div><div><div class="t1">Level up!</div><div class="t2">Level '+lv.l+'</div><div class="t3">'+xp+' XP total</div></div></div>';requestAnimationFrame(function(){toast.classList.add("show")});setTimeout(function(){toast.classList.remove("show")},4000)}
+      else if(isGold&&!lastEval.gold)sfx("gold");
+      else if(isOk&&!lastEval.ok)sfx("clear");
+      else if(isLim&&!lastEval.lim)sfx("fail");
+      else if(n>lastEval.n)sfx("base");
+    }
+    if(!past)lastEval={set:true,n:n,ok:isOk,gold:isGold,lim:isLim,lvl:lv.l};
+    // achievements
+    D.ach.forEach(function(a){
+      var el=cards[a.id],u=st.streak>=a.need,b=el.querySelector("button");
+      el.classList.toggle("locked",!u);
+      el.querySelector(".t1").textContent=u?"Achievement unlocked!":"Locked \u00b7 "+a.label;
+      el.querySelector(".st").textContent=u?"Current streak":(a.need-st.streak)+" more clean day"+(a.need-st.streak===1?"":"s");
+      b.hidden=!(u&&(dl||dlChecked));
+    });
+    renderCustomAch(st);
+    // sidebar: next badge (desktop)
+    (function(){var sa=document.getElementById("sideAch");if(!sa)return;var nx=D.ach.filter(function(a){return st.streak<a.need})[0],last=D.ach.filter(function(a){return st.streak>=a.need}).pop(),a=nx||last;if(!a){sa.innerHTML="";return}
+      var pc=nx?Math.round(st.streak/a.need*100):100;sa.className="sideach px"+(nx?" locked":"");
+      sa.innerHTML='<div class="slot">'+svg(a.icon)+'</div><div><div class="k">'+(nx?"Next badge":"All badges earned")+'</div><div class="n"></div><div class="p">'+(nx?(a.need-st.streak)+" more clean day"+(a.need-st.streak===1?"":"s"):"Latest: "+esc(a.title))+'</div><div class="bar"><i style="width:'+pc+'%"></i></div></div><button type="button" class="lnk">See all achievements</button>';
+      sa.querySelector(".n").textContent=a.title;sa.querySelector(".lnk").addEventListener("click",function(){go("achievements")});})();
+    // visible achievements: latest unlocked + next locked, 3 total
+    var unl=D.ach.filter(function(a){return st.streak>=a.need}),lk=D.ach.filter(function(a){return st.streak<a.need}),vs=[];
+    if(unl.length)vs.push(unl[unl.length-1].id);lk.forEach(function(a){if(vs.length<3)vs.push(a.id)});for(var ui=unl.length-2;ui>=0&&vs.length<3;ui--)vs.unshift(unl[ui].id);
+    D.ach.forEach(function(a){cards[a.id].hidden=!achOpen&&vs.indexOf(a.id)<0});
+    document.getElementById("achMore").textContent=achOpen?"Show fewer":"Show all achievements ("+D.ach.length+")";
+    // new unlock toast
+    var sk="pc-seen-"+(st.start||"none"),seen=[];
+    try{seen=JSON.parse(localStorage.getItem(sk)||"[]")}catch(x){}
+    var fresh=D.ach.filter(function(a){return st.streak>=a.need&&seen.indexOf(a.id)<0});
+    if(fresh.length){showToast(fresh[fresh.length-1]);try{localStorage.setItem(sk,JSON.stringify(seen.concat(fresh.map(function(a){return a.id}))))}catch(x){}}
+  }
+  function elapsed(){
+    var now=new Date(),t;
+    function u(n,w){return n+" "+w+(n===1?"":"s")}
+    if(now<START_AT){var s=Math.floor((START_AT-now)/1000),dd=Math.floor(s/86400);t="Starts in "+(dd?u(dd,"day")+", ":"")+u(Math.floor(s%86400/3600),"hour")+", "+u(Math.floor(s%3600/60),"minute")}
+    else{
+      var m=(now.getFullYear()-START_AT.getFullYear())*12+now.getMonth()-START_AT.getMonth();
+      var a=new Date(START_AT);a.setMonth(a.getMonth()+m);
+      if(a>now){m--;a=new Date(START_AT);a.setMonth(a.getMonth()+m)}
+      var r=Math.floor((now-a)/60000),D=Math.floor(r/1440),H=Math.floor(r%1440/60),M=r%60;
+      t="In effect for "+(m?u(m,"month")+", ":"")+u(D,"day")+", "+u(H,"hour")+", "+u(M,"minute");
+    }
+    document.getElementById("elapsed").textContent=t;var tf=document.getElementById("tlFrom");if(tf)tf.textContent=(new Date()<START_AT?"Starting ":"Since ")+START_AT.toLocaleString("en-US",{month:"long",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"});
+  }
+  var R=new Date(START_AT),n0=new Date();do{R.setDate(R.getDate()+90)}while(R<=n0);
+  var rv=document.getElementById("review");if(rv)rv.textContent=R.toLocaleDateString("en-CA",{month:"long",day:"numeric",year:"numeric",timeZone:"America/Toronto"});

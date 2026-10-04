@@ -1,30 +1,70 @@
 # ProductivityCraft
 
-A pixel-art habit game: daily quests, streaks, achievements, and daily wrap-up PDFs.
-Everything runs in the browser. No accounts, no servers, no tracking: data stays on the user's device.
+A pixel-art habit game: daily quests, streaks, subjects, a growing grove. Runs as a web app (PWA) and as an Android app via Capacitor. All data stays on the device.
 
-## Deploy (pick one)
+## Layout
 
-This folder is a static site. Upload its **contents** so `index.html` is at the site root (a subfolder also works; all paths are relative).
+```
+src/
+  index.html          page markup with three injection points
+  styles/NN-*.css     styles, concatenated in filename order
+  js/NN-*.js          app code, concatenated in filename order into one closure
+  assets/achievements.json
+public/               copied as-is into dist/ (fonts, icons, vendor, manifest)
+  sw.template.js      service worker; __VERSION__ is filled in at build time
+tests/                Playwright tests (desktop, phone, rules, data)
+build.mjs             builds dist/
+capacitor.config.json Android wrapper (webDir: dist)
+scripts/add-permissions.js
+assets/               source images for the Android icon
+```
 
-- **GitHub Pages:** create a public repository, upload these files, then open Settings > Pages, choose "Deploy from a branch", branch `main`, folder `/ (root)`. The site appears at `https://<username>.github.io/<repo>/`.
-- **Netlify:** open app.netlify.com/drop and drag this folder onto the page.
-- **Cloudflare Pages:** create a project, choose "Direct upload", and upload this folder.
+The JS files share one scope, so order matters: `00-core.js` defines state and helpers, later files use them. Keep new code in the file for its feature, or add a new numbered file.
 
-HTTPS is required for offline use and for "Install app" / "Add to Home Screen"; all three hosts provide it automatically.
-Opening `index.html` straight from disk also works, just without offline caching or install.
+## Commands
 
-## Updating
+```
+npm install
+npx playwright install chromium
+npm run build
+npm test
+npm run serve
+```
 
-Replace the files on the host and bump the cache name in `sw.js` (`productivitycraft-v3` to `productivitycraft-v2`, and so on). Installed copies fetch the update and show "An update is ready. Reload to use it."
+`npm run build` writes `dist/` and stamps the service-worker cache with the package version plus a content hash, so every build refreshes installed copies automatically. `npm run serve` opens it at http://localhost:8080.
 
-## Data and privacy
+## Releasing the web version
 
-- Logs, quests, rules and settings live in the browser's local storage for the site's address.
-- Clearing site data erases them. **Export backup** saves a JSON file; **Import backup** restores it on any device.
-- The app makes no network requests beyond loading its own files.
+Pushing to `main` runs the tests and, if they pass, deploys `dist/` to GitHub Pages (`.github/workflows/pages.yml`). One-time setup: repo Settings → Pages → Source: **GitHub Actions**.
 
-## Third-party components
+Bump `version` in `package.json` for meaningful releases; the cache name changes on every build regardless.
 
-- Press Start 2P and VT323 fonts: SIL Open Font License 1.1 (see `fonts/`).
-- jsPDF 2.5.1: MIT License (see `vendor/LICENSE-jsPDF.txt`).
+## Android
+
+First time:
+
+```
+npm run build
+npx cap add android
+node scripts/add-permissions.js
+npx @capacitor/assets generate --android
+npx cap sync android
+cd android
+./gradlew assembleDebug
+```
+
+After that, `npm run android:apk` rebuilds the web app, syncs and builds. The APK is at `android/app/build/outputs/apk/debug/app-debug.apk`. Installing over an older build keeps data as long as the `appId` and the debug signing key (on this machine) stay the same.
+
+## Data and schema
+
+Everything is stored in `localStorage` under `pc-cache-v1`; backups are the same data as JSON. `SCHEMA` in `src/js/00-core.js` is the current data version. When the stored shape changes:
+
+1. Bump `SCHEMA`.
+2. Add a step to `migrate()` that upgrades older data.
+3. Add a test in `tests/data.spec.mjs` that imports an old backup.
+
+Backups from a newer schema are refused with a message rather than half-imported.
+
+## Testing
+
+`npm test` builds and runs every spec headlessly. The tests drive the real page with a fake clock and seeded storage, so they cover streak and day rules, carried days, strict mode, the timer flow, backups, and phone layouts. Run one file with `npx playwright test tests/rules.spec.mjs`.
