@@ -1,7 +1,7 @@
   /* ---- mobile quest list: compact rows, details sheet, run view ---- */
   var COLQ={time:1,target:1,limit:1,wake:1,scale:1};
   function qSummary(q,e){var v=e[q.id];
-    if(q.type==="time"){var d=+v||0;return q.roll?hm(rollSum(q.id,todayKey()))+"/"+hm(rollNeed(q,todayKey()))+" wk":hm(d)+" / "+hm(q.min)}
+    if(q.type==="time"){var d=+v||0;return q.roll?hm(rollSum(q.id,todayKey()))+" / "+hm(weekTarget(q,todayKey()))+" wk":hm(d)+" / "+hm(q.min)}
     if(q.type==="target")return num(v||0)+" / "+num(q.min)+(q.ul?" "+q.ul:"");
     if(q.type==="limit")return (q.unit==="min"?hm(+v||0):num(v||0))+" / "+(q.unit==="min"?hm(q.max):num(q.max));
     if(q.type==="wake")return v?String(v):"--:--";
@@ -9,7 +9,7 @@
     return ""}
   function openDetails(q){var T=todayKey(),e=S.days[T]||{},cq=cfg().quests.filter(function(x){return x.id===q.id})[0]||q,sj=q.subj?subjById(q.subj):null,DN=["Su","Mo","Tu","We","Th","Fr","Sa"];
     openG(q.label,function(b){var rows=[];function r(k,v){rows.push('<div class="dt-r"><span>'+k+'</span><b>'+v+'</b></div>')}
-      r("Goal",esc(reqText(q)));if(q.type==="time"&&q.roll){var cvd=emptyCover(T);if(cvd!=null)r("Empty days covered",cvd===0?"none right now":cvd+" from today");var rs=rollSum(q.id,T),rn=rollNeed(q,T);r("This week",hm(rs)+" of "+hm(rn)+(rs>=rn?(rs===rn?" \u00b7 on pace":" \u00b7 ahead "+hm(rs-rn)):" \u00b7 "+hm(rn-rs)+" more today keeps you on pace"))}
+      r("Goal",esc(reqText(q)));if(q.type==="time"&&q.roll){var cvd=emptyCover(T);if(cvd!=null)r("Empty days covered",cvd===0?"none right now":cvd+" from today");var rs=rollSum(q.id,T),rn=rollNeed(q,T);r("This week",hm(rs)+" of "+hm(weekTarget(q,T))+" \u00b7 need "+hm(rn)+" by today"+(rs>=rn?(rs===rn?" \u00b7 on pace":" \u00b7 ahead "+hm(rs-rn)):" \u00b7 "+hm(rn-rs)+" more today keeps you on pace"))}
       
       if(q.total)r("Project total",(q.type==="time"?hm(projSum(q.id)):num(projSum(q.id)))+" of "+(q.type==="time"?hm(q.total):num(q.total)));
       if(q.note)r("Note",esc(q.note));

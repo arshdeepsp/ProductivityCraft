@@ -29,3 +29,25 @@ test("without strict mode timers start immediately", async ({ page }) => {
   await expect(page.locator("#gModal")).toBeHidden();
   await expect(page.locator("#quests .q.running")).toBeVisible();
 });
+
+test("weekly totals reset on Monday and need a share of the week so far", async ({ page }) => {
+  const RQ2 = [{ id: "cs", type: "time", label: "CS work", min: 60, roll: 420, addedOn: "2026-10-01" }];
+  const days = { "2026-11-07": { cs: 420, q: RQ2, ended: true }, "2026-11-08": { cs: 0, q: RQ2, ended: true } };
+  await openApp(page, { now: "2026-11-10T09:00:00-05:00", cfg: { quests: RQ2 }, days: { ...days, "2026-11-09": { cs: 60, q: RQ2, ended: true } } });
+  await page.locator("#quests .q", { hasText: "CS work" }).locator(".pzb").click();
+  await page.click(".qmenu button:has-text('View details')");
+  const row = await page.locator("#gBody .dt-r", { hasText: "This week" }).textContent();
+  expect(row).toContain("1h of 7h");
+  expect(row).toContain("need 2h by today");
+});
+
+test("switching a daily quest to a weekly total starts tomorrow", async ({ page }) => {
+  const D = [{ id: "cs", type: "time", label: "CS work", min: 60 }];
+  await openApp(page, { now: "2026-11-20T09:00:00-05:00", cfg: { quests: D } });
+  await page.click("#hdrEdit");
+  await page.click("#qmgr [data-tog='cs']");
+  await page.selectOption("#qmgr select[data-p=rollmode]", "roll");
+  await page.click("#mgrSaveTop");
+  await expect(page.locator("#sync")).toContainText("tomorrow");
+  await expect(page.locator("#quests .q .req")).toHaveText("min 1 hour");
+});
