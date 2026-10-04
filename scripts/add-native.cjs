@@ -14,10 +14,15 @@ fs.mkdirSync(javaDir, { recursive: true });
 fs.mkdirSync(resDir, { recursive: true });
 fs.mkdirSync(layoutDir, { recursive: true });
 
-fs.copyFileSync(path.join("native", "android", "FocusNotifyPlugin.java"), path.join(javaDir, "FocusNotifyPlugin.java"));
+for (const f of ["FocusNotifyPlugin.java", "FocusNotifier.java", "FocusNotifyReceiver.java"]) {
+  fs.copyFileSync(path.join("native", "android", f), path.join(javaDir, f));
+}
 fs.copyFileSync(path.join("native", "android", "ic_stat_focus.xml"), path.join(resDir, "ic_stat_focus.xml"));
 fs.copyFileSync(path.join("native", "android", "notif_focus.xml"), path.join(layoutDir, "notif_focus.xml"));
 fs.copyFileSync(path.join("native", "android", "notif_focus_small.xml"), path.join(layoutDir, "notif_focus_small.xml"));
+const rawDir = path.join("android", "app", "src", "main", "res", "raw");
+fs.mkdirSync(rawDir, { recursive: true });
+fs.copyFileSync(path.join("native", "android", "pc_chime.wav"), path.join(rawDir, "pc_chime.wav"));
 
 fs.writeFileSync(path.join(javaDir, "MainActivity.java"), `package ${pkg};
 
@@ -32,5 +37,12 @@ public class MainActivity extends BridgeActivity {
     }
 }
 `);
+
+const manifestPath = path.join("android", "app", "src", "main", "AndroidManifest.xml");
+let manifest = fs.readFileSync(manifestPath, "utf8");
+if (!manifest.includes("FocusNotifyReceiver")) {
+  manifest = manifest.replace("</application>", '    <receiver android:name=".FocusNotifyReceiver" android:exported="false" />\n    </application>');
+  fs.writeFileSync(manifestPath, manifest);
+}
 
 console.log("Native focus timer plugin added to android/");
