@@ -199,9 +199,51 @@ details.rules[open]>summary::after{content:"-"}
 .empty{font-size:20px;color:#3F3F3F;padding:8px 2px}
 .rules-empty{font-size:20px;color:var(--muted);text-shadow:2px 2px 0 #000;margin:18px 3px 0}
 .privacy{font-size:18px;color:var(--muted);text-shadow:2px 2px 0 #000;text-align:center;margin:0}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+@media (max-width:720px){
+  .gui-h{display:grid!important;grid-template-columns:minmax(0,1fr);gap:6px;margin-bottom:8px}
+  .gui-h h2{min-width:0}
+  .gui-r{display:grid!important;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:6px;justify-content:stretch}
+  .gui-r .lock{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .gui-r .stone{min-width:0;white-space:nowrap;font-size:7px!important;padding:8px 8px!important}
+  .gui-r #backToday{grid-column:1/-1}
+  .gui,#gui,.wrap,.dash,.dash-main{min-width:0;max-width:100%}
+  #gui *{max-width:100%}
+  body{overflow-x:hidden}
+}
 /* ===== Just 5 in focus mode (all sizes) ===== */
 html body.focusview #sparkBar{display:flex!important}body.focusview #pickBtn,body.focusview #batchBtn{display:none!important}
-.qcount,.qsum,.donesep,.runbox,.tdtg{display:none}
+.qsum,.tdtg,.qtools .sm,.wksub,.fab,.tdghost{display:none}
+/* ===== web cleanup (shared with mobile) ===== */
+#quests{display:flex;flex-direction:column;gap:6px}
+.qcount{display:inline-block;font:9px var(--px);background:#3C8527;color:#fff;padding:4px 6px;margin-left:8px;vertical-align:middle;text-shadow:none;cursor:pointer}
+.qcount[hidden]{display:none !important}
+#gui .xp,#xpText{display:none!important}
+.donesep{display:flex;align-items:center;justify-content:space-between;order:2;grid-column:1/-1;width:100%;text-align:left;font:9px var(--px);color:#3F3F3F;background:#B5B5B5;border:2px solid #8B8B8B;padding:9px 12px;margin-top:2px;cursor:pointer}
+.donesep[hidden]{display:none !important}
+.donesep .chev{display:inline-block;flex:none;width:8px;height:8px;border-right:3px solid #555;border-bottom:3px solid #555;transform:rotate(45deg);margin:-4px 4px 0 0;transition:transform .15s}
+#quests.done-open .donesep .chev{transform:rotate(-135deg);margin:4px 4px 0 0}
+#quests .q.indone{order:3}#quests:not(.done-open) .q.indone{display:none!important}#quests .q.indone .qgrip{visibility:hidden}
+html body #sparkBar,html body #sparkBar[hidden]{display:flex!important;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+html body:not(.spark-on) #pickBtn,html body:not(.spark-on) #batchBtn{display:none!important}
+.msprint{display:inline-block}
+html body #nqBtn,html body #spBtn,html body #qEditBtn,html body #tdToggle,html body #tdRow{display:none!important}
+html body .qtools:not(:has(#shareBtn:not([hidden]))){display:none!important}
+.hdricon{display:inline-grid;place-items:center;width:34px;height:30px;padding:0!important}.hdricon svg{width:16px;height:16px}
+.stone.hdradd{font-size:8px;padding:7px 10px}
+#quests .proj{display:none!important}
+.runbox{display:grid;grid-template-columns:1fr;gap:3px;align-items:center;flex:1;min-width:220px}
+.rb-t{font:20px var(--px);color:#FFFF55;text-shadow:2px 2px 0 #000}
+.rb-s{font:16px var(--vt);color:#fff}
+.rb-b{height:8px;background:#1E1E1E;border:2px solid #000}.rb-b i{display:block;height:100%;background:#7FE05A}
+.rb-f{font:15px var(--vt);color:#FFF3C4}.rb-f:empty{display:none}
+#quests .q.running{border-color:#FFD23F}
+#quests .q.running .ctr,#quests .q.running .plan{display:none!important}
+#quests .q.running .ctl{display:flex;align-items:center;gap:12px}
+#quests .q.running .tmr{order:2;align-self:stretch;height:auto!important;min-height:44px;padding:0 14px}
+#quests .q.running .tmr span{display:none}
+@media (max-width:720px){.qtools .sm{display:inline}}
+.addsheet{display:grid;gap:10px}.addopt{display:grid;gap:4px;text-align:left;background:#8B8B8B;color:#fff;border:3px solid;border-color:#fff #555 #555 #fff;padding:12px;font:inherit;cursor:pointer;text-shadow:1px 1px 0 #3F3F3F}.addopt b{font:11px var(--px);font-weight:400}.addopt span{font:16px var(--vt);color:#EDEDED}.addopt.td{cursor:default}.addopt .edrow{margin-top:6px}.addopt input{flex:1;min-width:0;font:18px var(--vt);background:#373737;color:#fff;border:3px solid;border-color:#1E1E1E #8B8B8B #8B8B8B #1E1E1E;padding:6px 8px}.addopt .cmsg2{color:#E8FFE0;margin:4px 0 0;font-size:15px}
 .dtl{display:grid;margin:2px 0 8px}.dt-r{display:flex;justify-content:space-between;align-items:baseline;gap:14px;border-bottom:2px solid #A6A6A6;padding:7px 0;font-size:18px}.dt-r span{color:#5A5A5A}.dt-r b{font-weight:400;text-align:right;color:#1E1E1E}
 /* ===== mobile quest list ===== */
 @media (max-width:720px){
@@ -221,7 +263,35 @@ html body.focusview #sparkBar{display:flex!important}body.focusview #pickBtn,bod
   #quests .q .sjchip{margin-top:2px;font-size:14px;padding:0 5px}
   #quests .q .stone.wkbtn,#quests .q .stone.tdbtn{font-size:8px;padding:8px 9px}
   #quests .q .sw{width:64px;height:32px}
-  .donesep{display:block;order:2;width:100%;text-align:left;font:9px var(--px);color:#3F3F3F;background:#B5B5B5;border:2px solid #8B8B8B;padding:8px 10px;margin-top:2px;cursor:pointer}
+  .donesep{display:flex;align-items:center;justify-content:space-between;order:2;width:100%;text-align:left;font:9px var(--px);color:#3F3F3F;background:#B5B5B5;border:2px solid #8B8B8B;padding:9px 12px;margin-top:2px;cursor:pointer}
+  .donesep[hidden]{display:none !important}
+  .donesep .chev{display:inline-block;flex:none;width:8px;height:8px;border-right:3px solid #555;border-bottom:3px solid #555;transform:rotate(45deg);margin:-4px 4px 0 0;transition:transform .15s}
+  #quests.done-open .donesep .chev{transform:rotate(-135deg);margin:4px 4px 0 0}
+  .qcount{cursor:pointer}
+  html body .qtools:not(:has(#shareBtn:not([hidden]))){display:none!important}
+  html body .qtools{grid-template-columns:1fr!important}
+  html body #sparkBar,html body #sparkBar[hidden]{display:grid!important;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}
+  html body.spark-on #sparkBar{grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(0,1fr))}
+  html body:not(.spark-on) #pickBtn,html body:not(.spark-on) #batchBtn{display:none!important}
+  html body.focusview #sparkBar{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}
+  .msprint{display:block}
+  .m-hide{display:none}
+  #sparkBar .stone{overflow:hidden;text-overflow:ellipsis}
+  .gui-r{grid-template-columns:minmax(0,1fr) auto auto auto!important}
+  .hdricon{display:grid;place-items:center;width:34px;height:30px;padding:0!important}.hdricon svg{width:16px;height:16px}
+  .stone.hdradd{display:none!important}
+  .fab{display:grid;place-items:center;position:fixed;right:14px;bottom:calc(var(--navH,70px) + 14px);z-index:24;width:56px;height:56px;font:22px var(--px);color:#fff;background:#3C8527;border:4px solid;border-color:#5DB33F #2A5E1B #2A5E1B #5DB33F;box-shadow:0 0 0 3px #000,0 6px 0 rgba(0,0,0,.35);text-shadow:2px 2px 0 #1E4A12;cursor:pointer}
+  .fab:active{transform:translateY(2px)}
+  body:not([data-cur="today"]) .fab,body.grove-on .fab,body.past-view .fab{display:none!important}
+  .tdghost{display:none!important;order:1;gap:6px;align-items:center;border:3px dashed #8B8B8B;background:rgba(255,255,255,.25);padding:6px 8px}
+  .tdghost input{flex:1;min-width:0;font:18px var(--vt);background:transparent;border:0;color:#3F3F3F;padding:4px 2px;outline:none}
+  .tdghost input::placeholder{color:#6A6A6A}
+  .tdghost .stone{font-size:7px!important;padding:8px 9px!important}
+  .tdghost:focus-within{border-style:solid;border-color:#3C8527;background:#E8F5E1}
+  #gui{padding-bottom:12px}
+  .wrap{padding-bottom:70px}
+  #quests .q.t-weekly .wkbox{display:none}
+  .wksub{display:block;font:15px var(--vt);color:#E6E6E6;margin-top:2px}
   #quests .q.indone{order:3}
   #quests:not(.done-open) .q.indone{display:none!important}
   #quests .q.indone .qgrip{visibility:hidden}
@@ -593,7 +663,7 @@ body[data-cur="achievements"] .ach-sec{padding-top:10px}
   .hudbody>.stripnav{grid-column:2;grid-row:1;margin-top:0}
   .hudbody>.strip{grid-column:2;grid-row:2/span 3;align-self:start}
   .hudbody>.dayinfo{grid-column:2;grid-row:5}
-  #quests{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  #quests{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   #quests .q{grid-template-columns:18px 26px minmax(0,1fr);align-content:start}
   #quests .q .ctl{grid-column:1/-1;justify-self:stretch;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px 10px}
   #quests .empty,#quests .packs{grid-column:1/-1}
@@ -901,6 +971,7 @@ details.rules>summary h2{flex:1}
 <div class="grove" id="grove" role="dialog" aria-modal="true" aria-label="Your grove" hidden><canvas id="groveCanvas"></canvas><div class="ginfo" id="groveInfo"></div><button type="button" class="stone ginfo-tg" id="groveInfoTg" aria-expanded="true">Hide info</button><button type="button" class="stone gback" id="groveBack">Back to game</button><div class="ghint" id="groveHint" hidden>Tap anywhere to return</div></div>
 <div class="sprint" id="sprint" role="dialog" aria-modal="true" aria-label="Sprint" hidden><div class="sp-card" id="spBody"></div></div>
 <button type="button" class="sp-pill" id="spPill" hidden></button>
+<button type="button" class="fab" id="fabAdd" aria-label="New quest">+</button>
 <div class="scrim" id="modalScrim" hidden></div>
 <div class="modal" id="gModal" role="dialog" aria-modal="true" aria-labelledby="gTitle" hidden><div class="modal-card"><div class="drawer-h"><h2 id="gTitle"></h2><button type="button" class="stone" id="gClose" aria-label="Close">Close</button></div><div class="modal-b" id="gBody"></div></div></div>
 <div class="modal" id="nqModal" role="dialog" aria-modal="true" aria-labelledby="nqTitle" hidden><div class="modal-card"><div class="drawer-h"><h2 id="nqTitle">New quest</h2><button type="button" class="stone" id="nqClose" aria-label="Close">Close</button></div><div class="modal-b" id="nqBody"></div></div></div>
@@ -941,6 +1012,8 @@ details.rules>summary h2{flex:1}
       <h2 id="guiTitle"><span id="guiTitleT">Today's quests</span> <span class="qcount" id="qCount" hidden></span></h2>
       <div class="gui-r">
         <span class="lock px" id="lockIn"></span>
+        <button type="button" class="stone save hdradd" id="hdrAdd">+ Add</button>
+        <button type="button" class="stone hdricon" id="hdrEdit" aria-label="Edit quests" title="Edit quests"><svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><rect x="10" y="1" width="3" height="3" fill="#fff"/><rect x="8" y="3" width="3" height="3" fill="#fff"/><rect x="6" y="5" width="3" height="3" fill="#fff"/><rect x="4" y="7" width="3" height="3" fill="#fff"/><rect x="2" y="9" width="3" height="3" fill="#FFD23F"/><rect x="1" y="12" width="3" height="3" fill="#3F3F3F"/></svg></button>
         <button type="button" class="stone focusb" id="focusBtn" aria-pressed="false" title="Hide the sidebar and extras">Focus</button>
         <button type="button" class="stone endb" id="endBtn">End day</button>
         <button type="button" class="stone" id="backToday" hidden>Back to today</button>
@@ -949,9 +1022,9 @@ details.rules>summary h2{flex:1}
     </div>
     <div id="questsWrap">
       <div class="top3" id="top3"></div>
-      <div class="sparkbar" id="sparkBar" hidden><button type="button" class="stone save" id="sp5Btn">&#9654; Just 5 minutes</button><button type="button" class="stone" id="pickBtn">Pick for me</button><button type="button" class="stone" id="batchBtn">Batch to-dos</button></div>
+      <div class="sparkbar" id="sparkBar" hidden><button type="button" class="stone save" id="sp5Btn">&#9654; Just 5<span class="m-hide"> minutes</span></button><button type="button" class="stone msprint" id="spBtn2">Sprint</button><button type="button" class="stone" id="pickBtn">Pick<span class="m-hide"> for me</span></button><button type="button" class="stone" id="batchBtn">Batch<span class="m-hide"> to-dos</span></button></div>
       <div class="quests" id="quests"></div>
-      <div class="qtools"><button type="button" class="stone save" id="nqBtn">+ <span class="lg">New </span>quest</button><button type="button" class="stone" id="spBtn">Sprint</button><button type="button" class="stone tdtg" id="tdToggle">+ To-do</button><button type="button" class="stone" id="shareBtn" hidden>Share week</button><button type="button" class="stone" id="qEditBtn">Edit<span class="lg"> quests</span></button></div>
+      <div class="qtools"><button type="button" class="stone save" id="nqBtn">+ <span class="lg">New </span><span class="sm">Quest</span><span class="lg">quest</span></button><button type="button" class="stone" id="spBtn">Sprint</button><button type="button" class="stone tdtg" id="tdToggle">+ To-do</button><button type="button" class="stone" id="shareBtn" hidden>Share week</button><button type="button" class="stone" id="qEditBtn">Edit<span class="lg"> quests</span></button></div>
       <div class="carrynote" id="carryNote" hidden></div>
       <div class="parkbox" id="parkBox" hidden></div>
       <div class="tdrow" id="tdRow"><input id="tdNew" maxlength="60" placeholder="Add a to-do" aria-label="New to-do"><button type="button" class="stone" id="tdAdd">Add</button></div>
@@ -1294,7 +1367,7 @@ details.rules>summary h2{flex:1}
     timerTick();renderHudExtras(T);renderShelf();notifSync();applyHide();mobileList(defs,e,past);renderPark();renderHeat();
     defs.forEach(function(q){var el=qEls[q.id];if(!el||q.type!=="time")return;var rq=el.row.querySelector(".req"),base=reqText(q),xtra="";
       if(q.roll){var rk=k,rs=rollSum(q.id,rk),rn=rollNeed(q,rk),df=rs-rn;xtra=" \u00b7 7-day: "+hm(rs)+" / "+hm(rn)+(df===0?" \u00b7 on pace":df>0?" \u00b7 ahead "+hm(df):" \u00b7 behind "+hm(-df))}else if(cfg().bank){var cv=(bankCov.get(e)||{})[q.id]||0,bk=bankNow[q.id]||0;if(cv)xtra=" \u00b7 +"+hm(cv)+" from bank";else if(bk)xtra=" \u00b7 bank "+hm(bk)}
-      rq.textContent=base+xtra});if(gEl)maybeGateModal(st);document.getElementById("tdRow").hidden=past;
+      rq.textContent=base});if(gEl)maybeGateModal(st);document.getElementById("tdRow").hidden=past;
     var pn=document.getElementById("pausedNote"),pq=(k===T)?cfg().quests.filter(function(q){return isPaused(q,T)}):[],uq=(k===T)?cfg().quests.filter(function(q){return !isPaused(q,T)&&!scheduled(q,T)}):[];
     var pt=[];if(pq.length)pt.push("Paused: "+pq.map(function(q){return q.label+" (until "+fmtD(add(q.pausedUntil,-1))+")"}).join(", "));if(uq.length)pt.push("Not scheduled today: "+uq.map(function(q){return q.label}).join(", "));if(k===T&&isVac(T))pt.push("Vacation: everything is optional today.");else if(k===T&&!reqOf(defs).length&&cfg().quests.length)pt.push("Rest day: nothing required today.");
     pn.textContent=pt.join(" \u00b7 ");pn.hidden=!pt.length;
@@ -2747,9 +2820,14 @@ details.rules>summary h2{flex:1}
     var sep=document.getElementById("doneSep");if(!sep){sep=document.createElement("button");sep.type="button";sep.id="doneSep";sep.className="donesep";sep.addEventListener("click",function(){doneOpen=!doneOpen;try{localStorage.setItem("pc-doneopen",doneOpen?"1":"0")}catch(x){}mobileList(defs,S.days[todayKey()]||{},ro())})}
     if(sep.parentNode!==qWrap)qWrap.appendChild(sep);
     var nDone=0;defs.forEach(function(q){var el=qEls[q.id];if(!el)return;var row=el.row,isDone=row.classList.contains("met")&&q.type!=="limit"&&!(S.timer&&S.timer.id===q.id);row.classList.toggle("indone",isDone);if(isDone)nDone++;
-      row.classList.toggle("colq",!!COLQ[q.type]);var sm=row.querySelector(".qsum");if(COLQ[q.type]){if(!sm){sm=document.createElement("button");sm.type="button";sm.className="qsum";sm.addEventListener("click",function(){row.classList.toggle("open")});row.appendChild(sm)}sm.textContent=qSummary(q,e)}});
-    sep.hidden=!nDone;sep.textContent="Done today ("+nDone+") "+(doneOpen?"\u25b4":"\u25be");qWrap.classList.toggle("done-open",doneOpen);
-    var dc=document.getElementById("qCount"),rq=reqOf(defs).filter(function(q){return q.type!=="limit"});if(dc){dc.textContent=rq.filter(function(q){return metQ(q,e)}).length+"/"+rq.length;dc.hidden=!rq.length}}
+      row.classList.toggle("colq",!!COLQ[q.type]);if(q.type==="weekly"){var ws=row.querySelector(".wksub"),wkt=row.querySelector(".wk");if(!ws){ws=document.createElement("span");ws.className="wksub";row.children[3].appendChild(ws)}ws.textContent=wkt?wkt.textContent:""}var sm=row.querySelector(".qsum");if(COLQ[q.type]){if(!sm){sm=document.createElement("button");sm.type="button";sm.className="qsum";sm.addEventListener("click",function(){row.classList.toggle("open")});row.appendChild(sm)}sm.textContent=qSummary(q,e)}});
+    var gh=document.getElementById("tdGhost");if(!gh){gh=document.createElement("div");gh.id="tdGhost";gh.className="tdghost";gh.innerHTML='<input maxlength="60" placeholder="+ Add a to-do" aria-label="New to-do"><button type="button" class="stone">Add</button>';var gi=gh.querySelector("input");function addG(){var v=gi.value.trim();if(!v)return;var tn=document.getElementById("tdNew");tn.value=v;document.getElementById("tdAdd").click();gi.value="";setTimeout(function(){var g2=document.querySelector("#tdGhost input");if(g2)g2.focus()},60)}gh.querySelector("button").addEventListener("click",addG);gi.addEventListener("keydown",function(ev){if(ev.key==="Enter")addG()})}
+    if(gh.parentNode!==qWrap)qWrap.appendChild(gh);gh.hidden=past||locked();
+    document.body.classList.toggle("spark-on",!!cfg().sparkTools);document.body.classList.toggle("past-view",!!past);
+    sep.hidden=!nDone;sep.innerHTML="<span>Done today ("+nDone+")</span><i class=\"chev\"></i>";sep.setAttribute("aria-expanded",doneOpen);qWrap.classList.toggle("done-open",doneOpen);
+    var dc=document.getElementById("qCount"),rq=reqOf(defs).filter(function(q){return q.type!=="limit"});if(dc){dc.textContent=rq.filter(function(q){return metQ(q,e)}).length+"/"+rq.length+" done";dc.hidden=!rq.length;if(!dc.dataset.w){dc.dataset.w=1;dc.setAttribute("role","button");dc.tabIndex=0;dc.title="What counts?";dc.addEventListener("click",openCountInfo)}}}
+  function openCountInfo(){var T=viewKey||todayKey(),e=S.days[T]||{},defs=defsOf(e).length?defsOf(e):activeDefs(T),rq=reqOf(defs).filter(function(q){return q.type!=="limit"}),skip=defs.filter(function(q){return rq.indexOf(q)<0});
+    openG("Today\u2019s count",function(b){b.innerHTML='<p class="help">The count is required quests done today. Clear them all (and break no limit) to clear the day.</p><div class="dtl">'+rq.map(function(q){var m=metQ(q,e);return '<div class="dt-r"><span>'+esc(q.label)+'</span><b class="'+(m?'okc':'')+'">'+(m?'\u2714 Done':'To do')+'</b></div>'}).join("")+'</div>'+(skip.length?'<p class="sh2">Not counted</p><p class="help">'+skip.map(function(q){return esc(q.label)+' ('+(q.type==="limit"?"limit":q.type==="todo"?"to-do":q.type==="weekly"?"weekly goal":"optional")+')'}).join(", ")+'</p>':'')+'<div class="edrow end"><button type="button" class="stone save" id="ciOk">Got it</button></div>';b.querySelector("#ciOk").addEventListener("click",closeG)})}
   function runBox(id){var el=qEls[id];if(!el)return;var row=el.row,on=S.timer&&S.timer.id===id;row.classList.toggle("running",!!on);var rb=row.querySelector(".runbox");
     if(!on){if(rb)rb.remove();return}
     var q=activeDefs(todayKey()).filter(function(x){return x.id===id})[0];if(!q)return;
@@ -2762,7 +2840,16 @@ details.rules>summary h2{flex:1}
   /* ---- today-page declutter ---- */
   function hideOpts(){return [["req", "Quest descriptions"], ["grip", "Drag handles"], ["chip", "Subject chips"], ["heat", "Momentum meter"], ["note", "Next-rank hint"], ["todo", "To-do box"], ["prog", "Progress bar"]]}
   var focusView=false;try{focusView=localStorage.getItem("pc-focusview")==="1"}catch(x){}
-  function applyHide(){var h=cfg().hide||{},b=document.body;hideOpts().forEach(function(o){b.classList.toggle("hide-"+o[0],!!h[o[0]])});b.classList.toggle("focusview",focusView);var fb=document.getElementById("focusBtn");if(fb){fb.setAttribute("aria-pressed",focusView);fb.textContent=focusView?"Show all":"Focus"}}
+  function applyHide(){var h=cfg().hide||{},b=document.body;hideOpts().forEach(function(o){b.classList.toggle("hide-"+o[0],!!h[o[0]])});b.classList.toggle("focusview",focusView);var fb=document.getElementById("focusBtn");if(fb){fb.setAttribute("aria-pressed",focusView);fb.textContent=focusView?(window.innerWidth<=720?"All":"Show all"):"Focus"}}
+  document.getElementById("spBtn2").addEventListener("click",function(){openSprintSetup()});
+  document.getElementById("hdrEdit").addEventListener("click",function(){document.getElementById("qEditBtn").click()});
+  function openAddSheet(){if(locked())return;openG("Add",function(b){
+      b.innerHTML='<div class="addsheet"><button type="button" class="addopt" id="aoQuest"><b>Quest</b><span>Something you do regularly: daily habit, timed work, target, limit\u2026</span></button><div class="addopt td"><b>To-do</b><span>A one-off task. Gone once it\u2019s done.</span><div class="edrow"><input id="aoTd" maxlength="60" placeholder="e.g. Email advisor"><button type="button" class="stone save" id="aoTdAdd">Add</button></div><p class="cmsg2" id="aoMsg"></p></div></div>';
+      b.querySelector("#aoQuest").addEventListener("click",function(){closeG();setTimeout(function(){document.getElementById("nqBtn").click()},0)});
+      var inp=b.querySelector("#aoTd");function addT(){var v=inp.value.trim();if(!v)return;var tn=document.getElementById("tdNew");tn.value=v;document.getElementById("tdAdd").click();inp.value="";b.querySelector("#aoMsg").textContent="Added: "+v+". Add another or close.";inp.focus()}
+      b.querySelector("#aoTdAdd").addEventListener("click",addT);inp.addEventListener("keydown",function(ev){if(ev.key==="Enter")addT()})})}
+  document.getElementById("fabAdd").addEventListener("click",openAddSheet);
+  document.getElementById("hdrAdd").addEventListener("click",openAddSheet);
   document.getElementById("tdToggle").addEventListener("click",function(){var on=!document.body.classList.contains("tdopen");document.body.classList.toggle("tdopen",on);if(on)setTimeout(function(){var i=document.getElementById("tdNew");if(i)i.focus()},50)});
   document.getElementById("focusBtn").addEventListener("click",function(){focusView=!focusView;try{localStorage.setItem("pc-focusview",focusView?"1":"0")}catch(x){}applyHide();haptic("light")});
   /* ---- daily wrap-up ---- */
