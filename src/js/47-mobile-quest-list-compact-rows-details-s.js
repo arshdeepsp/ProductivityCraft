@@ -24,6 +24,7 @@
       b.querySelector("#dtOk").addEventListener("click",closeG);b.querySelector("#dtEdit").addEventListener("click",function(){closeG();openMgr()})})}
   var doneOpen=false;try{doneOpen=localStorage.getItem("pc-doneopen")==="1"}catch(x){}
   function mobileList(defs,e,past){
+    var s5=document.getElementById("sp5Btn");if(s5){var done5=allTimeDone();if(s5.dataset.done!==String(done5)){s5.dataset.done=String(done5);s5.innerHTML=done5?"&#10003; Bonus 5<span class=\"m-hide\"> minutes</span>":"&#9654; Just 5<span class=\"m-hide\"> minutes</span>";s5.classList.toggle("save",!done5)}}
     var sep=document.getElementById("doneSep");if(!sep){sep=document.createElement("button");sep.type="button";sep.id="doneSep";sep.className="donesep";sep.addEventListener("click",function(){doneOpen=!doneOpen;try{localStorage.setItem("pc-doneopen",doneOpen?"1":"0")}catch(x){}mobileList(defs,S.days[todayKey()]||{},ro())})}
     if(sep.parentNode!==qWrap)qWrap.appendChild(sep);
     var nDone=0;defs.forEach(function(q){var el=qEls[q.id];if(!el)return;var row=el.row,isDone=row.classList.contains("met")&&q.type!=="limit"&&!(S.timer&&S.timer.id===q.id);row.classList.toggle("indone",isDone);if(isDone)nDone++;
