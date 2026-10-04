@@ -23,3 +23,10 @@
 /* ===== long quest names wrap instead of hiding under the time chip ===== */
 #quests .q>div:nth-child(4){min-width:0}
 #quests .q .lbl{overflow-wrap:anywhere;word-break:break-word;hyphens:auto}
+
+/* ===== quests waiting for their start date ===== */
+.waitlist{order:4;grid-column:1/-1;display:flex;flex-direction:column;gap:4px;border:2px dashed #8B8B8B;padding:8px 12px;color:#3F3F3F;background:rgba(255,255,255,.18)}
+.waitlist[hidden]{display:none !important}
+.wl-h{font:8px var(--px)}.wl-r{font-size:18px}.wl-r em{font-style:normal;color:#5A5A5A;font-size:16px}
+.sjpick small{font:14px var(--vt);opacity:.85;margin-left:4px}
+#quests.timing .waitlist{display:none!important}

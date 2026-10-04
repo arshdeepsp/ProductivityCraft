@@ -3,7 +3,7 @@
   function easeInfo(){var T=todayKey(),c=cfg(),setupEnd=add(START_KEY,7),setup=T<setupEnd,ws=weekStart(T),used=(c.easeLog||[]).filter(function(x){return x.date>=ws&&x.date<=T}).reduce(function(a,x){return a+(x.n||0)},0);return{T:T,setup:setup,setupEnd:setupEnd,used:used,left:Math.max(0,EASE_BUDGET-used)}}
   function allDays(q){return q.days&&q.days.length?q.days:[0,1,2,3,4,5,6]}
   function isEasier(o,n,T){
-    if(n.type!==o.type)return true;if(!o.opt&&n.opt)return true;var LR={free:0,flex:1,fortnight:2};if((LR[n.lock||"flex"])<(LR[o.lock||"flex"]))return true;
+    if(n.type!==o.type)return true;if(!o.opt&&n.opt)return true;if(n.startOn&&n.startOn>(o.startOn||""))return true;var LR={free:0,flex:1,fortnight:2};if((LR[n.lock||"flex"])<(LR[o.lock||"flex"]))return true;
     if(n.pausedUntil&&n.pausedUntil!==o.pausedUntil&&isPaused(n,add(T,1)))return true;
     var nd=allDays(n);if(allDays(o).some(function(d){return nd.indexOf(d)<0}))return true;
     if((o.type==="time"||o.type==="target"||o.type==="weekly"||o.type==="scale")&&num(n.min)<num(o.min))return true;

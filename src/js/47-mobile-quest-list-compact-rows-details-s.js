@@ -9,7 +9,7 @@
     return ""}
   function openDetails(q){var T=todayKey(),e=S.days[T]||{},cq=cfg().quests.filter(function(x){return x.id===q.id})[0]||q,sj=q.subj?subjById(q.subj):null,DN=["Su","Mo","Tu","We","Th","Fr","Sa"];
     openG(q.label,function(b){var rows=[];function r(k,v){rows.push('<div class="dt-r"><span>'+k+'</span><b>'+v+'</b></div>')}
-      r("Goal",esc(reqText(q)));if(q.type==="time"&&q.roll){var cvd=emptyCover(T);if(cvd!=null)r("Empty days covered",cvd===0?"none right now":cvd+" from today");var rs=rollSum(q.id,T),rn=rollNeed(q,T);r("This week",hm(rs)+" of "+hm(rn)+(rs>=rn?" \u00b7 ahead "+hm(rs-rn):" \u00b7 behind "+hm(rn-rs)))}
+      r("Goal",esc(reqText(q)));if(q.type==="time"&&q.roll){var cvd=emptyCover(T);if(cvd!=null)r("Empty days covered",cvd===0?"none right now":cvd+" from today");var rs=rollSum(q.id,T),rn=rollNeed(q,T);r("This week",hm(rs)+" of "+hm(rn)+(rs>=rn?(rs===rn?" \u00b7 on pace":" \u00b7 ahead "+hm(rs-rn)):" \u00b7 "+hm(rn-rs)+" more today keeps you on pace"))}
       
       if(q.total)r("Project total",(q.type==="time"?hm(projSum(q.id)):num(projSum(q.id)))+" of "+(q.type==="time"?hm(q.total):num(q.total)));
       if(q.note)r("Note",esc(q.note));
@@ -32,6 +32,7 @@
     var gh=document.getElementById("tdGhost");if(!gh){gh=document.createElement("div");gh.id="tdGhost";gh.className="tdghost";gh.innerHTML='<input maxlength="60" placeholder="+ Add a to-do" aria-label="New to-do"><button type="button" class="stone">Add</button>';var gi=gh.querySelector("input");function addG(){var v=gi.value.trim();if(!v)return;var tn=document.getElementById("tdNew");tn.value=v;document.getElementById("tdAdd").click();gi.value="";setTimeout(function(){var g2=document.querySelector("#tdGhost input");if(g2)g2.focus()},60)}gh.querySelector("button").addEventListener("click",addG);gi.addEventListener("keydown",function(ev){if(ev.key==="Enter")addG()})}
     if(gh.parentNode!==qWrap)qWrap.appendChild(gh);gh.hidden=past||locked();
     document.body.classList.toggle("spark-on",!!cfg().sparkTools);document.body.classList.toggle("past-view",!!past);
+    var wl=document.getElementById("waitList");if(!wl){wl=document.createElement("div");wl.id="waitList";wl.className="waitlist"}if(wl.parentNode!==qWrap)qWrap.appendChild(wl);var Tw=todayKey(),W=past?[]:cfg().quests.filter(function(q){return q.startOn&&q.startOn>Tw&&!q.completed});wl.hidden=!W.length;wl.innerHTML=W.length?'<span class="wl-h">Starting soon</span>'+W.map(function(q){return '<span class="wl-r">'+esc(q.label)+' <em>'+fmtD(q.startOn)+'</em></span>'}).join(""):"";
     sep.hidden=!nDone;sep.innerHTML="<span>Done today ("+nDone+")</span><i class=\"chev\"></i>";sep.setAttribute("aria-expanded",doneOpen);qWrap.classList.toggle("done-open",doneOpen);
     var dc=document.getElementById("qCount"),rq=reqOf(defs).filter(function(q){return q.type!=="limit"});if(dc){dc.textContent=rq.filter(function(q){return metQ(q,e)}).length+"/"+rq.length+" done";dc.hidden=!rq.length;if(!dc.dataset.w){dc.dataset.w=1;dc.setAttribute("role","button");dc.tabIndex=0;dc.title="What counts?";dc.addEventListener("click",openCountInfo)}}}
   function openCountInfo(){var T=viewKey||todayKey(),e=S.days[T]||{},defs=defsOf(e).length?defsOf(e):activeDefs(T),rq=reqOf(defs).filter(function(q){return q.type!=="limit"}),skip=defs.filter(function(q){return rq.indexOf(q)<0});
