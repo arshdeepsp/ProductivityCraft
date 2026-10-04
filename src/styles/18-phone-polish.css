@@ -21,7 +21,7 @@
   .ctr .tag{font-size:15px!important}
   .tm{font:16px var(--vt);height:40px;min-width:118px}
   .ctr .stone.now{height:40px}
-  .sw{width:76px;height:36px}.sw span{width:28px;height:28px}.sw[aria-checked="true"] span{left:42px}
+  .sw{width:76px;height:36px;--k:28px}
   .stone.sc{width:34px;height:34px}
   .stone.wkbtn,.stone.tdbtn{padding:11px 12px}
   .pzb{width:30px;height:30px}

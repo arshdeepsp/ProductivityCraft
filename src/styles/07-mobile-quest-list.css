@@ -15,7 +15,7 @@
   #quests .q.running .qsum{display:none}
   #quests .q .sjchip{margin-top:2px;font-size:14px;padding:0 5px}
   #quests .q .stone.wkbtn,#quests .q .stone.tdbtn{font-size:8px;padding:8px 9px}
-  #quests .q .sw{width:64px;height:32px}
+  #quests .q .sw{width:64px;height:32px;--k:24px}
   .donesep{display:flex;align-items:center;justify-content:space-between;order:2;width:100%;text-align:left;font:9px var(--px);color:#3F3F3F;background:#B5B5B5;border:2px solid #8B8B8B;padding:9px 12px;margin-top:2px;cursor:pointer}
   .donesep[hidden]{display:none !important}
   .donesep .chev{display:inline-block;flex:none;width:8px;height:8px;border-right:3px solid #555;border-bottom:3px solid #555;transform:rotate(45deg);margin:-4px 4px 0 0;transition:transform .15s}

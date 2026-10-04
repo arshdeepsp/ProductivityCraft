@@ -41,3 +41,26 @@ test("the app header stays pinned while scrolling every tab", async ({ page }) =
     }
   }
 });
+
+test("trends tiles fit on a small phone", async ({ page }) => {
+  const TQ = [{ id: "cs", type: "time", label: "CS work", min: 60 }];
+  const days = {};
+  for (let i = 1; i <= 30; i++) days[`2026-10-${String(i).padStart(2, "0")}`] = { cs: 180, q: TQ, ended: true, sess: [{ id: "cs", s: 0, e: 1, m: 125 }] };
+  await openApp(page, { now: "2026-11-02T20:00:00-05:00", cfg: { quests: TQ, addTrends: true }, days, hash: "#trends" });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBe(0);
+  expect(await page.evaluate(() => [...document.querySelectorAll(".ttile")].filter((t) => t.scrollWidth > t.clientWidth + 1).length)).toBe(0);
+});
+
+test("the on/off switch knob stays inside its track", async ({ page }) => {
+  const SQ = [{ id: "j", type: "check", label: "Journal" }, { id: "k", type: "check", label: "Read" }];
+  await openApp(page, { cfg: { quests: SQ } });
+  const inside = () => page.evaluate(() => [...document.querySelectorAll("#quests .sw")].filter((s) => s.offsetParent).every((s) => {
+    const t = s.getBoundingClientRect(), k = s.querySelector("span").getBoundingClientRect();
+    return k.left >= t.left && k.right <= t.right && k.top >= t.top && k.bottom <= t.bottom;
+  }));
+  expect(await inside()).toBe(true);
+  await page.tap("#quests .q:nth-child(2) .sw");
+  await page.click("#doneSep");
+  await page.waitForTimeout(200);
+  expect(await inside()).toBe(true);
+});
