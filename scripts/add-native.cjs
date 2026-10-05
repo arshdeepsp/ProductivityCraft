@@ -53,4 +53,20 @@ if (!manifest.includes("FocusNotifyReceiver")) {
   fs.writeFileSync(manifestPath, manifest);
 }
 
-console.log("Native focus timer plugin added to android/");
+fs.writeFileSync(path.join(resDir, "pc_splash_blank.xml"), `<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@android:color/transparent" />
+    <size android:width="1dp" android:height="1dp" />
+</shape>
+`);
+const stylesPath = path.join("android", "app", "src", "main", "res", "values", "styles.xml");
+let styles = fs.readFileSync(stylesPath, "utf8");
+styles = styles.replace(/<style name="AppTheme\.NoActionBarLaunch"[\s\S]*?<\/style>/, `<style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="android:background">#212121</item>
+        <item name="windowSplashScreenBackground">#212121</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/pc_splash_blank</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+    </style>`);
+fs.writeFileSync(stylesPath, styles);
+
+console.log("Native focus timer plugin and plain launch screen added to android/");

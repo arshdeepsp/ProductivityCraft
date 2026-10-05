@@ -10,13 +10,14 @@
   var RANKS=[[0,"Apprentice","sprout"],[7,"Journeyman","sprout"],[21,"Session Player","flame"],[42,"Bandleader","metronome"],[90,"Virtuoso","dumbbell"],[180,"Master","trophy"],[365,"Maestro","star"]];
   var S={days:{},refl:{},cfg:null},db=null,uid=null,dl=null,dlChecked=false,view="today",dirty={},timer=null;
   /* Data schema. Bump SCHEMA and add a step to migrate() whenever the stored shape changes. */
-  var SCHEMA=7,RERATE_MIN=60;
+  var SCHEMA=8,RERATE_MIN=60;
   function migrate(c){c=c||{};var v=c.schema||2;
     if(v<3){if(c.cfg){delete c.cfg.bank;delete c.cfg.commitCheck}v=3}
     if(v<4){Object.keys(c.days||{}).forEach(function(k){var d=c.days[k],s=d&&d.sched;if(s&&!Array.isArray(s)&&typeof s==="object")d.sched=Object.keys(s).sort().map(function(id){return Object.assign({id:"b-"+id,q:id},s[id])})});v=4}
     if(v<5){if(c.cfg){var de=c.cfg.dayEnd|0;if(de>0){var dd=Object.assign({wake:"07:00",bed:"23:00"},c.cfg.day||{});if(lockHour(dd.bed,dd.wake)<de)dd.bed=String(de).padStart(2,"0")+":00";c.cfg.day=dd}delete c.cfg.dayEnd}v=5}
     if(v<6){Object.keys(c.days||{}).forEach(function(k){var d=c.days[k];if(d){delete d.ended;delete d.endedAt}});v=6}
     if(v<7){var SJ7=(c.cfg&&c.cfg.subjects)||[];((c.cfg&&c.cfg.quests)||[]).forEach(function(q){var L=q.subjs&&q.subjs.length?q.subjs:(q.subj?[q.subj]:[]);if(!L.length||q.topics){delete q.topic;return}var T=[];if(q.topic)T=[q.topic];else L.forEach(function(sid){var sj=SJ7.filter(function(x){return x.id===sid})[0];((sj&&sj.topics)||[]).forEach(function(t){T.push(t.id)})});if(T.length)q.topics=T;delete q.topic});v=7}
+    if(v<8)v=8;
     c.schema=v;return c}
   try{var c=migrate(JSON.parse(localStorage.getItem("pc-cache-v1")||"{}"));S.days=c.days||{};S.refl=c.refl||{};S.cfg=c.cfg||null;S.timer=c.timer||null;S.sprint=c.sprint||null;if(c.spLen)S.spLen=c.spLen;if(c.spRounds!=null)S.spRounds=c.spRounds;if(c.spLongOn===false)S.spLongOn=false}catch(e){}
   function cache(){try{S.schema=SCHEMA;localStorage.setItem("pc-cache-v1",JSON.stringify(S))}catch(e){}}
@@ -54,7 +55,7 @@
   function reqDefsFor(k){if(isVac(k))return [];var e=S.days[k];return reqOf((e&&e.q)?e.q:(hasEntry(e)?LEGACY:activeDefs(k)))}
   function num(v){return Math.round((+v||0)*100)/100}
   function projSum(id,upto){var t=0;Object.keys(S.days).forEach(function(k){if(!upto||k<=upto)t+=+((S.days[k]||{})[id])||0});return num(t)}
-  function hasEntry(e){return !!e&&Object.keys(e).some(function(f){if(f==="top")return (e.top||[]).some(function(x){return x&&x.t});return f!=="q"&&f!=="sched"&&f!=="calls"&&f.indexOf("plan_")!==0&&e[f]!==""&&e[f]!=null&&e[f]!==0&&e[f]!==false})}
+  function hasEntry(e){return !!e&&Object.keys(e).some(function(f){if(f==="top")return (e.top||[]).some(function(x){return x&&x.t});return f!=="q"&&f!=="sched"&&f!=="schSkip"&&f!=="calls"&&f.indexOf("plan_")!==0&&e[f]!==""&&e[f]!=null&&e[f]!==0&&e[f]!==false})}
   function defsOf(e){return (e&&e.q)||(hasEntry(e)?LEGACY:activeDefs(todayKey()))}
   function metQ(q,e){e=e||{};var v=e[q.id];if(q.type==="wake"){if(!v)return q.id==="wakeAt"&&e.wake===true;var m=mins(v);return m>=mins(q.from)&&m<=mins(q.to)}if(q.type==="time")return timeMet(q,e);if(q.type==="limit")return (v|0)<=q.max;if(q.type==="check"||q.type==="weekly"||q.type==="todo")return v===true;if(q.type==="target")return num(v)>=q.min;if(q.type==="scale")return (v|0)>=q.min;return false}
   function overQ(q,e){return q.type==="limit"&&((e||{})[q.id]|0)>q.max}

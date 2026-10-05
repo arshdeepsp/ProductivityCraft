@@ -203,3 +203,132 @@ for (const width of [360, 390]) {
     });
   });
 }
+
+const store = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("pc-cache-v1")));
+const raw = async (page, k = "2026-11-02") => ((await store(page)).days[k] || {});
+
+test("a free time can be blocked as busy with one tap, and Auto-plan works around it", async ({ page }) => {
+  await open(page);
+  await tapTime(page, "10:00");
+  await page.click("#schBzB");
+  await expect(page.locator("[data-bz]")).toHaveText(["Class", "Work", "Meal", "Commute"]);
+  await page.click("[data-bz='Class']");
+  expect((await raw(page)).sched.map((b) => [b.lb, b.f, b.t])).toEqual([["Class", 600, 660]]);
+  await expect(page.locator(".sch-b.busy b")).toHaveText("Class");
+  await page.click("#schDesel");
+  await page.click("#schAuto");
+  const s = (await raw(page)).sched;
+  expect(s.filter((b) => b.q).every((b) => b.t <= 600 || b.f >= 660)).toBe(true);
+  expect(s.filter((b) => b.q).length).toBeGreaterThan(0);
+});
+
+test("a busy block can have its own name, and it's never a reminder", async ({ page }) => {
+  await page.addInitScript(mock);
+  await open(page, { cfg: { nf: { on: true } } });
+  await tapTime(page, "14:00");
+  await page.click("#schBzB");
+  await page.fill("#schBzIn", "Lab meeting");
+  await page.click("#schBzAdd");
+  expect((await raw(page)).sched.map((b) => b.lb)).toEqual(["Lab meeting"]);
+  await page.click("#schOk");
+  await page.clock.runFor(2000);
+  expect((await page.evaluate(() => window.__ln)).filter((x) => x.id >= 3500 && x.id < 4000)).toEqual([]);
+});
+
+test("a block repeats on picked weekdays for a number of weeks", async ({ page }) => {
+  await open(page);
+  await tapTime(page, "10:00");
+  await page.click("#schBzB");
+  await page.click("[data-bz='Class']");
+  await page.click("#schRepB");
+  await expect(page.locator("[data-rd='1']")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("#schWkN")).toHaveText("4 weeks");
+  await page.click("[data-rd='3']");
+  await page.click("#schWkP");
+  await expect(page.locator("#schRepSum")).toHaveText("10 times, until Dec 6");
+  await page.click("#schRepOk");
+  const st = await store(page);
+  expect(st.cfg.rep.map(({ lb, f, t, dows, from, until }) => ({ lb, f, t, dows, from, until }))).toEqual([{ lb: "Class", f: 600, t: 660, dows: [1, 3], from: "2026-11-02", until: "2026-12-06" }]);
+  expect(st.days["2026-11-02"].sched).toBeUndefined();
+  await expect(page.locator(".sch-b.rep")).toHaveCount(1);
+  await expect(page.locator(".sch-rep")).toHaveText("↻ Mon, Wed until Dec 6");
+});
+
+const REP = [{ id: "r1", lb: "Class", f: 600, t: 660, dows: [1, 3], from: "2026-11-02", until: "2026-11-29" }];
+for (const [now, n] of [["2026-11-04T08:00:00-05:00", 1], ["2026-11-03T08:00:00-05:00", 0], ["2026-11-30T08:00:00-05:00", 0]]) {
+  test(`repeats show on the right days only (${now.slice(0, 10)})`, async ({ page }) => {
+    await open(page, { now, cfg: { rep: REP } });
+    await expect(page.locator(".sch-b.busy")).toHaveCount(n);
+  });
+}
+
+test("a repeated quest shot can only repeat on the quest's own days", async ({ page }) => {
+  await open(page);
+  await place(page, "fr", "13:00");
+  await page.click(".sch-b");
+  await page.click("#schRepB");
+  await expect(page.locator("[data-rd='6']")).toBeDisabled();
+  await expect(page.locator("[data-rd='0']")).toBeDisabled();
+  await page.click("[data-rd='2']");
+  await page.click("#schRepOk");
+  expect((await store(page)).cfg.rep[0]).toMatchObject({ q: "fr", f: 780, t: 840, dows: [1, 2] });
+  await expect(page.locator("[data-sq='fr']")).toContainText("1h / 1h");
+});
+
+test("moving one repeat changes today only, with one tap to change every week", async ({ page }) => {
+  await open(page, { cfg: { rep: REP } });
+  await page.click(".sch-b.busy");
+  await tapTime(page, "11:00");
+  let d = await raw(page);
+  expect(d.schSkip).toEqual(["r1"]);
+  expect(d.sched.map((b) => [b.lb, b.f, b.t])).toEqual([["Class", 660, 720]]);
+  await expect(page.locator(".sch-help")).toHaveText("Changed for today only.");
+  await page.click("#schEvery");
+  const st = await store(page);
+  expect(st.cfg.rep[0]).toMatchObject({ f: 660, t: 720 });
+  d = st.days["2026-11-02"];
+  expect(d.sched).toBeUndefined();
+  expect(d.schSkip).toBeUndefined();
+  await expect(page.locator(".sch-b.rep span")).toHaveText("11:00–12:00");
+});
+
+test("skip one occurrence, or stop the repeat", async ({ page }) => {
+  await open(page, { cfg: { rep: REP } });
+  await page.click(".sch-b.busy");
+  await page.click("#schRm");
+  expect((await raw(page)).schSkip).toEqual(["r1"]);
+  await expect(page.locator(".sch-b")).toHaveCount(0);
+  expect((await store(page)).cfg.rep).toHaveLength(1);
+  await page.click("#schOk");
+  await page.evaluate(() => { const c = JSON.parse(localStorage.getItem("pc-cache-v1")); delete c.days["2026-11-02"].schSkip; localStorage.setItem("pc-cache-v1", JSON.stringify(c)); });
+  await page.reload();
+  await page.click("#schBtn");
+  await page.click(".sch-b.busy");
+  await page.click("#schStop");
+  expect((await store(page)).cfg.rep).toBeUndefined();
+  await expect(page.locator(".sch-b")).toHaveCount(0);
+});
+
+test("a repeated quest shot reminds you like any other", async ({ page }) => {
+  await page.addInitScript(mock);
+  await openApp(page, { cfg: { quests: Q, nf: { on: true }, rep: [{ id: "r2", q: "cs", f: 600, t: 660, dows: [1], from: "2026-11-02", until: "2026-11-29" }] } });
+  await page.clock.runFor(2000);
+  const n = (await page.evaluate(() => window.__ln)).filter((x) => x.id >= 3500 && x.id < 4000);
+  expect(n.map((x) => [x.title, x.extra.sched])).toEqual([["Time for CS work", "cs"]]);
+});
+
+for (const width of [320, 360]) {
+  test.describe(`repeat panel ${width}`, () => {
+    test.use({ viewport: { width, height: 700 }, isMobile: true, hasTouch: true });
+    test("the repeat controls fit and are thumb-sized", async ({ page }) => {
+      await open(page, { cfg: { rep: REP } });
+      await page.locator(".sch-b.busy").click();
+      await page.click("#schRepB");
+      const r = await page.evaluate(() => {
+        const ft = document.getElementById("schFt").getBoundingClientRect(), btns = [...document.querySelectorAll("#schFt button")];
+        return { side: document.documentElement.scrollWidth > innerWidth, inFt: btns.every((b) => { const x = b.getBoundingClientRect(); return x.left >= ft.left && x.right <= ft.right && x.bottom <= innerHeight + 1; }), small: btns.filter((b) => b.getBoundingClientRect().height < 40).map((b) => b.textContent) };
+      });
+      expect(r).toEqual({ side: false, inFt: true, small: [] });
+    });
+  });
+}

@@ -5,6 +5,7 @@ export async function openApp(page, { now = "2026-11-02T09:00:00-05:00", cfg = {
   const state = { days, cfg: { quests: [], rules: [], idleGrove: 0, start: "2026-10-01T04:00:00.000Z", updated: "2026-10-01T10:00:00Z", ...cfg } };
   await page.addInitScript(([s, x]) => {
     localStorage.setItem("pc-welcomed", "1");
+    if (!("pc-splash" in x)) localStorage.setItem("pc-splash", "off");
     if (!localStorage.getItem("pc-cache-v1")) localStorage.setItem("pc-cache-v1", s);
     for (const [k, v] of Object.entries(x)) localStorage.setItem(k, v);
   }, [JSON.stringify(state), extra]);

@@ -137,8 +137,8 @@ test("the Subjects page lists topics under subject headers with level, goal, mon
   ] }];
   const Q = [{ id: "m", type: "time", label: "Maths", min: 60, subj: "s1", subjs: ["s1"], topics: ["a", "b"] }];
   await openApp(page, { cfg: { quests: Q, subjects: SJ }, days: { "2026-09-01": { tt: { b: 500 } }, "2026-10-31": { tt: { b: 80 } } }, extra: { "pc-rerate": "2026-11-02" }, hash: "#subjects" });
-  await expect(page.locator(".tsec .tsec-h b")).toHaveText("Maths");
-  await expect(page.locator(".tsec-h .sj-link")).toContainText("Fed by: Maths");
+  await expect(page.locator(".sjsec .sjsec-h b")).toHaveText("Maths");
+  await expect(page.locator(".sjsec-h .sj-link")).toContainText("Fed by: Maths");
   await expect(page.locator(".tr")).toHaveCount(2);
   const b = page.locator(".tr[data-tid='b']");
   await expect(b.locator(".tr-mo")).toContainText("1h 20m");

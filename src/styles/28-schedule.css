@@ -56,3 +56,20 @@ body.sch-open{overflow:hidden}
 .sch-adj[hidden]{display:none!important}
 .sch-adj label{display:flex;align-items:center;gap:6px;font:18px var(--vt)}
 .sch-adj input{font:20px/1.2 var(--vt);background:#373737;color:#fff;border:3px solid;border-color:#1E1E1E #8B8B8B #8B8B8B #1E1E1E;padding:4px 6px;color-scheme:dark}
+/* busy blocks and weekly repeats */
+.sch-b.busy{background:repeating-linear-gradient(135deg,#5A5A5A 0 6px,#4E4E4E 6px 12px);border-color:#8A8A8A #2E2E2E #2E2E2E #8A8A8A}
+.sch-b.rep{border-left-style:double;border-left-width:5px}
+.sch-tag{font:7px var(--px);background:#4E4E4E;color:#fff;padding:3px 5px;vertical-align:middle}
+.sch-rep{margin:0 0 4px;font:16px/1.2 var(--vt);color:#2F5A22}
+.sch-acts{display:flex;gap:6px;margin-top:8px}
+.sch-acts .stone{flex:1 1 0;min-width:0;min-height:44px;padding:6px 8px;font-size:8px;line-height:1.4}
+.sch-acts .stone.sch-x{flex:0 0 44px;padding:0;font:22px var(--vt)}
+.sch-acts .stone.save{flex-grow:1.4}
+.sch-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:6px 0}
+.sch-days .stone{min-height:44px;padding:0;font-size:9px}
+.sch-days .stone[disabled]{opacity:.35}
+.sch-wk{display:flex;align-items:center;gap:10px;margin:6px 0;font:18px var(--vt)}
+.sch-wk .stone{width:44px;height:44px;padding:0;font-size:14px}
+.sch-wk b{font:10px var(--px);min-width:84px;text-align:center}
+.sch-bzin{display:flex;gap:6px;margin-top:6px}
+.sch-bzin input{flex:1;min-width:0;font:19px var(--vt);background:#373737;color:#fff;border:3px solid;border-color:#1E1E1E #8B8B8B #8B8B8B #1E1E1E;padding:6px 8px}

@@ -82,3 +82,24 @@ test("long quest names wrap instead of hiding under the time chip", async ({ pag
   const gap = await page.evaluate(() => { const r = document.querySelector("#quests .q"); return r.querySelector(".qsum").getBoundingClientRect().left - r.querySelector(".lbl").getBoundingClientRect().right; });
   expect(gap).toBeGreaterThanOrEqual(0);
 });
+
+for (const width of [320, 360]) {
+  test.describe(`overflow ${width}`, () => {
+    test.use({ viewport: { width, height: 800 }, isMobile: true, hasTouch: true });
+    test("Subjects and Trends stay within the screen with long names", async ({ page }) => {
+      const long = "Distributed systems and consensus protocols";
+      const SJ = [{ id: "s1", name: long, topics: [{ id: "t1", name: "Root cause analysis for microservice architectures", p: 2, hist: [], target: 4, next: "read the whole Dapper paper and take notes" }] }, { id: "s2", name: "Maths", topics: [] }];
+      const Q = [{ id: "m", type: "time", label: "A very long quest name for thesis reading", min: 60, subj: "s1", subjs: ["s1"], topics: ["t1"] }];
+      await openApp(page, { cfg: { quests: Q, subjects: SJ }, days: { "2026-11-01": { m: 90, q: Q, tt: { t1: 90 } } }, extra: { "pc-rerate": "2026-11-02" }, hash: "#subjects" });
+      await expect(page.locator(".sjsec")).toHaveCount(2);
+      const over = () => page.evaluate(() => ({ doc: document.documentElement.scrollWidth - innerWidth, boxes: [...document.querySelectorAll(".sjsec,.ttile,.sjt,.trcard")].filter((b) => b.offsetParent && (b.getBoundingClientRect().right > innerWidth || b.getBoundingClientRect().left < 0)).length }));
+      expect(await over()).toEqual({ doc: 0, boxes: 0 });
+      const g = await page.evaluate(() => { const [a, b] = document.querySelectorAll(".sjsec"); return b.getBoundingClientRect().top - a.getBoundingClientRect().bottom; });
+      expect(g).toBeGreaterThanOrEqual(12);
+      await page.evaluate(() => (location.hash = "#trends"));
+      await expect(page.locator(".ttile").first()).toBeVisible();
+      expect(await over()).toEqual({ doc: 0, boxes: 0 });
+      expect(await page.evaluate(() => [...document.querySelectorAll(".tt-v")].filter((v) => v.scrollWidth > v.clientWidth).map((v) => v.textContent))).toEqual([]);
+    });
+  });
+}
