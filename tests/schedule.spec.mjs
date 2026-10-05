@@ -6,7 +6,7 @@ const Q = [
   { id: "fr", type: "time", label: "French", min: 30, roll: 300, days: [1, 2, 3, 4, 5] },
   { id: "j", type: "check", label: "Journal" }
 ];
-const sched = (page) => page.evaluate(() => (JSON.parse(localStorage.getItem("pc-cache-v1")).days["2026-11-02"] || {}).sched || null);
+const sched = (page) => page.evaluate(() => { const s = (JSON.parse(localStorage.getItem("pc-cache-v1")).days["2026-11-02"] || {}).sched; return s ? s.map((b) => [b.q, b.f, b.t].concat(b.j5 ? ["j5"] : [])) : null; });
 
 async function tapTime(page, hhmm) {
   const [h, m] = hhmm.split(":").map(Number);
@@ -31,38 +31,38 @@ test("tap a quest then a time to block its daily minimum", async ({ page }) => {
   await open(page);
   await page.click("[data-sq='cs']");
   await tapTime(page, "10:00");
-  expect(await sched(page)).toEqual({ cs: { f: 600, t: 660 } });
-  await expect(page.locator("[data-sb='cs'] span")).toHaveText("10:00–11:00");
+  expect(await sched(page)).toEqual([["cs", 600, 660]]);
+  await expect(page.locator(".sch-b span")).toHaveText("10:00–11:00");
 });
 
 test("a weekly total blocks its weekly hours divided by its work days", async ({ page }) => {
   await open(page);
   await page.click("[data-sq='fr']");
   await tapTime(page, "13:00");
-  expect(await sched(page)).toEqual({ fr: { f: 780, t: 840 } });
+  expect(await sched(page)).toEqual([["fr", 780, 840]]);
 });
 
 test("a 5-min start keeps the daily share and its length is fixed", async ({ page }) => {
   await open(page);
   await page.click("[data-sq='cs']");
   await tapTime(page, "10:00");
-  await page.click("[data-sb='cs']");
+  await page.click(".sch-b");
   await page.click("[data-sm='j5']");
-  expect(await sched(page)).toEqual({ cs: { f: 600, t: 660, j5: true } });
-  await expect(page.locator("[data-sb='cs'] .sch-h")).toHaveCount(0);
-  await expect(page.locator("[data-sb='cs'] b")).toContainText("▶ 5");
+  expect(await sched(page)).toEqual([["cs", 600, 660, "j5"]]);
+  await expect(page.locator(".sch-b .sch-h")).toHaveCount(0);
+  await expect(page.locator(".sch-b b")).toContainText("▶ 5");
 });
 
 test("dragging the bottom edge changes a range in 15-minute steps", async ({ page }) => {
   await open(page);
   await page.click("[data-sq='cs']");
   await tapTime(page, "10:00");
-  const h = await page.locator("[data-sb='cs'] .sch-h").boundingBox();
+  const h = await page.locator(".sch-b .sch-h").boundingBox();
   await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2);
   await page.mouse.down();
   await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2 + 18 * 2, { steps: 4 });
   await page.mouse.up();
-  await expect.poll(() => sched(page)).toEqual({ cs: { f: 600, t: 690 } });
+  await expect.poll(() => sched(page)).toEqual([["cs", 600, 690]]);
 });
 
 test("overlaps and past times are refused", async ({ page }) => {
@@ -70,21 +70,23 @@ test("overlaps and past times are refused", async ({ page }) => {
   await page.click("[data-sq='cs']");
   await tapTime(page, "10:00");
   await page.click("[data-sq='fr']");
+  await tapTime(page, "13:00");
+  await page.click(".sch-b >> nth=1");
   await tapTime(page, "09:30");
   await expect(page.locator("#gBody .cmsg2")).toContainText("overlaps CS work");
   await tapTime(page, "08:00");
   await expect(page.locator("#gBody .cmsg2")).toContainText("already passed");
-  expect(await sched(page)).toEqual({ cs: { f: 600, t: 660 } });
+  expect(await sched(page)).toEqual([["cs", 600, 660], ["fr", 780, 840]]);
 });
 
 test("a placed block can be moved and removed", async ({ page }) => {
   await open(page);
   await page.click("[data-sq='cs']");
   await tapTime(page, "10:00");
-  await page.click("[data-sb='cs']");
+  await page.click(".sch-b");
   await tapTime(page, "15:00");
-  expect(await sched(page)).toEqual({ cs: { f: 900, t: 960 } });
-  await page.click("[data-sb='cs']");
+  expect(await sched(page)).toEqual([["cs", 900, 960]]);
+  await page.click(".sch-b");
   await page.click("#schRm");
   expect(await sched(page)).toBeNull();
 });
@@ -140,4 +142,49 @@ test.describe("phone", () => {
     const over = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth || document.getElementById("gBody").scrollWidth > document.getElementById("gBody").clientWidth);
     expect(over).toBe(false);
   });
+});
+
+test("a quest can be split into several shots across the day", async ({ page }) => {
+  await open(page);
+  await page.click("[data-sq='cs']");
+  await page.locator(".sch-b .sch-h").waitFor({ state: "detached" }).catch(() => {});
+  await tapTime(page, "10:00");
+  const h = await page.locator(".sch-b .sch-h").boundingBox();
+  await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2 - 18 * 2, { steps: 4 });
+  await page.mouse.up();
+  await expect.poll(() => sched(page)).toEqual([["cs", 600, 630]]);
+  await expect(page.locator("[data-sq='cs'] small")).toHaveText("30m / 1h");
+  await page.click("[data-sq='cs']");
+  await expect(page.locator("#gBody .sch-help")).toContainText("(30m left)");
+  await tapTime(page, "16:00");
+  expect(await sched(page)).toEqual([["cs", 600, 630], ["cs", 960, 990]]);
+  await expect(page.locator("[data-sq='cs'] small")).toHaveText("1h / 1h · 2 shots");
+  await expect(page.locator(".sch-b b").first()).toContainText("1/2");
+});
+
+test("Split breaks a block in two, and each shot is its own reminder", async ({ page }) => {
+  await page.addInitScript(mock);
+  await openApp(page, { cfg: { quests: Q, nf: { on: true } }, days: { "2026-11-02": { q: Q, sched: [{ id: "a", q: "cs", f: 600, t: 660 }] } } });
+  await page.click("#schBtn");
+  await page.click(".sch-b");
+  await page.click("#schSplit");
+  expect(await sched(page)).toEqual([["cs", 600, 630], ["cs", 630, 660]]);
+  await tapTime(page, "14:00");
+  expect(await sched(page)).toEqual([["cs", 600, 630], ["cs", 840, 870]]);
+  await page.click("#schOk");
+  await page.clock.runFor(2000);
+  const n = (await page.evaluate(() => window.__ln)).filter((x) => x.id >= 3500 && x.id < 4000);
+  expect(n.map((x) => x.at.slice(16, 21))).toEqual(["10:00", "14:00"]);
+  await expect(page.locator("#quests .q", { hasText: "CS work" }).locator(".req")).toContainText("10:00–10:30, 14:00–14:30");
+});
+
+test("a new shot stops short of the next block instead of overlapping it", async ({ page }) => {
+  await openApp(page, { cfg: { quests: Q }, days: { "2026-11-02": { q: Q, sched: [{ id: "a", q: "fr", f: 630, t: 690 }] } } });
+  await page.click("#schBtn");
+  await page.click("[data-sq='cs']");
+  await tapTime(page, "10:00");
+  expect(await sched(page)).toEqual([["cs", 600, 630], ["fr", 630, 690]]);
+  await expect(page.locator("#gBody .cmsg2")).toContainText("Add another shot for the rest");
 });

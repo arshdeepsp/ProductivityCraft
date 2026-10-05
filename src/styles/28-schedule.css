@@ -22,3 +22,6 @@
 .sch-top .cmsg2{margin:0 0 6px}
 .sch-q.on{outline:3px solid #FFFF55;outline-offset:1px}
 .sch-bar .stone.on{background:#5E9E3A;color:#fff;border-color:#7CC24E #2F5A22 #2F5A22 #7CC24E}
+.sch-q.part:not(.on){background:#D8C27A}
+.sch-b b em{font-style:normal;opacity:.8;margin-left:4px}
+.sch-act{display:flex;gap:6px;margin-left:auto}

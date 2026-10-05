@@ -15,7 +15,7 @@ test("export then import round-trips data and stamps the schema", async ({ page 
   const file = join(tmpdir(), "pc-backup.json");
   await (await dl).saveAs(file);
   const data = JSON.parse(readFileSync(file, "utf8"));
-  expect(data.schema).toBe(3);
+  expect(data.schema).toBe(4);
   expect(data.days["2026-11-01"].cs).toBe(75);
   await page.evaluate(() => localStorage.clear());
   await page.reload();
@@ -42,7 +42,7 @@ test("old schema-2 backups import and lose retired settings", async ({ page }) =
   const st = await page.evaluate(() => JSON.parse(localStorage.getItem("pc-cache-v1")));
   expect(st.days["2026-10-30"].cs).toBe(60);
   expect(st.cfg.bank).toBeUndefined();
-  expect(st.schema).toBe(3);
+  expect(st.schema).toBe(4);
 });
 
 test("newer backups are refused", async ({ page }) => {
@@ -55,4 +55,13 @@ test("newer backups are refused", async ({ page }) => {
   await page.click("#setImp");
   await (await chooser).setFiles(file);
   await expect(page.locator("#sync")).toContainText("newer version");
+});
+
+test("schema 4: a one-block-per-quest schedule becomes a list of shots", async ({ page }) => {
+  await openApp(page, { cfg: { quests: Q }, days: { "2026-11-02": { q: Q, sched: { cs: { f: 600, t: 660, j5: true } } } } });
+  await page.click("#quests .q .act button[aria-label^='More']");
+  await page.waitForTimeout(900);
+  const st = await page.evaluate(() => JSON.parse(localStorage.getItem("pc-cache-v1")));
+  expect(st.schema).toBe(4);
+  expect(st.days["2026-11-02"].sched).toEqual([{ id: "b-cs", q: "cs", f: 600, t: 660, j5: true }]);
 });
