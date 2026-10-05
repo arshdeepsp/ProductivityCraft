@@ -17,7 +17,7 @@
     if(id==="alerts")return n.on?"On · check-in "+n.checkinAt:"Off";
     if(id==="look")return (THEME_NAMES[c.theme||""]||"Auto")+" theme";
     if(id==="sound")return (sfxOn?"Sound on":"Sound off")+" · vibration "+(c.haptics!==false?"on":"off");
-    if(id==="extras"){var on=[c.sparkTools&&"Quick-start",c.addShare&&"Share week",c.addTrends&&"Trends"].filter(Boolean);return (on.length?on.join(", "):"No add-ons")+" · "+(c.customAch||[]).length+" custom badge"+((c.customAch||[]).length===1?"":"s")}
+    if(id==="extras"){var on=[c.sparkTools&&"Quick-start",c.addShare&&"Share week",c.addTrends&&"Trends"].filter(Boolean);return on.length?on.join(", "):"No add-ons"}
     if(id==="data"){var le=0;try{le=+localStorage.getItem("pc-lastExport")||0}catch(x){}return le?"Last backup "+new Date(le).toLocaleDateString("en-CA",{month:"short",day:"numeric"}):"No backup yet"}
     return ""}
   function renderSettings(){
@@ -48,9 +48,8 @@
       h+=sgroup("Show on Today",hideOpts().map(function(o){var shown=!((c.hide||{})[o[0]]);return srow(o[1],"",swc(null,shown,o[1],'data-hide="'+o[0]+'"'))}).join(""))}
     else if(setTab==="sound"){
       h+=sgroup("",srow("Sound","Game sounds and chimes",swc("setSfx",sfxOn,"Sound"))+srow("Tap sounds","A click with every tap",swc("setTapSnd",c.tapSound!==false,"Tap sounds"))+srow("Vibration","",swc("setHap",c.haptics!==false,"Vibration"))+srow("Keep screen on","While a timer or sprint runs",swc("setAwake",c.keepAwake!==false,"Keep screen on")))}
-    else if(setTab==="extras"){var CA=c.customAch||[];
-      h+=sgroup("Add-ons",srow("Quick-start tools","Pick for me and Batch to-dos in the ⋮ menu",swc("setSpark",c.sparkTools,"Quick-start tools"))+srow("Share week","A summary card to send",swc("setShare",c.addShare,"Share week"))+srow("Trends page","Weekly charts in the nav",swc("setTrends",c.addTrends,"Trends page")));
-      h+=sgroup("Custom achievements ("+CA.length+"/4)",CA.map(function(a){return '<div class="srow sca"><input data-ca="'+esc(a.id)+'" data-cf="title" maxlength="24" value="'+esc(a.title)+'" aria-label="Title"><select data-ca="'+esc(a.id)+'" data-cf="icon" aria-label="Icon">'+opt(Object.keys(D.icons).map(function(k){return [k,k]}),a.icon)+'</select><input data-ca="'+esc(a.id)+'" data-cf="desc" maxlength="40" value="'+esc(a.desc||"")+'" aria-label="Description" placeholder="Description"><select data-ca="'+esc(a.id)+'" data-cf="kind" aria-label="Unlocks at">'+opt([["streak","Streak days"],["total","Cleared days"],["level","Level"]],a.kind)+'</select><input type="number" min="1" max="3650" data-ca="'+esc(a.id)+'" data-cf="n" value="'+a.n+'" aria-label="Number"><button type="button" class="stone mini del" data-cax="'+esc(a.id)+'">Delete</button></div>'}).join("")+(CA.length<4?'<div class="srow sbtns"><button type="button" class="stone mini" id="caAdd">+ Add custom achievement</button></div>':''))}
+    else if(setTab==="extras"){
+      h+=sgroup("Add-ons",srow("Quick-start tools","Pick for me and Batch to-dos in the ⋮ menu",swc("setSpark",c.sparkTools,"Quick-start tools"))+srow("Share week","A summary card to send",swc("setShare",c.addShare,"Share week"))+srow("Trends page","Weekly charts in the nav",swc("setTrends",c.addTrends,"Trends page")));}
     else if(setTab==="data"){
       h+=sgroup("Backup",srow("Export backup",esc(setSummary("data")),'<button type="button" class="stone mini save" id="setExp">Export</button>')+srow("Import backup","Merges with what’s here",'<button type="button" class="stone mini" id="setImp">Import</button>'),"data");
       h+='<p class="help sfoot">Everything stays on this device; nothing is sent anywhere.</p>'}
@@ -71,10 +70,6 @@
     var a=document.getElementById("vacToday");if(a){a.addEventListener("click",function(){startVac(todayKey())});bind("vacTom","click",function(){startVac(add(todayKey(),1))})}
     var ve=document.getElementById("vacEnd");if(ve)ve.addEventListener("click",function(){var T2=todayKey(),c2=clone(cfg());c2.vacs=(c2.vacs||[]).map(function(x){return x.to>T2?(x.from>T2?null:{from:x.from,to:T2}):x}).filter(function(x){return x&&x.to>x.from});saveCfg(c2);if(S.days[T2]){S.days[T2]=Object.assign({},S.days[T2],{q:activeDefs(T2)});dirty[T2]=true;cache()}qSig="";render();renderSettings()});
     bind("packAdd","click",function(){var p=document.getElementById("packSel").value;if(p){applyPack(p);renderSettings()}});
-    function upCA(fn2){var c2=clone(cfg());c2.customAch=c2.customAch||[];fn2(c2.customAch);saveCfg(c2);render()}
-    el.querySelectorAll("[data-cf]").forEach(function(x){x.addEventListener("change",function(){var id=x.getAttribute("data-ca"),f=x.getAttribute("data-cf"),v=x.value;upCA(function(L){L.forEach(function(a){if(a.id!==id)return;if(f==="n"){v=Math.max(1,Math.min(3650,Math.round(+v||1)))}if(f==="title"&&!v.trim())return;a[f]=f==="n"?v:String(v).trim()})})})});
-    el.querySelectorAll("[data-cax]").forEach(function(x){var arm=null;x.addEventListener("click",function(){if(!arm){x.textContent="Confirm";arm=setTimeout(function(){arm=null;x.textContent="Delete"},4000);return}upCA(function(L){var i=L.findIndex(function(a){return a.id===x.getAttribute("data-cax")});if(i>=0)L.splice(i,1)});renderSettings()})});
-    var caA=document.getElementById("caAdd");if(caA)caA.addEventListener("click",function(){upCA(function(L){if(L.length<4)L.push({id:"ca"+Date.now().toString(36),title:"My milestone",desc:"A goal of my own",icon:"star",kind:"streak",n:30})});renderSettings()});
     bind("setTapSnd","click",function(){var c2=clone(cfg());c2.tapSound=c2.tapSound===false;saveCfg(c2);haptic("medium");renderSettings()});
     bind("setHap","click",function(){var c2=clone(cfg());c2.haptics=c2.haptics===false;saveCfg(c2);haptic("medium");renderSettings()});
     el.querySelectorAll("[data-hide]").forEach(function(x){x.addEventListener("click",function(){var c2=clone(cfg()),k=x.getAttribute("data-hide");c2.hide=Object.assign({},c2.hide||{});c2.hide[k]=!c2.hide[k];saveCfg(c2);applyHide();renderSettings()})});

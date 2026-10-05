@@ -10,7 +10,7 @@
   var RANKS=[[0,"Apprentice","sprout"],[7,"Journeyman","sprout"],[21,"Session Player","flame"],[42,"Bandleader","metronome"],[90,"Virtuoso","dumbbell"],[180,"Master","trophy"],[365,"Maestro","star"]];
   var S={days:{},refl:{},cfg:null},db=null,uid=null,dl=null,dlChecked=false,view="today",dirty={},timer=null;
   /* Data schema. Bump SCHEMA and add a step to migrate() whenever the stored shape changes. */
-  var SCHEMA=8,RERATE_MIN=60;
+  var SCHEMA=9,RERATE_MIN=60;
   function migrate(c){c=c||{};var v=c.schema||2;
     if(v<3){if(c.cfg){delete c.cfg.bank;delete c.cfg.commitCheck}v=3}
     if(v<4){Object.keys(c.days||{}).forEach(function(k){var d=c.days[k],s=d&&d.sched;if(s&&!Array.isArray(s)&&typeof s==="object")d.sched=Object.keys(s).sort().map(function(id){return Object.assign({id:"b-"+id,q:id},s[id])})});v=4}
@@ -18,6 +18,7 @@
     if(v<6){Object.keys(c.days||{}).forEach(function(k){var d=c.days[k];if(d){delete d.ended;delete d.endedAt}});v=6}
     if(v<7){var SJ7=(c.cfg&&c.cfg.subjects)||[];((c.cfg&&c.cfg.quests)||[]).forEach(function(q){var L=q.subjs&&q.subjs.length?q.subjs:(q.subj?[q.subj]:[]);if(!L.length||q.topics){delete q.topic;return}var T=[];if(q.topic)T=[q.topic];else L.forEach(function(sid){var sj=SJ7.filter(function(x){return x.id===sid})[0];((sj&&sj.topics)||[]).forEach(function(t){T.push(t.id)})});if(T.length)q.topics=T;delete q.topic});v=7}
     if(v<8)v=8;
+    if(v<9){if(c.cfg)delete c.cfg.customAch;v=9}
     c.schema=v;return c}
   try{var c=migrate(JSON.parse(localStorage.getItem("pc-cache-v1")||"{}"));S.days=c.days||{};S.refl=c.refl||{};S.cfg=c.cfg||null;S.timer=c.timer||null;S.sprint=c.sprint||null;if(c.spLen)S.spLen=c.spLen;if(c.spRounds!=null)S.spRounds=c.spRounds;if(c.spLongOn===false)S.spLongOn=false}catch(e){}
   function cache(){try{S.schema=SCHEMA;localStorage.setItem("pc-cache-v1",JSON.stringify(S))}catch(e){}}

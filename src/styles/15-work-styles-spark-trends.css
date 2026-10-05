@@ -43,3 +43,13 @@
 #sparkBar .kebab{font-size:16px!important;line-height:1;padding:6px 0!important;min-width:44px;text-align:center}
 .trends .tgrid{gap:12px}
 .trends .tgrid.subjt{gap:16px}
+.ttop{display:grid;gap:10px}
+.ttop-r{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;align-items:baseline}
+.ttop-n{min-width:0;display:flex;flex-wrap:wrap;gap:0 8px;align-items:baseline}.ttop-n b{font:19px var(--vt);font-weight:400;color:#fff;overflow-wrap:anywhere}.ttop-n small{font:15px var(--vt);color:#BDBDBD}
+.ttop-m{font:18px var(--vt);color:#FFFF55}
+.ttop-b{grid-column:1/-1;height:10px;background:#111;border:2px solid #000}.ttop-b i{display:block;height:100%;background:#B07FD0}
+.ttop-f{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px;margin-top:12px;font:16px var(--vt);color:#7FE05A}.ttop-f .dn{color:#FF8A80}
+.tnote{margin:6px 0 0;font:16px var(--vt);color:#BDBDBD}
+.tcharts .trcard:last-child:nth-child(odd){grid-column:1/-1}
+.ttop-flat{font:13px var(--vt);font-style:normal;color:#1E1E1E;background:#F2B705;padding:0 5px}
+.ttop-warn{margin:12px 0 0;font:16px var(--vt);color:#FFD27F}

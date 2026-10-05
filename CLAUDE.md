@@ -74,6 +74,12 @@ build.mjs              the whole build
 - Settings (`10-settings-panel.js`): home list of categories (`SET_CATS`, each with a live summary) → a page per category built from `sgroup(title, rows, helpTopic)` and `srow(title, hint, control)`. Hints are one line; anything longer goes in How it works (`HELP` in `24-help-onboarding.js`, opened with `openHelp(topicId)`). Wiring uses `bind(id, …)` because only one category is in the DOM at a time.
 - Today-only wake/bed lives on the Schedule page ("Adjust today"), not in Settings.
 
+## Badges and Trends
+- Badges: `D.ach` (20, in `D.groups`) in `src/assets/achievements.json` with pixel icons (`D.icons`, 16×16 rows). `03-achievements.js`: `badgeStats(st)` scans history once, `BADGE_RULE[id](o)` → `[have, need, unit]`, `renderBadges(st)` (called from `render`) records newly met badges in `cfg.badges = {id: date}` (they stay earned), toasts once (several at once share one toast), and drives the desktop "Next badge" card (`nextBadge`). Certificates are drawn on demand by `certPDF`. Custom achievements were removed (SCHEMA 9 drops `cfg.customAch`). Toast kicker is "Badge earned!" (`showToast({kicker})` for other uses).
+- Trends (`31-trends.js`, add-on page): this week (focus, days cleared, topic time, plan kept, reminders answered, deep sessions), top topics by time over 4 weeks with levels and 30-day level gains, focus by hour of day (from `e.sess`), 14-day focus, days cleared per week, records.
+- Proficiency is only ever self-rated (`setRating`); time and quests never change it. `PROF_DO` anchors each level to a can-do test, shown under the pips and in the weekly check-in. `topicFlat(t)` flags effort without progress (≥ `STALL_MIN` 300 min in `STALL_DAYS` 28 days and no rating rise since the window began) on Subjects rows, the check-in and Trends.
+- Subjects page boxes fold from their header (`.sjsec.fold`, ids kept in `pc-sjfold`).
+
 ## Splash
 - `#splash` is in `index.html` (visible before JS runs, so cold start never flashes the app); `53-splash.js` animates it: the grove sapling (`drawPlant`) grows over a filling bar, with a status line (focusing / streak + today), ~1.25 s, tap skips, reduced motion = static 0.7 s. Shows on launch and on return after `SPLASH_AWAY` (30 min) hidden. A CSS fallback hides it at 4 s if JS fails. No Minecraft imagery: we're moving away from it.
 - Native launch screen is a plain `#212121` (no icon) so it hands off seamlessly; `add-native.cjs` writes `pc_splash_blank.xml` and patches `AppTheme.NoActionBarLaunch` in `styles.xml`.

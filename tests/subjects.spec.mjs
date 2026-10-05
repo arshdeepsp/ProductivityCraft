@@ -175,3 +175,56 @@ test("a reviewed topic no quest feeds still shows as the running topic", async (
   await expect.poll(async () => (await store(page)).timer?.topic).toBe("old");
   await expect(page.locator(".runbox .rb-tp")).toContainText("Old proofs");
 });
+
+test("subject boxes collapse to their header and stay collapsed", async ({ page }) => {
+  await openApp(page, { cfg: { quests: [], subjects: SUBJ }, extra: { "pc-rerate": "2026-11-02" }, hash: "#subjects" });
+  const s2 = page.locator(".sjsec[data-sid='s2']");
+  await expect(s2.locator(".tr")).toHaveCount(2);
+  await s2.locator(".sjsec-tg").click();
+  await expect(s2).toHaveClass(/fold/);
+  await expect(s2.locator(".sjsec-tg")).toHaveAttribute("aria-expanded", "false");
+  await expect(s2.locator(".tr").first()).toBeHidden();
+  await expect(page.locator(".sjsec[data-sid='s1'] .tr").first()).toBeVisible();
+  await page.reload();
+  await expect(page.locator(".sjsec[data-sid='s2']")).toHaveClass(/fold/);
+  await page.locator(".sjsec[data-sid='s2'] .sjsec-tg").click();
+  await expect(page.locator(".sjsec[data-sid='s2'] .tr").first()).toBeVisible();
+});
+
+const FS = [{ id: "s1", name: "Maths", topics: [
+  { id: "f", name: "Flat one", p: 2, hist: [{ d: "2026-09-01", p: 2 }] },
+  { id: "u", name: "Rising", p: 3, hist: [{ d: "2026-09-01", p: 2 }, { d: "2026-10-25", p: 3 }] },
+  { id: "l", name: "Light", p: 1, hist: [] }
+] }];
+const FD = { "2026-10-20": { tt: { f: 200, u: 200, l: 100 } }, "2026-10-30": { tt: { f: 160, u: 160, l: 100 } } };
+
+test("each level says what you can do, and time alone never changes it", async ({ page }) => {
+  await openApp(page, { cfg: { quests: [], subjects: FS }, days: FD, extra: { "pc-rerate": "2026-11-02" }, hash: "#subjects" });
+  await expect(page.locator(".tr[data-tid='u'] .tr-do")).toHaveText("I can solve standard problems without notes");
+  await expect(page.locator(".tr[data-tid='l'] [data-pv='4']")).toHaveAttribute("title", "Advanced: I can apply it to new problems or explain it");
+  expect((await page.evaluate(() => JSON.parse(localStorage.getItem("pc-cache-v1")).cfg.subjects[0].topics.map((t) => t.p)))).toEqual([2, 3, 1]);
+});
+
+test("a topic with 5h+ in 4 weeks and a flat level is flagged on Subjects and Trends", async ({ page }) => {
+  await openApp(page, { cfg: { quests: [], subjects: FS, addTrends: true }, days: FD, extra: { "pc-rerate": "2026-11-02" }, hash: "#subjects" });
+  await expect(page.locator(".tr.flat")).toHaveCount(1);
+  await expect(page.locator(".tr[data-tid='f'] .tr-flat")).toHaveText("6h in 4 weeks, level unchanged. Does the rating still fit?");
+  await page.evaluate(() => (location.hash = "#trends"));
+  await expect(page.locator(".ttop-flat")).toHaveCount(1);
+  await expect(page.locator(".ttop-r", { hasText: "Flat one" }).locator(".ttop-flat")).toHaveText("level flat");
+  await expect(page.locator(".ttop-warn")).toContainText("1 topic got 5h+ in 4 weeks with no level change");
+  await page.evaluate(() => (location.hash = "#subjects"));
+  await page.click(".tr[data-tid='f'] [data-pv='3']");
+  await expect(page.locator(".tr.flat")).toHaveCount(0);
+});
+
+test("the weekly check-in rates what you can do and points out flat topics", async ({ page }) => {
+  await openApp(page, { cfg: { quests: [], subjects: FS }, days: FD });
+  await expect(page.locator("#gTitle")).toHaveText("Weekly check-in");
+  await expect(page.locator("#gBody .help").first()).toContainText("not how much time you put in");
+  const f = page.locator("#gBody .rr-r", { hasText: "Flat one" });
+  await expect(f.locator(".rr-do")).toHaveText("I can follow a worked example");
+  await expect(f.locator(".rr-flat")).toHaveText("Lots of time lately, level unchanged.");
+  await f.locator("[data-pv='4']").click();
+  await expect(f.locator(".rr-do")).toHaveText("I can apply it to new problems or explain it");
+});

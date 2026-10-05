@@ -6,7 +6,6 @@
   document.getElementById("mbGrove").addEventListener("click",function(){openGrove(false)});
   document.getElementById("mbSprint").addEventListener("click",function(){openSprintSetup()});
   (function(){var st=document.getElementById("strip"),x0=null,y0=null;st.addEventListener("touchstart",function(e){var t=e.touches[0];x0=t.clientX;y0=t.clientY},{passive:true});st.addEventListener("touchend",function(e){if(x0==null)return;var t=e.changedTouches[0],dx=t.clientX-x0,dy=t.clientY-y0;x0=null;if(Math.abs(dx)>40&&Math.abs(dx)>Math.abs(dy)*1.5){var b=document.getElementById(dx>0?"stripPrev":"stripNext");if(!b.disabled)b.click()}},{passive:true})})();
-  var achOpen=false;document.getElementById("achMore").addEventListener("click",function(){achOpen=!achOpen;render()});
   var lastEval={set:false},lastCleared=null,page=0,selDay=null,lastSt=null;
   function fmtD(k){return parse(k).toLocaleDateString("en-CA",{month:"short",day:"numeric"})}
 
@@ -109,30 +108,7 @@
       else if(n>lastEval.n)sfx("base");
     }
     if(!past)lastEval={set:true,n:n,ok:isOk,gold:isGold,lim:isLim,lvl:lv.l};
-    // achievements
-    D.ach.forEach(function(a){
-      var el=cards[a.id],u=st.streak>=a.need,b=el.querySelector("button");
-      el.classList.toggle("locked",!u);
-      el.querySelector(".t1").textContent=u?"Achievement unlocked!":"Locked \u00b7 "+a.label;
-      el.querySelector(".st").textContent=u?"Current streak":(a.need-st.streak)+" more clean day"+(a.need-st.streak===1?"":"s");
-      b.hidden=!(u&&(dl||dlChecked));
-    });
-    renderCustomAch(st);
-    // sidebar: next badge (desktop)
-    (function(){var sa=document.getElementById("sideAch");if(!sa)return;var nx=D.ach.filter(function(a){return st.streak<a.need})[0],last=D.ach.filter(function(a){return st.streak>=a.need}).pop(),a=nx||last;if(!a){sa.innerHTML="";return}
-      var pc=nx?Math.round(st.streak/a.need*100):100;sa.className="sideach px"+(nx?" locked":"");
-      sa.innerHTML='<div class="slot">'+svg(a.icon)+'</div><div><div class="k">'+(nx?"Next badge":"All badges earned")+'</div><div class="n"></div><div class="p">'+(nx?(a.need-st.streak)+" more clean day"+(a.need-st.streak===1?"":"s"):"Latest: "+esc(a.title))+'</div><div class="bar"><i style="width:'+pc+'%"></i></div></div><button type="button" class="lnk">See all achievements</button>';
-      sa.querySelector(".n").textContent=a.title;sa.querySelector(".lnk").addEventListener("click",function(){go("achievements")});})();
-    // visible achievements: latest unlocked + next locked, 3 total
-    var unl=D.ach.filter(function(a){return st.streak>=a.need}),lk=D.ach.filter(function(a){return st.streak<a.need}),vs=[];
-    if(unl.length)vs.push(unl[unl.length-1].id);lk.forEach(function(a){if(vs.length<3)vs.push(a.id)});for(var ui=unl.length-2;ui>=0&&vs.length<3;ui--)vs.unshift(unl[ui].id);
-    D.ach.forEach(function(a){cards[a.id].hidden=!achOpen&&vs.indexOf(a.id)<0});
-    document.getElementById("achMore").textContent=achOpen?"Show fewer":"Show all achievements ("+D.ach.length+")";
-    // new unlock toast
-    var sk="pc-seen-"+(st.start||"none"),seen=[];
-    try{seen=JSON.parse(localStorage.getItem(sk)||"[]")}catch(x){}
-    var fresh=D.ach.filter(function(a){return st.streak>=a.need&&seen.indexOf(a.id)<0});
-    if(fresh.length){showToast(fresh[fresh.length-1]);try{localStorage.setItem(sk,JSON.stringify(seen.concat(fresh.map(function(a){return a.id}))))}catch(x){}}
+    if(!past)renderBadges(st);
   }
   function elapsed(){
     var now=new Date(),t;

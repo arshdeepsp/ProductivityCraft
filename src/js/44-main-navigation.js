@@ -8,7 +8,7 @@
     document.querySelectorAll("#mainnav [data-go]").forEach(function(b){var on=b.getAttribute("data-go")===v;b.classList.toggle("on",on);if(on)b.setAttribute("aria-current","page");else b.removeAttribute("aria-current")});
     document.body.setAttribute("data-cur",v);var vt=document.getElementById("viewTitle");if(vt)vt.textContent={today:"Today",subjects:"Subjects",rules:"Rules",achievements:"Badges",trends:"Trends",settings:"Settings"}[v]||"";var sb=document.getElementById("setBtn");if(sb)sb.classList.toggle("on",v==="settings");var tb=document.getElementById("trendsBtn");if(tb)tb.classList.toggle("on",v==="trends");
     if(v==="settings"){if(prevView!=="settings")setTab=null;renderSettings()}if(v==="subjects")renderSubjects();if(v==="today"||v==="achievements")render();if(v==="trends")renderTrends();
-    if(v==="achievements"&&!achOpen){achOpen=true;render()}
+    
     if(!noHash&&location.hash!=="#"+v){try{history.pushState(null,"","#"+v)}catch(x){location.hash=v}}
     window.scrollTo(0,0);
   }

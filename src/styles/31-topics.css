@@ -18,3 +18,5 @@
 .rr .pp{width:24px;height:24px}
 .rb-tp .stone.on{background:#5E9E3A;color:#fff;border-color:#7CC24E #2F5A22 #2F5A22 #7CC24E}
 .q.running .sjchip{display:none!important}
+.rr-do{grid-column:1/-1;font:15px var(--vt);color:#555}
+.rr-flat{grid-column:1/-1;font:15px var(--vt);color:#7A5A00}

@@ -130,3 +130,17 @@ details.rules[open]>summary::after{content:"-"}
 .empty{font-size:20px;color:#3F3F3F;padding:8px 2px}
 .rules-empty{font-size:20px;color:var(--muted);text-shadow:2px 2px 0 #000;margin:18px 3px 0}
 .privacy{font-size:18px;color:var(--muted);text-shadow:2px 2px 0 #000;text-align:center;margin:0}
+.ach-sum{font-size:20px;color:#fff;text-shadow:2px 2px 0 #000;margin:-10px 3px 4px}
+.ach-sub small{font:16px var(--vt);color:#D8D8D8;margin-left:8px;text-shadow:none}
+.ach .ab{min-width:0}
+.ach .abar{height:8px;background:#111;border:2px solid #000;margin-top:8px}.ach .abar i{display:block;height:100%;width:0;background:#7FE05A}
+.ach .abar[hidden]{display:none}
+.ach .st{margin-top:6px}
+#achGrid .ach-sub:first-child{margin-top:8px}
+@media (max-width:720px){
+  #achGrid .ach-grid{gap:12px}
+  #achGrid .ach{grid-template-columns:52px 1fr;gap:12px;padding:10px 12px}
+  #achGrid .ach .slot{width:52px;height:52px;border-width:3px}#achGrid .ach .slot svg{width:40px;height:40px}
+  #achGrid .ach .t2{font-size:10px;margin:2px 0 4px}
+  #achGrid .ach button{margin-top:6px;padding:7px 10px}
+}

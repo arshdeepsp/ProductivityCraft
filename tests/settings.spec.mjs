@@ -82,7 +82,7 @@ for (const width of [360, 390]) {
 }
 
 test("every settings page renders without script errors", async ({ page }) => {
-  const errors = await openApp(page, { hash: "#settings", cfg: { nf: { on: true }, deadlines: [{ id: "d1", title: "Thesis", date: "2026-11-20" }], customAch: [{ id: "a", title: "Mine", desc: "", icon: "star", kind: "streak", n: 10 }] } });
+  const errors = await openApp(page, { hash: "#settings", cfg: { nf: { on: true }, deadlines: [{ id: "d1", title: "Thesis", date: "2026-11-20" }], } });
   for (const k of ["day", "quests", "alerts", "look", "sound", "extras", "data"]) {
     await page.click(`[data-st='${k}']`);
     await expect(page.locator(".stitle")).toBeVisible();

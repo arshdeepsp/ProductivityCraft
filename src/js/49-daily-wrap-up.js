@@ -114,9 +114,9 @@
     txt("XP earned",px+36,by+56,"16px "+PX,"#3F3F3F");
     [["Minutes",mins_],["Plan bonuses",pb],["Cleared",ok(e)?50:0],["Gold",gold(e)?100:0]].forEach(function(a,i){txt(a[0],px+36,by+96+i*30,"30px "+VT,"#1E1E1E");txt("+"+a[1],px+bw-36,by+96+i*30,"30px "+VT,"#1E1E1E","right")});
     txt("Level "+lv.l+"  \u00b7  "+lv.cur+"/"+lv.need,px+36,by+bh-20,"30px "+VT,"#2E6B24");
-    var qx=px+bw+40,nx=null;RANKS.forEach(function(x){if(!nx&&x[0]>st.streak)nx=x});var na=D.ach.filter(function(a){return a.need>st.streak})[0];
+    var qx=px+bw+40,nx=null;RANKS.forEach(function(x){if(!nx&&x[0]>st.streak)nx=x});var na=nextBadge(badgeStats(st));
     txt("Progress",qx+36,by+56,"16px "+PX,"#3F3F3F");
-    var pr=["Streak: "+st.streak+" (best "+st.best+")",st.rebase?"Rank: Rebasing":"Rank: "+(RANKS.filter(function(x){return st.streak>=x[0]}).pop()||RANKS[0])[1],nx?"Next rank: "+nx[1]+" in "+(nx[0]-st.streak):"Top rank reached",na?"Next badge: "+na.title+" in "+(na.need-st.streak):"All badges unlocked"];
+    var pr=["Streak: "+st.streak+" (best "+st.best+")",st.rebase?"Rank: Rebasing":"Rank: "+(RANKS.filter(function(x){return st.streak>=x[0]}).pop()||RANKS[0])[1],nx?"Next rank: "+nx[1]+" in "+(nx[0]-st.streak):"Top rank reached",na?"Next badge: "+na.a.title+" ("+na.p.txt+")":"All badges earned"];
     pr.forEach(function(t,i){txt(t,qx+36,by+96+i*30,"30px "+VT,"#1E1E1E")});
     /* observations */
     var oy=by+bh+30,sh0=210,oh=H-80-sh0-30-oy;panel(px,oy,pw,oh,"#212121");txt("Observations",px+36,oy+58,"16px "+PX,"#FFFF55");
