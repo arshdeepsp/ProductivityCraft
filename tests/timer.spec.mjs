@@ -19,3 +19,17 @@ test("a running timer enters Focus, shows one card, and restores on stop", async
   expect(await page.evaluate(() => document.body.classList.contains("focusview"))).toBe(false);
   await expect(page.locator("#quests .q.t-time").first().locator(".act output")).toHaveText("30m");
 });
+
+test("the screen wake lock is taken again when the app comes back to the front", async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__wl = 0;
+    Object.defineProperty(navigator, "wakeLock", { configurable: true, value: { request: () => { window.__wl++; return Promise.resolve({ release: () => Promise.resolve() }); } } });
+  });
+  await openApp(page, { cfg: { quests: Q } });
+  await page.click("#quests .q:nth-child(1) .tmr");
+  await expect.poll(() => page.evaluate(() => window.__wl)).toBe(1);
+  const flip = (v) => page.evaluate((st) => { Object.defineProperty(document, "visibilityState", { configurable: true, get: () => st }); document.dispatchEvent(new Event("visibilitychange")); }, v);
+  await flip("hidden");
+  await flip("visible");
+  await expect.poll(() => page.evaluate(() => window.__wl)).toBe(2);
+});

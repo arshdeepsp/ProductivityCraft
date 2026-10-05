@@ -5,7 +5,7 @@ const mock = (fail) => `
 window.__fn=[];window.__ln=[];
 window.Capacitor={isNativePlatform:()=>true,Plugins:{
   FocusNotify:{show:(o)=>{window.__fn.push(o);return ${fail ? "Promise.reject(new Error('not implemented'))" : "Promise.resolve()"}},hide:()=>{window.__fn.push('hide');return Promise.resolve()}},
-  LocalNotifications:{requestPermissions:()=>Promise.resolve({display:'granted'}),createChannel:()=>Promise.resolve(),getPending:()=>Promise.resolve({notifications:[]}),cancel:()=>Promise.resolve(),schedule:(o)=>{o.notifications.forEach(n=>window.__ln.push(n.id));return Promise.resolve()}},
+  LocalNotifications:{requestPermissions:()=>Promise.resolve({display:'granted'}),createChannel:()=>Promise.resolve(),getPending:()=>Promise.resolve({notifications:[]}),cancel:(o)=>{(o.notifications||[]).forEach(n=>window.__ln.push('x'+n.id));return Promise.resolve()},schedule:(o)=>{o.notifications.forEach(n=>window.__ln.push(n.id));return Promise.resolve()}},
   App:{addListener:()=>Promise.resolve({})},KeepAwake:{keepAwake:()=>Promise.resolve(),allowSleep:()=>Promise.resolve()}}};`;
 
 const Q = [{ id: "cs", type: "time", label: "CS work", min: 60 }];
@@ -39,4 +39,75 @@ test("falls back to a plain notification if the native plugin is missing", async
   await page.clock.runFor(4000);
   await page.waitForTimeout(200);
   expect(await page.evaluate(() => window.__ln)).toContain(900);
+});
+
+test("stopping a timer clears both the live and the fallback notification", async ({ page }) => {
+  await page.addInitScript(mock(true));
+  await openApp(page, { cfg: { quests: Q, nf: { on: true } } });
+  await page.click("#quests .q .tmr");
+  await page.clock.runFor(4000);
+  await page.click("#quests .q.running .tmr");
+  await page.clock.runFor(1000);
+  const ln = await page.evaluate(() => window.__ln);
+  expect(ln.lastIndexOf("x900")).toBeGreaterThan(ln.lastIndexOf(900));
+  expect((await page.evaluate(() => window.__fn)).pop()).toBe("hide");
+});
+
+test("stop always hides, even if the app thinks nothing is showing", async ({ page }) => {
+  await page.addInitScript(mock(false));
+  await openApp(page, { cfg: { quests: Q, nf: { on: true } } });
+  await page.click("#quests .q .tmr");
+  await page.clock.runFor(4000);
+  await page.evaluate(() => { window.__fn = []; });
+  await page.click("#quests .q.running .tmr");
+  await page.clock.runFor(4000);
+  const calls = await page.evaluate(() => window.__fn);
+  expect(calls).toContain("hide");
+  expect(calls.filter((c) => c && c.title)).toEqual([]);
+});
+
+test("a leftover live notification is cleared when the app opens with no timer", async ({ page }) => {
+  await page.addInitScript(mock(false));
+  await openApp(page, { cfg: { quests: Q, nf: { on: true } } });
+  await page.clock.runFor(1000);
+  expect(await page.evaluate(() => window.__fn)).toContain("hide");
+});
+
+test("the live timer grows a sapling toward the quest's goal", async ({ page }) => {
+  await page.addInitScript(mock(false));
+  await openApp(page, { cfg: { quests: Q, nf: { on: true } }, days: { "2026-11-02": { q: Q, cs: 20 } } });
+  await page.click("#quests .q .tmr");
+  await page.clock.runFor(4000);
+  const up = (await page.evaluate(() => window.__fn)).filter((c) => c && c.title).pop();
+  const start = await page.evaluate(() => JSON.parse(localStorage.getItem("pc-cache-v1")).timer.start);
+  expect(up.grow.dur).toBe(60 * 60000);
+  expect(up.grow.from).toBe(start - 20 * 60000);
+  expect(up.grow.art.length).toBe(7);
+  expect(up.grow.art.every((a) => typeof a === "string" && a.length > 40)).toBe(true);
+});
+
+test("Just 5 grows over 5 minutes, then hands off to the full goal", async ({ page }) => {
+  await page.addInitScript(mock(false));
+  await openApp(page, { cfg: { quests: [{ id: "fr", type: "time", label: "French", min: 30, roll: 300, days: [1, 2, 3, 4, 5] }], nf: { on: true } } });
+  await page.click("#sp5Btn");
+  await page.clock.runFor(4000);
+  const down = (await page.evaluate(() => window.__fn)).filter((c) => c && c.title).pop();
+  expect(down.grow.dur).toBe(5 * 60000);
+  expect(down.next.grow.dur).toBe(60 * 60000);
+});
+
+test("a sprint block grows over the block, and a paused block doesn't", async ({ page }) => {
+  await page.addInitScript(mock(false));
+  await openApp(page, { cfg: { quests: Q, nf: { on: true } } });
+  await page.click("#toolsBtn");
+  await page.click(".qmenu button:has-text('Sprint')");
+  await page.selectOption("#spLen", "50");
+  await page.click("#spGo");
+  await page.clock.runFor(4000);
+  let last = (await page.evaluate(() => window.__fn)).filter((c) => c && c.title).pop();
+  expect(last.grow.dur).toBe(50 * 60000);
+  await page.click("#spPause");
+  await page.clock.runFor(4000);
+  last = (await page.evaluate(() => window.__fn)).filter((c) => c && c.title).pop();
+  expect(last.grow).toBeNull();
 });

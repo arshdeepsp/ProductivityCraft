@@ -8,7 +8,7 @@
   function spLabel(id){var q=spDefs().concat(cfg().quests).filter(function(x){return x.id===id})[0];return q?q.label:"Quest"}
   function spAdd(id,m){if(m<1)return 0;var T=todayKey();if(S.days[T]&&S.days[T].ended)return 0;var e=Object.assign({},S.days[T]||{});e.q=activeDefs(T);if(!e.q.some(function(x){return x.id===id}))return 0;e[id]=Math.min(MAXM,(e[id]|0)+m);S.days[T]=e;dirty[T]=true;cache();clearTimeout(timer);timer=setTimeout(flush,300);render(true);return m}
   function spFmt(ms){ms=Math.max(0,ms);var s=Math.ceil(ms/1000),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return (h?h+":"+String(m).padStart(2,"0"):m)+":"+String(x).padStart(2,"0")}
-  function spSave(){cache();notifSync();setTimeout(function(){if(typeof focusSync==="function")focusSync()},0)}
+  function spSave(){cache();notifSync();setTimeout(function(){if(typeof focusSync==="function")focusSync(!S.sprint||S.sprint.phase==="done")},0)}
   function openSprintSetup(){
     if(locked()){setSync("This day is locked.");return}
     if(S.sprint){spShow();return}
@@ -33,7 +33,7 @@
           if(S.timer){S.timer.noPenalty=true;stopTimer()}
           var len=lenC,rounds=roundsC,now=Date.now(),first=spSuggest(sel,null);
           S.spLen=len;S.spRounds=rounds;S.sprint={firstStep:first0(fstep),topic:topicC,ids:sel.slice(),len:len,rounds:rounds,longEvery:S.spLongOn===false?0:4,phase:"focus",cur:first,block:1,start:now,end:now+len*60000,paused:null,log:{},next:null};
-          spSave();spMin=false;spShow();sfx("base");
+          spSave();spMin=false;spShow();sfx("base");callCheck();
           });
         });
       }

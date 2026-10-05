@@ -9,8 +9,6 @@
 #quests.done-open .donesep .chev{transform:rotate(-135deg);margin:4px 4px 0 0}
 #quests .q.indone{order:3}#quests:not(.done-open) .q.indone{display:none!important}#quests .q.indone .qgrip{visibility:hidden}
 html body #sparkBar,html body #sparkBar[hidden]{display:flex!important;flex-wrap:wrap;gap:6px;margin:0 0 10px}
-html body:not(.spark-on) #pickBtn,html body:not(.spark-on) #batchBtn{display:none!important}
-.msprint{display:inline-block}
 html body #nqBtn,html body #spBtn,html body #qEditBtn,html body #tdToggle,html body #tdRow{display:none!important}
 html body .qtools:not(:has(#shareBtn:not([hidden]))){display:none!important}
 .hdricon{display:inline-grid;place-items:center;width:34px;height:30px;padding:0!important}.hdricon svg{width:16px;height:16px}
@@ -29,3 +27,5 @@ html body .qtools:not(:has(#shareBtn:not([hidden]))){display:none!important}
 @media (max-width:720px){.qtools .sm{display:inline}}
 .addsheet{display:grid;gap:10px}.addopt{display:grid;gap:4px;text-align:left;background:#8B8B8B;color:#fff;border:3px solid;border-color:#fff #555 #555 #fff;padding:12px;font:inherit;cursor:pointer;text-shadow:1px 1px 0 #3F3F3F}.addopt b{font:11px var(--px);font-weight:400}.addopt span{font:16px var(--vt);color:#EDEDED}.addopt.td{cursor:default}.addopt .edrow{margin-top:6px}.addopt input{flex:1;min-width:0;font:18px var(--vt);background:#373737;color:#fff;border:3px solid;border-color:#1E1E1E #8B8B8B #8B8B8B #1E1E1E;padding:6px 8px}.addopt .cmsg2{color:#E8FFE0;margin:4px 0 0;font-size:15px}
 .dtl{display:grid;margin:2px 0 8px}.dt-r{display:flex;justify-content:space-between;align-items:baseline;gap:14px;border-bottom:2px solid #A6A6A6;padding:7px 0;font-size:18px}.dt-r span{color:#5A5A5A}.dt-r b{font-weight:400;text-align:right;color:#1E1E1E}
+
+#quests .offsep{order:4}#quests.off-open .offsep .chev{transform:rotate(-135deg);margin:4px 4px 0 0}#quests .q.offq{order:5}#quests:not(.off-open) .q.offq{display:none!important}#quests .q.offq .qgrip{visibility:hidden}

@@ -7,4 +7,4 @@ body.focusview .top>.dash{margin:auto 0!important;width:100%}
 body.focusview .wrap{padding-bottom:0!important}
 body.focusview .dash{margin-top:0}
 body.focusview .dash-main{margin-top:0}
-@media (max-width:720px){html body.focusview #gui #sparkBar{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)!important}body.focusview{padding-bottom:calc(16px + var(--sab))!important}body.focusview .wrap{padding-bottom:16px}}
+@media (max-width:720px){html body.focusview #gui #sparkBar{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 44px!important}body.focusview{padding-bottom:calc(16px + var(--sab))!important}body.focusview .wrap{padding-bottom:16px}}

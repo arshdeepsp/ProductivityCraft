@@ -23,11 +23,7 @@
   .qcount{cursor:pointer}
   html body .qtools:not(:has(#shareBtn:not([hidden]))){display:none!important}
   html body .qtools{grid-template-columns:1fr!important}
-  html body #sparkBar,html body #sparkBar[hidden]{display:grid!important;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}
-  html body.spark-on #sparkBar{grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(0,1fr))}
-  html body:not(.spark-on) #pickBtn,html body:not(.spark-on) #batchBtn{display:none!important}
-  html body.focusview #sparkBar{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}
-  .msprint{display:block}
+  html body #sparkBar,html body #sparkBar[hidden]{display:grid!important;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 44px}
   .m-hide{display:none}
   #sparkBar .stone{overflow:hidden;text-overflow:ellipsis}
   .gui-r{grid-template-columns:minmax(0,1fr) auto auto auto!important}
@@ -64,8 +60,7 @@
   html body.hide-grip #quests .q{grid-template-columns:0 12px 28px minmax(0,1fr) auto!important}
   #tdRow{display:none}body.tdopen #tdRow{display:flex}
   #gui .xp,#xpText{display:none!important}
-  #sparkBar{display:grid!important;grid-template-columns:1.3fr 1fr 1fr;gap:6px;margin-bottom:8px}#sparkBar[hidden]{display:none !important}#sparkBar .stone{font-size:7px;padding:9px 4px;white-space:nowrap}
-  html body.focusview #sparkBar{display:grid!important;grid-template-columns:1fr}
+  #sparkBar{gap:6px;margin-bottom:8px}#sparkBar .stone{font-size:7px;padding:9px 4px;white-space:nowrap}
   .qtools{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.qtools .stone{font-size:7px!important;padding:10px 2px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.qtools .stone[hidden]{display:none !important}
   .gui-r{gap:6px}.gui-r .locks,#lockTxt{font-size:15px}
 }

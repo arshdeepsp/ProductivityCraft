@@ -30,22 +30,29 @@
     if(AP.minimizeApp)AP.minimizeApp();else if(AP.exitApp)AP.exitApp()})})();
   var wakeOn=false,wakeLockObj=null,ongoingSig="";
   function focusActive(){return !!(S.timer||(S.sprint&&S.sprint.phase!=="done"))}
-  function focusSync(){
+  /* Growing sapling in the live notification: grow = {from, dur, art}. The native side picks the stage from (now - from) / dur and re-posts itself at each stage via an alarm. */
+  var focusArtCache=null;
+  function focusArt(){if(focusArtCache)return focusArtCache;var out=[];try{for(var s=0;s<7;s++){var cv=document.createElement("canvas"),W=24,H=36;cv.width=W;cv.height=H;var c=cv.getContext("2d");c.fillStyle="#6A4A31";c.fillRect(0,H-2,W,2);c.fillStyle="#5E9E3A";c.fillRect(0,H-3,W,1);drawPlant(c,1,12,H-3,s,grng("focus-sapling"),0);out.push(cv.toDataURL("image/png").split(",")[1]||"")}}catch(x){out=[]}return focusArtCache=out}
+  function timerGoal(q){var e=S.days[todayKey()]||{};if(q.roll)return schLen(q);var pl=planOf(q,e);return cfg().showPlan&&pl>q.min?pl:q.min}
+  function growFor(from,mins){return mins>0?{from:Math.round(from),dur:Math.round(mins*60000),art:focusArt()}:null}
+  function focusOff(){var FN=capPlugin("FocusNotify");if(FN&&FN.hide)FN.hide().catch(function(){});var ln=LN();if(ln&&ln.cancel)ln.cancel({notifications:[{id:900}]}).catch(function(){})}
+  function focusSync(force){
     var want=focusActive()&&cfg().keepAwake!==false&&document.visibilityState==="visible";
     if(want!==wakeOn){wakeOn=want;var KA=capPlugin("KeepAwake");
       if(KA){(want?KA.keepAwake():KA.allowSleep()).catch(function(){})}
       else if(navigator.wakeLock){if(want)navigator.wakeLock.request("screen").then(function(l){wakeLockObj=l}).catch(function(){wakeOn=false});else if(wakeLockObj){wakeLockObj.release().catch(function(){});wakeLockObj=null}}}
-    var n=nf(),t=null,b=null,when=null,down=false,chrono=false,next=null;
+    var n=nf(),t=null,b=null,when=null,down=false,chrono=false,next=null,grow=null;
     if(n.on&&n.timer){
       if(S.timer){var c5=S.timer.commit&&!S.timer.c5;t=(c5?"Just 5 minutes: ":"Focusing: ")+S.timer.label;b=S.timer.first?"First: "+S.timer.first:"Tap to return";chrono=true;down=!!c5;when=c5?S.timer.start+S.timer.commit*60000:S.timer.start;
-        if(c5)next={title:"Focusing: "+S.timer.label,body:"5 minutes done. Keep going or stop to log it.",when:Math.round(S.timer.start),countdown:false,chrono:true}}
-      else if(S.sprint&&S.sprint.phase==="focus"){var sp=S.sprint;t="Sprint: "+spLabel(sp.cur);if(sp.paused)b="Paused";else{b="Block "+sp.block+(sp.rounds?" of "+sp.rounds:"");chrono=true;down=true;when=sp.end;
+        var gq=activeDefs(todayKey()).filter(function(x){return x.id===S.timer.id})[0],full=gq&&gq.type==="time"?growFor(S.timer.start-((S.days[todayKey()]||{})[gq.id]|0)*60000,timerGoal(gq)):null;grow=c5?growFor(S.timer.start,S.timer.commit):full;
+        if(c5)next={title:"Focusing: "+S.timer.label,body:"5 minutes done. Keep going or stop to log it.",when:Math.round(S.timer.start),countdown:false,chrono:true,grow:full}}
+      else if(S.sprint&&S.sprint.phase==="focus"){var sp=S.sprint;t="Sprint: "+spLabel(sp.cur);if(sp.paused)b="Paused";else{b="Block "+sp.block+(sp.rounds?" of "+sp.rounds:"");chrono=true;down=true;when=sp.end;grow=growFor(sp.end-(sp.blen||sp.len)*60000,sp.blen||sp.len);
           var last=sp.rounds&&sp.block>=sp.rounds,lb=sp.longEvery&&sp.block%sp.longEvery===0,bend=sp.end+(lb?30:15)*60000;
           next=last?{title:"Sprint complete",body:"Open the app to see your summary.",chrono:false}:{title:lb?"Long break":"Decision break",body:"Next block when this reaches zero",when:Math.round(bend),countdown:true,chrono:true,next:{title:"Break over",body:"Start your next block",chrono:false}}}}
       else if(S.sprint&&S.sprint.phase==="break"){t=S.sprint.long?"Long break":"Decision break";if(S.sprint.breakDone)b="Break over \u2014 start your next block";else{b="Next block when this reaches zero";chrono=true;down=true;when=S.sprint.bend;next={title:"Break over",body:"Start your next block",chrono:false}}}}
-    var sig=t?[t,b,when,down].join("|"):"";if(sig===ongoingSig)return;ongoingSig=sig;
+    var sig=t?[t,b,when,down,grow?grow.from+"/"+grow.dur:""].join("|"):"";if(sig===ongoingSig&&force!==true)return;ongoingSig=sig;if(!t){focusOff();return}
     function legacy(){var ln=LN();if(!ln)return;ln.cancel({notifications:[{id:900}]}).catch(function(){}).then(function(){if(!t)return;return ensureChannels().then(function(){return ln.schedule({notifications:[{id:900,title:t,body:b,ongoing:true,autoCancel:false,channelId:"pc_focus",schedule:{at:new Date(Date.now()+400)}}]})})}).catch(function(){})}
     var FN=capPlugin("FocusNotify");
-    if(FN&&FN.show){(t?FN.show({title:t,body:b,when:when==null?null:Math.round(when),countdown:down,chrono:chrono,next:next}):FN.hide()).catch(legacy);return}
+    if(FN&&FN.show){FN.show({title:t,body:b,when:when==null?null:Math.round(when),countdown:down,chrono:chrono,next:next,grow:grow}).catch(legacy);return}
     legacy()}
-  setInterval(focusSync,3000);document.addEventListener("visibilitychange",function(){wakeOn=!wakeOn&&false;focusSync()});
+  setInterval(focusSync,3000);if(!focusActive())setTimeout(function(){focusSync(true)},400);document.addEventListener("visibilitychange",function(){wakeOn=false;focusSync()});

@@ -1,8 +1,8 @@
   /* ---- spark tools ---- */
-  function pickPool(){var T=todayKey(),e=S.days[T]||{},out=[];activeDefs(T).forEach(function(q){
+  function pickPool(){var T=todayKey(),e=S.days[T]||{},out=[];activeDefs(T).forEach(function(q){if(q.off)return;
       if(q.type==="time"&&!metQ(q,e))out.push(q);else if((q.type==="check"||q.type==="todo"||q.type==="weekly")&&!e[q.id])out.push(q);else if(q.type==="target"&&!metQ(q,e))out.push(q)});return out}
-  function behindTime(){var T=todayKey(),e=S.days[T]||{},L=activeDefs(T).filter(function(q){return q.type==="time"});if(!L.length)return null;var open=L.filter(function(q){return !metQ(q,e)});return open[0]||L[0]}
-  function allTimeDone(){var T=todayKey(),e=S.days[T]||{},L=activeDefs(T).filter(function(q){return q.type==="time"});return L.length>0&&L.every(function(q){return metQ(q,e)})}
+  function behindTime(){var T=todayKey(),e=S.days[T]||{},L=activeDefs(T).filter(function(q){return q.type==="time"&&!q.off});if(!L.length)return null;var open=L.filter(function(q){return !metQ(q,e)});return open[0]||L[0]}
+  function allTimeDone(){var T=todayKey(),e=S.days[T]||{},L=activeDefs(T).filter(function(q){return q.type==="time"&&!q.off});return L.length>0&&L.every(function(q){return metQ(q,e)})}
   function openBonus5(after){var T=todayKey(),e=S.days[T]||{},L=activeDefs(T).filter(function(q){return q.type==="time"});
     openG("All done today",function(b){b.innerHTML='<p class="mhead good">Every time quest is done today.</p><p class="help">Want a bonus 5 minutes anyway? Pick one, or call it a day.</p><div class="addsheet">'+L.map(function(q){return '<button type="button" class="addopt" data-b5="'+q.id+'"><b>'+esc(q.label)+'</b><span>'+hm(e[q.id]|0)+' logged today</span></button>'}).join("")+'</div><div class="edrow end"><button type="button" class="stone" id="b5No">Call it a day</button></div>';
       b.querySelector("#b5No").addEventListener("click",closeG);

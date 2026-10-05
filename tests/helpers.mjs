@@ -1,7 +1,4 @@
-import { pathToFileURL } from "node:url";
-import { resolve } from "node:path";
-
-export const APP = pathToFileURL(resolve("dist/index.html")).href;
+export const APP = "http://127.0.0.1:4173/index.html";
 
 export async function openApp(page, { now = "2026-11-02T09:00:00-05:00", cfg = {}, days = {}, extra = {}, hash = "" } = {}) {
   await page.clock.install({ time: new Date(now) });

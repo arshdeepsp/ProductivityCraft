@@ -30,7 +30,7 @@ test("leftover to-dos from yesterday are reviewed once when the app opens", asyn
   await page.click("#tdrGo");
   await expect(page.locator("#gModal")).toBeHidden();
   await expect.poll(() => page.evaluate(() => localStorage.getItem("pc-todoreview"))).toBe("2026-11-02");
-  await page.reload();
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
   await page.clock.runFor(1500);
   await expect(page.locator("#gModal")).toBeHidden();
   expect(await page.evaluate(cfgQuests)).toEqual(["Email advisor"]);
@@ -42,4 +42,38 @@ test("a notification is scheduled when to-dos are still open", async ({ page }) 
   await openApp(page, { cfg: { quests: Q, nf: { on: true } } });
   await page.clock.runFor(2000);
   expect(await page.evaluate(() => window.__ln)).toContain("2400 To-dos still open");
+});
+
+test("ending the day reviews open to-dos once, with nothing asked again next morning", async ({ page }) => {
+  const Q = [{ id: "j", type: "check", label: "Journal" }, { id: "a", type: "todo", label: "Email advisor", addedOn: "2026-11-02" }];
+  await openApp(page, { cfg: { quests: Q } });
+  await page.click("#endBtn");
+  await page.click("#emYes");
+  await page.click("#edClose");
+  await expect(page.locator("#gTitle")).toHaveText("Still need these to-dos?");
+  await expect(page.locator("#gBody")).toContainText("The day is done.");
+  await page.click("#tdrGo");
+  await expect(page.locator("#gModal")).toBeHidden();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("pc-todoreview"))).toBe("2026-11-03");
+});
+
+test("closing the day-ended dialog any way still reviews open to-dos", async ({ page }) => {
+  const Q = [{ id: "j", type: "check", label: "Journal" }, { id: "a", type: "todo", label: "Email advisor", addedOn: "2026-11-02" }];
+  await openApp(page, { cfg: { quests: Q } });
+  await page.click("#endBtn");
+  await page.click("#emYes");
+  await page.click("#gClose");
+  await expect(page.locator("#gTitle")).toHaveText("Still need these to-dos?");
+});
+
+test("the leftover to-do review waits until a running timer stops", async ({ page }) => {
+  const Q = [{ id: "cs", type: "time", label: "CS", min: 60 }, { id: "a", type: "todo", label: "Email advisor", addedOn: "2026-11-01" }];
+  const state = { days: {}, cfg: { quests: Q, rules: [], idleGrove: 0, start: "2026-10-01T04:00:00.000Z", updated: "2026-10-01T10:00:00Z" }, timer: { id: "cs", label: "CS", start: Date.parse("2026-11-02T08:50:00-05:00"), day: "2026-11-02" } };
+  await page.addInitScript((s) => { if (!localStorage.getItem("pc-cache-v1")) localStorage.setItem("pc-cache-v1", s); }, JSON.stringify(state));
+  await openApp(page, { cfg: { quests: Q } });
+  await page.clock.runFor(1500);
+  await expect(page.locator("#gModal")).toBeHidden();
+  await page.click("#quests .q.running .tmr");
+  await page.clock.runFor(1000);
+  await expect(page.locator("#gTitle")).toHaveText("Still need these to-dos?");
 });

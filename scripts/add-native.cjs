@@ -26,6 +26,7 @@ fs.copyFileSync(path.join("native", "android", "pc_chime.wav"), path.join(rawDir
 
 fs.writeFileSync(path.join(javaDir, "MainActivity.java"), `package ${pkg};
 
+import android.content.Intent;
 import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;
 
@@ -34,6 +35,13 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(FocusNotifyPlugin.class);
         super.onCreate(savedInstanceState);
+        FocusNotifyPlugin.capture(getIntent());
+    }
+
+    @Override
+    public void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        FocusNotifyPlugin.capture(intent);
     }
 }
 `);

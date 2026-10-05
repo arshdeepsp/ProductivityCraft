@@ -9,6 +9,9 @@ test("weekly totals carry empty days only while the surplus lasts", async ({ pag
   const marks = await page.evaluate(() => [...document.querySelectorAll("#strip i")].slice(-5, -1).map((i) => i.className));
   expect(marks).toEqual(["carried", "carried", "carried", "grace"]);
   await expect(page.locator("#carryNote")).toContainText("don’t cover today");
+  await page.click("#carryNote");
+  await expect(page.locator("#gBody")).toContainText("Right now: today isn’t covered.");
+  await expect(page.locator("#gBody")).not.toContainText("\\u2019");
 });
 
 test("strict mode adds the commitment check and weekly easing budget", async ({ page }) => {
@@ -65,6 +68,7 @@ const MWF = [{ id: "w", type: "time", label: "Deep work", min: 60, roll: 360, da
 
 test("weekly totals pace by work days only", async ({ page }) => {
   await openApp(page, { now: "2026-11-10T09:00:00-05:00", cfg: { quests: MWF }, days: { "2026-11-09": { w: 120, q: MWF, ended: true } } });
+  await page.click("#offSep");
   await page.locator("#quests .q", { hasText: "Deep work" }).locator(".pzb").click();
   await page.click(".qmenu button:has-text('View details')");
   const row = await page.locator("#gBody .dt-r").filter({ has: page.locator("span", { hasText: /^This week$/ }) }).textContent();
@@ -74,8 +78,39 @@ test("weekly totals pace by work days only", async ({ page }) => {
 
 test("on an off day the weekly quest is visible but optional", async ({ page }) => {
   await openApp(page, { now: "2026-11-10T09:00:00-05:00", cfg: { quests: MWF }, days: { "2026-11-09": { w: 120, q: MWF, ended: true } } });
-  await expect(page.locator("#quests .q", { hasText: "Deep work" }).locator(".req")).toContainText("off day");
+  const row = page.locator("#quests .q", { hasText: "Deep work" });
+  await expect(row.locator(".req")).toContainText("off day");
   await expect(page.locator("#qCount")).toBeHidden();
+  await expect(page.locator("#offSep")).toContainText("Off today (1)");
+  await expect(page.locator("#pausedNote")).not.toContainText("Not scheduled");
+  await expect(row).toBeHidden();
+  await page.click("#offSep");
+  await expect(row).toBeVisible();
+});
+
+test("logging time on an off day counts for the week but never marks it done", async ({ page }) => {
+  const TT = [{ id: "w", type: "time", label: "Deep work", min: 60, roll: 240, days: [2, 4], addedOn: "2026-10-01" }];
+  await openApp(page, { now: "2026-11-09T09:00:00-05:00", cfg: { quests: TT } });
+  await page.click("#offSep");
+  const row = page.locator("#quests .q", { hasText: "Deep work" });
+  await row.locator(".tapnum").last().click();
+  await page.fill("#numIn", "10");
+  await page.click("#numGo");
+  await expect(row).toHaveClass(/offq/);
+  await expect(row).not.toHaveClass(/indone/);
+  await expect(row).not.toHaveClass(/\bmet\b/);
+  await expect(page.locator("#doneSep")).toBeHidden();
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("pc-cache-v1")).days["2026-11-09"].w)).toBe(10);
+});
+
+test("off-day weekly quests stay out of the schedule and Just 5", async ({ page }) => {
+  const Q = [...MWF, { id: "cs", type: "time", label: "CS", min: 60 }];
+  await openApp(page, { now: "2026-11-10T09:00:00-05:00", cfg: { quests: Q } });
+  await page.click("#schBtn");
+  await expect(page.locator("[data-sq]")).toHaveText(["CS 1h"]);
+  await page.click("#schOk");
+  await page.click("#sp5Btn");
+  await expect(page.locator("#quests .q.running")).toContainText("CS");
 });
 
 test("first-week target counts remaining work days", async ({ page }) => {

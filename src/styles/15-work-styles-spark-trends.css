@@ -39,3 +39,5 @@
   .subjt{grid-template-columns:minmax(0,1fr)!important}
   .sjt,.trcard{min-width:0}
 }
+
+#sparkBar .kebab{font-size:16px!important;line-height:1;padding:6px 0!important;min-width:44px;text-align:center}

@@ -85,3 +85,9 @@ test("pushing an existing quest's start date can't remove it from today", async 
   await page.waitForTimeout(150);
   await expect(page.locator("#quests .q", { hasText: "Read" })).toHaveCount(1);
 });
+
+test("the late-start cutoff is the middle of Your day", async ({ page }) => {
+  await openApp(page, { now: "2026-11-03T14:30:00-05:00", cfg: { quests: base, day: { wake: "06:00", bed: "22:00" } }, days: { "2026-11-03": { j: true, q: base } } });
+  await addQuest(page, "Afternoon study");
+  await expect(page.locator("#quests .q", { hasText: "Afternoon study" }).locator(".req")).toContainText("counts from tomorrow");
+});
