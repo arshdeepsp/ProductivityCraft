@@ -153,6 +153,6 @@
     var p=PACKS[name];if(!p)return;var c=clone(cfg()),T=todayKey();c.packChosen=name;
     var skipped=0;p.q.forEach(function(q,i){var n=stampAdded(clone(q));n.id="q"+Date.now().toString(36)+i+Math.floor(Math.random()*1e3);if(countsOnDay(n)&&overDays(c.quests.concat([n])).length){skipped++;return}c.quests.push(n)});if(skipped)setTimeout(function(){setSync(skipped+" pack quest"+(skipped===1?"":"s")+" skipped: the daily limit is "+capOf()+" quests.")},50);
     var R=clone(c.rules||DEFAULT_RULES);R.push(clone(p.r));c.rules=R;saveCfg(c);
-    if(S.days[T]&&!S.days[T].ended){S.days[T]=Object.assign({},S.days[T],{q:activeDefs(T)});dirty[T]=true;cache();clearTimeout(timer);timer=setTimeout(flush,300)}
+    if(S.days[T]){S.days[T]=Object.assign({},S.days[T],{q:activeDefs(T)});dirty[T]=true;cache();clearTimeout(timer);timer=setTimeout(flush,300)}
     qSig="";render();renderRules();setSync(name+" pack added");
   }

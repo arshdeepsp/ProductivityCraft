@@ -5,6 +5,6 @@
     saveCfg(c);e.q=activeDefs(T);commit();if(done)setSync("To-do done: "+q.label);
   }
   (function(){var inp=document.getElementById("tdNew"),btn=document.getElementById("tdAdd");if(!inp)return;
-    function addTd(){var l=inp.value.trim();if(!l||locked())return;var c=clone(cfg());c.quests.push({id:"td"+Date.now().toString(36),type:"todo",label:l.slice(0,60),addedOn:todayKey()});saveCfg(c);inp.value="";var T=todayKey();if(S.days[T]&&!S.days[T].ended){S.days[T]=Object.assign({},S.days[T],{q:activeDefs(T)});dirty[T]=true;cache()}qSig="";render();setSync("To-do added")}
+    function addTd(){var l=inp.value.trim();if(!l||locked())return;var c=clone(cfg());c.quests.push({id:"td"+Date.now().toString(36),type:"todo",label:l.slice(0,60),addedOn:todayKey()});saveCfg(c);inp.value="";var T=todayKey();if(S.days[T]){S.days[T]=Object.assign({},S.days[T],{q:activeDefs(T)});dirty[T]=true;cache()}qSig="";render();setSync("To-do added")}
     btn.addEventListener("click",addTd);inp.addEventListener("keydown",function(e){if(e.key==="Enter")addTd()});
   })();

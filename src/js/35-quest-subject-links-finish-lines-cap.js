@@ -2,10 +2,19 @@
   var LV=["","Novice","Beginner","Intermediate","Advanced","Expert"];
   function subjById(id){return subjList().filter(function(s){return s.id===id})[0]}
   function qSubjs(q){var L=q&&q.subjs&&q.subjs.length?q.subjs.slice():(q&&q.subj?[q.subj]:[]);return L.filter(function(id){return subjById(id)})}
-  function setSubjs(q,L){L=(L||[]).filter(function(x,i,a){return x&&a.indexOf(x)===i});if(L.length){q.subjs=L;q.subj=L[0]}else{delete q.subjs;delete q.subj;delete q.topic;if(q.fin&&q.fin.t!=="total")delete q.fin}}
+  function setSubjs(q,L){L=(L||[]).filter(function(x,i,a){return x&&a.indexOf(x)===i});if(L.length){q.subjs=L;q.subj=L[0]}else{delete q.subjs;delete q.subj;delete q.topic;delete q.topics;if(q.fin&&q.fin.t!=="total")delete q.fin}}
+  function topicById(tid){var r=null;subjList().some(function(s){return (s.topics||[]).some(function(t){if(t.id===tid){r={s:s,t:t};return true}return false})});return r}
+  function qTopics(q){return ((q&&q.topics)||[]).filter(function(t,i,a){return topicById(t)&&a.indexOf(t)===i})}
+  function qTopicPool(q){var L=qTopics(q),out=L.slice();qSubjs(q).forEach(function(sid){if(L.some(function(t){return topicById(t).s.id===sid}))return;(subjById(sid).topics||[]).forEach(function(t){out.push(t.id)})});return out}
+  function setLinks(q,L,SL){L=L.filter(function(x,i,a){return a.indexOf(x)===i});if(L.length)q.topics=L;else delete q.topics;delete q.topic;setSubjs(q,SL);if(q.fin&&q.fin.t==="topic"&&!qTopics(q).length)delete q.fin}
+  function linkTopic(q,tid){var o=topicById(tid);if(!o)return;var L=qTopics(q),SL=qSubjs(q),k=L.indexOf(tid),sid=o.s.id;if(k>=0)L.splice(k,1);else L.push(tid);var has=L.some(function(x){return topicById(x).s.id===sid});if(has&&SL.indexOf(sid)<0)SL.push(sid);if(!has)SL=SL.filter(function(x){return x!==sid});setLinks(q,L,SL)}
+  function subjFull(q,sid){var sj=subjById(sid),T=(sj&&sj.topics)||[],L=qTopics(q);return T.length?T.every(function(t){return L.indexOf(t.id)>=0}):qSubjs(q).indexOf(sid)>=0}
+  function linkSubj(q,sid){var sj=subjById(sid);if(!sj)return;var L=qTopics(q),SL=qSubjs(q),ids=(sj.topics||[]).map(function(t){return t.id});if(subjFull(q,sid)){L=L.filter(function(x){return ids.indexOf(x)<0});SL=SL.filter(function(x){return x!==sid})}else{L=L.concat(ids);if(SL.indexOf(sid)<0)SL.push(sid)}setLinks(q,L,SL)}
+  function topicPick(attr,q){var SJ=subjList();if(!SJ.length)return "";var L=qTopics(q),SL=qSubjs(q);return '<div class="tppick" role="group" aria-label="Feeds topics">'+SJ.map(function(sj){var T=sj.topics||[],full=subjFull(q,sj.id);
+      return '<div class="tpg" data-sid="'+sj.id+'"><div class="tpg-h"><span class="tpg-n">'+esc(sj.name)+'</span>'+(T.length?'<button type="button" class="lnk" '+attr+' data-lsj="'+sj.id+'">'+(full?'None':'All')+'</button>':'')+'</div><div class="sjpick">'+(T.length?T.map(function(t){var on=L.indexOf(t.id)>=0;return '<button type="button" class="stone mini'+(on?' on':'')+'" '+attr+' data-ltp="'+t.id+'" aria-pressed="'+on+'">'+esc(t.name)+' <small>'+(t.p||0)+'/5</small></button>'}).join(""):'<button type="button" class="stone mini'+(full?' on':'')+'" '+attr+' data-lsj="'+sj.id+'" aria-pressed="'+full+'">Whole subject</button><span class="tpg-e">No topics yet</span>')+'</div></div>'}).join("")+'</div>'}
+  function wireTopicPick(root,getQ,redraw){root.querySelectorAll("[data-ltp]").forEach(function(x){x.addEventListener("click",function(){linkTopic(getQ(x),x.getAttribute("data-ltp"));redraw()})});root.querySelectorAll("[data-lsj]").forEach(function(x){x.addEventListener("click",function(){linkSubj(getQ(x),x.getAttribute("data-lsj"));redraw()})})}
   function openSubjPick(q){var L=qSubjs(q);if(L.length===1){jumpSubj(L[0]);return}openG(q.label+" feeds",function(b){b.innerHTML='<div class="addsheet">'+L.map(function(id){var sj=subjById(id);return '<button type="button" class="addopt" data-js="'+id+'"><b>'+esc(sj.name)+'</b><span>'+((sj.topics||[]).length?LV[Math.max(1,Math.round(avgProf(sj)))]:"No topics yet")+'</span></button>'}).join("")+'</div>';b.querySelectorAll("[data-js]").forEach(function(x){x.addEventListener("click",function(){closeG();jumpSubj(x.getAttribute("data-js"))})})})}
-  function jumpSubj(id){go("subjects");setTimeout(function(){var c=document.querySelector('.subjcard[data-sid="'+id+'"]');if(c){c.scrollIntoView({block:"center"});c.classList.add("flash");setTimeout(function(){c.classList.remove("flash")},1500)}},50)}
-  function subjChips(name,sel){var L=subjList();if(!L.length)return "";return '<div class="sjpick" role="group" aria-label="Feeds subjects">'+L.map(function(sj){var on=sel.indexOf(sj.id)>=0;return '<button type="button" class="stone mini'+(on?' on':'')+'" '+name+'="'+sj.id+'" aria-pressed="'+on+'">'+esc(sj.name)+'</button>'}).join("")+'</div>'}
+  function jumpSubj(id){go("subjects");setTimeout(function(){var c=document.querySelector('.tsec[data-sid="'+id+'"]');if(c){c.scrollIntoView({block:"center"});c.classList.add("flash");setTimeout(function(){c.classList.remove("flash")},1500)}},50)}
   function subjMinutes(sid){var t=0;Object.keys(S.days).forEach(function(d){var e=S.days[d];if(!e)return;defsOf(e).forEach(function(q){if(q.type==="time"&&qSubjs(q).indexOf(sid)>=0)t+=e[q.id]|0})});return t}
   function capOf(){return cfg().cap||10}
   function activeCount(L){return (L||cfg().quests).filter(function(q){return q.type!=="todo"&&!q.completed}).length}
@@ -22,7 +31,7 @@
   function finishMet(q){var f=q.fin;if(q.dl){var s=0,T=todayKey();for(var d=q.dl.from;d<=T;d=add(d,1))s+=+((S.days[d]||{})[q.id])||0;if(s>=q.dl.total)return "target met";if(T>q.dl.due)return "deadline passed";return null}
     if(!f)return null;
     if(f.t==="total"&&q.total&&projSum(q.id)>=q.total)return "project total reached";
-    if(f.t==="topic"&&q.subj&&q.topic){var sj=subjById(q.subj),tp=sj&&(sj.topics||[]).filter(function(t){return t.id===q.topic})[0];if(tp&&(tp.p||0)>=(f.lvl||4))return tp.name+" reached "+LV[f.lvl||4]}
+    if(f.t==="topic"){var TL=qTopics(q).map(function(x){return topicById(x).t});if(TL.length&&TL.every(function(t){return (t.p||0)>=(f.lvl||4)}))return (TL.length===1?TL[0].name:"All its topics")+" reached "+LV[f.lvl||4]}
     if(f.t==="subject"&&q.subj){var sj2=subjById(q.subj);if(sj2&&(sj2.topics||[]).length&&Math.round(avgProf(sj2))>=(f.lvl||4))return sj2.name+" reached "+LV[f.lvl||4]}
     return null}
   function completeQuest(id,how,silent){var c=clone(cfg()),q=c.quests.filter(function(x){return x.id===id})[0];if(!q||q.completed)return;q.completed={on:todayKey(),how:how};saveCfg(c);qSig="";
@@ -50,7 +59,7 @@
   /* ---- notifications (native app via Capacitor; inert in the browser) ---- */
   function nativeApp(){try{return !!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())}catch(x){return false}}
   var LNp=null;function LN(){if(LNp)return LNp;try{if(!nativeApp())return null;LNp=window.Capacitor.Plugins&&window.Capacitor.Plugins.LocalNotifications||(window.Capacitor.registerPlugin?window.Capacitor.registerPlugin("LocalNotifications"):null)}catch(x){LNp=null}return LNp}
-  var NF_DEF={on:false,timer:true,sched:true,checkin:true,checkinAt:"19:00",endday:true,risk:true,dl:true,review:true,pace:true};
+  var NF_DEF={on:false,timer:true,sched:true,checkin:true,checkinAt:"19:00",todos:true,risk:true,dl:true,review:true,pace:true};
   function nf(){return Object.assign({},NF_DEF,cfg().nf||{})}
   function atTime(k,hhmm){var p=parse(k),a=hhmm.split(":");p.setHours(+a[0],+a[1],0,0);return p}
   function nfPlan(){
@@ -58,14 +67,12 @@
     function push(id,title,body,at,extra){var t=at instanceof Date?at.getTime():at;if(t>now+5000)out.push({id:id,title:title,body:body,channelId:"pc_alerts2",extra:Object.assign({at:t},extra||{}),schedule:{at:new Date(t),allowWhileIdle:true}})}
     if(n.timer&&S.timer){var q=activeDefs(T).filter(function(x){return x.id===S.timer.id})[0];if(q&&q.type==="time"){var lg=e[q.id]|0;if(!S.timer.minHit&&lg<q.min)push(1001,"Minimum reached \u2714",q.label+": "+hmL(q.min)+" done. Keep going or stop the timer to log it.",S.timer.start+(q.min-lg)*60000);var pl=planOf(q,e);if(cfg().showPlan&&pl>q.min&&!S.timer.planHit&&lg<pl)push(1002,"Plan reached \u2605",q.label+": "+hm(pl)+" done.",S.timer.start+(pl-lg)*60000);if(S.timer.commit&&!S.timer.c5)push(1003,"5 minutes in!","Keep going, or stop guilt-free.",S.timer.start+S.timer.commit*60000)}}
     var sp=S.sprint;if(n.timer&&sp){if(sp.phase==="focus"&&!sp.paused)push(1101,"Block done \u2014 take your break",spLabel(sp.cur)+" logged. 15-minute decision break starts now.",sp.end);if(sp.phase==="break"&&!sp.breakDone)push(1102,"Break over","Pick your next quest and start the block.",sp.bend);if(sp.phase==="focus"&&!sp.paused&&!(sp.rounds&&sp.block>=sp.rounds))push(1103,"Break over","Pick your next quest and start the block.",sp.end+((sp.longEvery&&sp.block%sp.longEvery===0)?30:15)*60000)}
-    var ended=!!e.ended;
     for(var i=0;i<7;i++){var k=add(T,i),today=i===0;
-      if(n.checkin&&!(today&&ended)){var left=today?reqOf(activeDefs(T)).filter(function(q){return q.type!=="limit"&&!metQ(q,e)}).length:null;if(!today||left>0)push(2000+i,"Evening check-in",today?left+" quest"+(left===1?"":"s")+" left today. Still time.":"How\u2019s today going? Open your quests.",atTime(k,n.checkinAt))}
-      if(today&&n.endday&&!ended){var otd=openTodos().length;if(otd){push(2400,"To-dos still open",otd+" to-do"+(otd===1?"":"s")+" not done today. Keep or clear them?",atMin(k,dayWin(k).e)-30*60000)}}
-      if(n.endday&&!(today&&ended)){push(2100+i,"End your day","Lock in today and get your wrap-up before bed.",atMin(k,dayWin(k).e)-60*60000)}}
-    var cov=emptyCover(T);if(n.risk&&cov!=null&&cov<=1&&!ended&&!hasEntry(e))push(2300,cov===0?"Empty today = a miss":"Covered today, not tomorrow",cov===0?"Your weekly totals don\u2019t cover an empty day today. Log something before the day ends.":"Today is covered by your weekly totals. Tomorrow an empty day would be a miss.",atTime(T,"18:00"));
-    if(n.risk&&st.miss===1&&!ended&&!ok(e))push(2200,"Streak at risk","You missed yesterday. Clear today to keep your "+st.streak+"-day streak.",atTime(T,"12:00"));
-    if(n.pace&&!ended){
+      if(n.checkin){var left=today?reqOf(activeDefs(T)).filter(function(q){return q.type!=="limit"&&!metQ(q,e)}).length:null;if(!today||left>0)push(2000+i,"Evening check-in",today?left+" quest"+(left===1?"":"s")+" left today. Still time.":"How\u2019s today going? Open your quests.",atTime(k,n.checkinAt))}
+      if(today&&n.todos){var otd=openTodos().length;if(otd){push(2400,"To-dos still open",otd+" to-do"+(otd===1?"":"s")+" not done today. Keep or clear them?",atMin(k,dayWin(k).e)-30*60000)}}}
+    var cov=emptyCover(T);if(n.risk&&cov!=null&&cov<=1&&!hasEntry(e))push(2300,cov===0?"Empty today = a miss":"Covered today, not tomorrow",cov===0?"Your weekly totals don\u2019t cover an empty day today. Log something before the day ends.":"Today is covered by your weekly totals. Tomorrow an empty day would be a miss.",atTime(T,"18:00"));
+    if(n.risk&&st.miss===1&&!ok(e))push(2200,"Streak at risk","You missed yesterday. Clear today to keep your "+st.streak+"-day streak.",atTime(T,"12:00"));
+    if(n.pace){
       var tq=activeDefs(T).filter(function(q){return q.type==="time"&&!q.opt});
       
       var midAt=atMin(T,dayMidMin(T));
@@ -74,7 +81,7 @@
       var ws=weekStart(T),thu=add(ws,3);
       if(T<=thu){var wq=tq.filter(function(q){return q.roll}),wDone=0,wNeed=0;wq.forEach(function(q){wNeed+=q.roll;for(var d=ws;d<=T;d=add(d,1))wDone+=(S.days[d]||{})[q.id]|0});
         if(wNeed&&wDone<wNeed/2)push(2600,"Halfway through the week",hm(wDone)+" of "+hm(wNeed)+" done across your weekly time quests.",atTime(thu,"09:00"))}}
-    if(n.sched&&!ended)schNotifs(T,e,push);
+    if(n.sched)schNotifs(T,e,push);
     if(n.dl)(cfg().deadlines||[]).forEach(function(d,i){var dk=add(d.date,-1);if(dk>=T)push(3000+i,"Tomorrow: "+d.title,"Your deadline is tomorrow. Plan today\u2019s work around it.",atTime(dk,"18:00"),{dl:d.id})});
     if(n.review){var due=allTopics().filter(function(o){return topicStats(o.t).due}).length;if(due){var sun=add(weekStart(T),6);push(4001,"Topics due for review",due+" topic"+(due===1?"":"s")+" untouched for 2+ weeks. Pick for me can suggest one.",atTime(sun>=T?sun:add(sun,7),"10:00"))}}
     return out}

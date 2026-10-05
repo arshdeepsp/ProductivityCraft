@@ -11,8 +11,6 @@
 .sjchip{display:inline-flex;align-items:center;gap:6px;margin-top:4px;font:15px var(--vt);background:#3A3A6A;color:#E8E8FF;border:2px solid #1E1E3A;padding:1px 7px;cursor:pointer;text-shadow:none}
 .sjchip .rdot{width:8px;height:8px;background:#FF3B30;display:inline-block}
 .q.doneq{opacity:.75}.q.doneq .lbl::after{content:" \2713 complete";font:15px var(--vt);color:#C8F5B0}
-.subjcard.flash{outline:4px solid #FFFF55}
-.sj-link{font:16px var(--vt);color:#3F3F3F}
 .shelf{display:grid;gap:6px;margin:0 3px}
 .shelf-r{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;background:#212121;color:#fff;border:3px solid #555;padding:8px 12px;font-size:19px}
 .shelf-r .mv{font-size:16px;color:#BDBDBD}.shelf-r.ar{opacity:.8}

@@ -10,7 +10,7 @@ test("the bar shows Just 5, Schedule and a tools menu", async ({ page }) => {
   await expect(page.locator("#schBtn")).toBeVisible();
   await expect(page.locator("#toolsBtn")).toBeVisible();
   await page.click("#schBtn");
-  await expect(page.locator("#gTitle")).toHaveText("Today’s schedule");
+  await expect(page.locator("#schPage")).toBeVisible();
 });
 
 test("the tools menu has Sprint, plus Pick and Batch when quick-start tools are on", async ({ page }) => {

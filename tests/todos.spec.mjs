@@ -9,18 +9,6 @@ test("to-dos finished on an earlier day are deleted", async ({ page }) => {
   expect(await page.evaluate(cfgQuests)).toEqual(["Done today", "Journal"]);
 });
 
-test("ending the day asks about open to-dos and deletes the chosen ones", async ({ page }) => {
-  const Q = [{ id: "j", type: "check", label: "Journal" }, { id: "a", type: "todo", label: "Email advisor", addedOn: "2026-11-02" }, { id: "b", type: "todo", label: "Print form", addedOn: "2026-11-02" }];
-  await openApp(page, { cfg: { quests: Q } });
-  await page.click("#endBtn");
-  await page.click("#emYes");
-  await page.click("#edClose");
-  await expect(page.locator("#gTitle")).toHaveText("Still need these to-dos?");
-  await page.click("[data-tdr='b']");
-  await page.click("#tdrGo");
-  await page.waitForTimeout(150);
-  expect(await page.evaluate(cfgQuests)).toEqual(["Journal", "Email advisor"]);
-});
 
 test("leftover to-dos from yesterday are reviewed once when the app opens", async ({ page }) => {
   const Q = [{ id: "a", type: "todo", label: "Email advisor", addedOn: "2026-11-01" }];
@@ -44,27 +32,7 @@ test("a notification is scheduled when to-dos are still open", async ({ page }) 
   expect(await page.evaluate(() => window.__ln)).toContain("2400 To-dos still open");
 });
 
-test("ending the day reviews open to-dos once, with nothing asked again next morning", async ({ page }) => {
-  const Q = [{ id: "j", type: "check", label: "Journal" }, { id: "a", type: "todo", label: "Email advisor", addedOn: "2026-11-02" }];
-  await openApp(page, { cfg: { quests: Q } });
-  await page.click("#endBtn");
-  await page.click("#emYes");
-  await page.click("#edClose");
-  await expect(page.locator("#gTitle")).toHaveText("Still need these to-dos?");
-  await expect(page.locator("#gBody")).toContainText("The day is done.");
-  await page.click("#tdrGo");
-  await expect(page.locator("#gModal")).toBeHidden();
-  await expect.poll(() => page.evaluate(() => localStorage.getItem("pc-todoreview"))).toBe("2026-11-03");
-});
 
-test("closing the day-ended dialog any way still reviews open to-dos", async ({ page }) => {
-  const Q = [{ id: "j", type: "check", label: "Journal" }, { id: "a", type: "todo", label: "Email advisor", addedOn: "2026-11-02" }];
-  await openApp(page, { cfg: { quests: Q } });
-  await page.click("#endBtn");
-  await page.click("#emYes");
-  await page.click("#gClose");
-  await expect(page.locator("#gTitle")).toHaveText("Still need these to-dos?");
-});
 
 test("the leftover to-do review waits until a running timer stops", async ({ page }) => {
   const Q = [{ id: "cs", type: "time", label: "CS", min: 60 }, { id: "a", type: "todo", label: "Email advisor", addedOn: "2026-11-01" }];
@@ -76,4 +44,15 @@ test("the leftover to-do review waits until a running timer stops", async ({ pag
   await page.click("#quests .q.running .tmr");
   await page.clock.runFor(1000);
   await expect(page.locator("#gTitle")).toHaveText("Still need these to-dos?");
+});
+
+test("there is no End day: open to-dos are reviewed the next time the app opens, and the reminder comes before bed", async ({ page }) => {
+  await page.addInitScript(`window.__ln=[];window.Capacitor={isNativePlatform:()=>true,Plugins:{LocalNotifications:{requestPermissions:()=>Promise.resolve({display:'granted'}),createChannel:()=>Promise.resolve(),getPending:()=>Promise.resolve({notifications:[]}),cancel:()=>Promise.resolve(),schedule:(o)=>{o.notifications.forEach(n=>window.__ln.push({id:n.id,at:String(n.schedule.at)}));return Promise.resolve()},addListener:()=>Promise.resolve({})},App:{addListener:()=>Promise.resolve({})},KeepAwake:{keepAwake:()=>Promise.resolve(),allowSleep:()=>Promise.resolve()}}};`);
+  const Q = [{ id: "j", type: "check", label: "Journal" }, { id: "a", type: "todo", label: "Email advisor", addedOn: "2026-11-02" }];
+  await openApp(page, { cfg: { quests: Q, nf: { on: true } } });
+  await expect(page.locator("#endBtn")).toHaveCount(0);
+  await page.clock.runFor(2000);
+  const ln = await page.evaluate(() => window.__ln);
+  expect(ln.some((x) => x.id >= 2100 && x.id < 2200)).toBe(false);
+  expect(ln.find((x) => x.id === 2400).at).toContain("22:30");
 });

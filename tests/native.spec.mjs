@@ -111,3 +111,24 @@ test("a sprint block grows over the block, and a paused block doesn't", async ({
   last = (await page.evaluate(() => window.__fn)).filter((c) => c && c.title).pop();
   expect(last.grow).toBeNull();
 });
+
+test("the live notification gets a pixel sky: day with dark text, night with light text", async ({ page }) => {
+  await page.addInitScript(mock(false));
+  await openApp(page, { cfg: { quests: Q, nf: { on: true } } });
+  await page.click("#sp5Btn");
+  await page.clock.runFor(4000);
+  const day = (await page.evaluate(() => window.__fn)).filter((c) => c && c.title).pop();
+  expect(day.bg.dark).toBe(false);
+  expect(day.bg.big.length).toBeGreaterThan(40);
+  expect(day.bg.small.length).toBeGreaterThan(40);
+  expect(day.next.bg).toEqual(day.bg);
+});
+
+test("at night the live notification uses the night sky", async ({ page }) => {
+  await page.addInitScript(mock(false));
+  await openApp(page, { now: "2026-11-02T21:30:00-05:00", cfg: { quests: Q, nf: { on: true } } });
+  await page.click("#quests .q .tmr");
+  await page.clock.runFor(4000);
+  const up = (await page.evaluate(() => window.__fn)).filter((c) => c && c.title).pop();
+  expect(up.bg.dark).toBe(true);
+});

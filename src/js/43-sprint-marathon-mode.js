@@ -6,7 +6,7 @@
   function spSuggest(ids,lastId){var T=todayKey(),e=S.days[T]||{},defs=spDefs().filter(function(q){return ids.indexOf(q.id)>=0}),pool=defs.filter(function(q){return defs.length<2||q.id!==lastId});if(!pool.length)pool=defs;
     pool.sort(function(a,b){var da=spTarget(a,e)-(e[a.id]|0),db=spTarget(b,e)-(e[b.id]|0);if(da!==db)return db-da;return (e[a.id]|0)-(e[b.id]|0)});return pool[0]?pool[0].id:null}
   function spLabel(id){var q=spDefs().concat(cfg().quests).filter(function(x){return x.id===id})[0];return q?q.label:"Quest"}
-  function spAdd(id,m){if(m<1)return 0;var T=todayKey();if(S.days[T]&&S.days[T].ended)return 0;var e=Object.assign({},S.days[T]||{});e.q=activeDefs(T);if(!e.q.some(function(x){return x.id===id}))return 0;e[id]=Math.min(MAXM,(e[id]|0)+m);S.days[T]=e;dirty[T]=true;cache();clearTimeout(timer);timer=setTimeout(flush,300);render(true);return m}
+  function spAdd(id,m){if(m<1)return 0;var T=todayKey();var e=Object.assign({},S.days[T]||{});e.q=activeDefs(T);if(!e.q.some(function(x){return x.id===id}))return 0;e[id]=Math.min(MAXM,(e[id]|0)+m);S.days[T]=e;dirty[T]=true;cache();clearTimeout(timer);timer=setTimeout(flush,300);render(true);return m}
   function spFmt(ms){ms=Math.max(0,ms);var s=Math.ceil(ms/1000),h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=s%60;return (h?h+":"+String(m).padStart(2,"0"):m)+":"+String(x).padStart(2,"0")}
   function spSave(){cache();notifSync();setTimeout(function(){if(typeof focusSync==="function")focusSync(!S.sprint||S.sprint.phase==="done")},0)}
   function openSprintSetup(){
@@ -52,7 +52,7 @@
     var sp=S.sprint;if(!sp){spEl.hidden=true;spPill.hidden=true;return}
     var now=Date.now(),changed=false;
     if(sp.phase==="focus"&&!sp.paused&&now>=sp.end){
-      var blk=sp.blen||sp.len;if(!(S.days[todayKey()]||{}).ended)addSession(todayKey(),sp.cur,sp.end-blk*60000,sp.end);if(sp.topic)addTopicTime(todayKey(),sp.topic,blk);var got=spAdd(sp.cur,blk);sp.blen=0;sp.log[sp.cur]=(sp.log[sp.cur]||0)+got;
+      var blk=sp.blen||sp.len;addSession(todayKey(),sp.cur,sp.end-blk*60000,sp.end);if(sp.topic)addTopicTime(todayKey(),sp.topic,blk);var got=spAdd(sp.cur,blk);sp.blen=0;sp.log[sp.cur]=(sp.log[sp.cur]||0)+got;
       var last=sp.rounds&&sp.block>=sp.rounds;
       if(last){sp.phase="done";}else{var lb=sp.longEvery&&sp.block%sp.longEvery===0;sp.phase="break";sp.bstart=sp.end;sp.bend=sp.end+(lb?SP_LONG:SP_BREAK)*60000;sp.long=!!lb;sp.prev=sp.cur;sp.next=spSuggest(sp.ids,sp.cur)}
       changed=true;sfx("chime");try{if(navigator.vibrate)navigator.vibrate([150,80,150])}catch(x){}

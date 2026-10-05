@@ -33,3 +33,24 @@ test("the screen wake lock is taken again when the app comes back to the front",
   await flip("visible");
   await expect.poll(() => page.evaluate(() => window.__wl)).toBe(2);
 });
+
+for (const width of [320, 360, 390, 1280]) {
+  test.describe(`width ${width}`, () => {
+    test.use({ viewport: { width, height: 800 }, ...(width < 700 ? { isMobile: true, hasTouch: true } : {}) });
+    test("past an hour, the running time shrinks to fit instead of widening the page", async ({ page }) => {
+      await openApp(page, { cfg: { quests: Q } });
+      await page.evaluate(() => document.querySelector("#quests .q .tmr").click());
+      await page.clock.fastForward(10 * 3600 * 1000 + 5 * 60 * 1000);
+      await expect(page.locator(".runbox .rb-t")).toHaveText(/^10:05:/);
+      const m = await page.evaluate(() => {
+        const t = document.querySelector(".runbox .rb-t"), box = document.querySelector("#quests .q.running").getBoundingClientRect(), r = t.getBoundingClientRect();
+        return { doc: document.documentElement.scrollWidth, vw: innerWidth, over: t.scrollWidth - t.clientWidth, left: r.left - box.left, right: box.right - r.right, fs: parseFloat(getComputedStyle(t).fontSize) };
+      });
+      expect(m.doc).toBeLessThanOrEqual(m.vw);
+      expect(m.over).toBeLessThanOrEqual(0);
+      expect(m.left).toBeGreaterThanOrEqual(0);
+      expect(m.right).toBeGreaterThanOrEqual(0);
+      expect(m.fs).toBeGreaterThanOrEqual(20);
+    });
+  });
+}

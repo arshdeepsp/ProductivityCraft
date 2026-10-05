@@ -24,14 +24,13 @@
     nfCall(t.label,icon,head,body,[["Stop &amp; log",function(){if(S.timer&&S.timer.id===q.id)toggleTimer(q)},"del"],["Keep going",null,"save"]])}
   function nfSprint(){if(S.sprint){go("today");if(!gEl.hidden)closeG();spShow()}else nfGo()}
   function nfQuestsLeft(title,icon,head,extra){var T=todayKey(),e=S.days[T]||{},L=nfOpen(),q=nfBehind();
-    if(!L.length){nfCall(title,"star","Every required quest is done. Day cleared!",'',[["End day",openEndModal,"save"],["Close"]]);return}
+    if(!L.length){nfCall(title,"star","Every required quest is done. Day cleared!",'',[["Nice",null,"save"]]);return}
     nfCall(title,icon,head||(L.length+" quest"+(L.length===1?"":"s")+" left. Still time."),(extra||'')+qList(e,L),[nfJust5(q),["Schedule",openSchedule],["Later"]].filter(Boolean))}
   function notifAction(id,x){x=x||{};var now=Date.now();S.call=CALL_IDS(id)&&x.at&&now>=x.at-60000&&now<=x.at+CALL_MIN*60000?{id:id,until:x.at+CALL_MIN*60000}:null;if(locked()&&id!==2400){nfGo();return}
     if(id===901)return S.sprint&&S.sprint.phase!=="done"?nfSprint():nfTimer("live");
     if(id===1001)return nfTimer("min");if(id===1002)return nfTimer("plan");if(id===1003)return nfTimer("five");
     if(id>=1101&&id<=1103)return nfSprint();
     if(id>=2000&&id<2100)return nfQuestsLeft("Evening check-in","note");
-    if(id>=2100&&id<2200){go("today");return openEndModal()}
     if(id===2200){var st=lastSt||compute();return nfQuestsLeft("Streak at risk","flame","Your "+st.streak+"-day streak is on the line.",'<p class="help">You missed yesterday. Clear today to keep it.</p>')}
     if(id===2300){var T=todayKey(),cov=emptyCover(T),rq=activeDefs(T).filter(function(q){return q.type==="time"&&q.roll&&!q.off})[0]||nfBehind();
       return nfCall("Weekly totals","metronome",cov===0?"An empty day today counts as a miss.":"You’re covered today, but not tomorrow.",'<p class="help">Log anything, even 5 minutes, and today counts normally.</p>',[rq?["Log 5 minutes",function(){start5(rq)},"save",1]:null,["How it works",openCarryInfo],["Later"]].filter(Boolean))}

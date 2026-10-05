@@ -24,8 +24,6 @@ test("count chip counts required quests only", async ({ page }) => {
 
 test("clearing every required quest clears the day", async ({ page }) => {
   await openApp(page, { cfg: { quests: Q }, days: { "2026-11-02": { cs: 60, j: true, q: Q } } });
-  await page.click("#endBtn");
-  await page.click("#emYes");
   await page.waitForTimeout(200);
   const mark = await page.evaluate(() => document.querySelector("#strip i.today, #strip i:last-child").className);
   expect(mark).toMatch(/ok/);
@@ -34,8 +32,6 @@ test("clearing every required quest clears the day", async ({ page }) => {
 test("breaking a limit fails the day", async ({ page }) => {
   await openApp(page, { cfg: { quests: Q }, days: { "2026-11-02": { cs: 60, j: true, sl: 45, q: Q } } });
   await expect(page.locator("#qCount")).toHaveText("2/2 done");
-  await page.click("#endBtn");
-  await page.click("#emYes");
   await page.waitForTimeout(200);
   const mark = await page.evaluate(() => document.querySelector("#strip i:last-child").className);
   expect(mark).not.toMatch(/\bok\b/);

@@ -58,11 +58,6 @@ test("evening check-in lists what's left and offers Just 5 on the furthest-behin
   await expect(page.locator("#quests .q.running")).toContainText("French");
 });
 
-test("end-day reminder opens End day", async ({ page }) => {
-  await boot(page);
-  await tap(page, 2100);
-  await expect(page.locator("#gTitle")).toHaveText("End today?");
-});
 
 test("streak at risk shows the streak at stake", async ({ page }) => {
   await boot(page);
@@ -88,7 +83,7 @@ test("deadline eve names the deadline and offers to plan today", async ({ page }
   await tap(page, 3000, { dl: "d1" });
   await expect(page.locator("#gBody .mhead")).toHaveText("Tomorrow: Thesis draft");
   await page.click("#gBody [data-nb='0']");
-  await expect(page.locator("#gTitle")).toHaveText("Today’s schedule");
+  await expect(page.locator("#schPage")).toBeVisible();
 });
 
 test("open to-dos reminder opens the to-do review", async ({ page }) => {

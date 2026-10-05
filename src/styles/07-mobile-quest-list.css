@@ -64,10 +64,7 @@
   .qtools{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.qtools .stone{font-size:7px!important;padding:10px 2px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.qtools .stone[hidden]{display:none !important}
   .gui-r{gap:6px}.gui-r .locks,#lockTxt{font-size:15px}
 }
-.subjcard,.sj-t,.sj-topics{min-width:0}
-.sj-t{grid-template-columns:auto minmax(0,1fr) auto!important}
-.sj-t .sj-l{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:right;justify-self:stretch}
-@media (max-width:720px){.subjgrid{grid-template-columns:minmax(0,1fr)!important}.pp{width:20px;height:20px}}
+@media (max-width:720px){.pp{width:22px;height:22px}}
 .carrynote{cursor:pointer;margin:8px 0;padding:8px 10px;background:#D7F0EF;border:3px solid #2F7A7A;color:#1F4F4F;font-size:18px}
 .carrynote.hot{background:#FFE3DD;border-color:#B3261E;color:#7A1A12}
 .pendtag{display:inline-block;margin-top:4px;margin-left:6px;font:15px var(--vt);background:#7A4A12;color:#FFE6B3;border:2px solid #3A2408;padding:1px 6px;text-shadow:none}

@@ -34,9 +34,6 @@ details.rules>summary h2{flex:1}
 .morestats{display:contents}
 .statsbtn{font:16px/1 var(--vt);background:#3A3A3A;color:#E0E0E0;border:2px solid #000;padding:3px 8px;cursor:pointer}
 .statsbtn:hover{background:#555}
-.stabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:-4px 0 6px;position:sticky;top:-16px;z-index:2;background:#C6C6C6;padding:8px 0}
-.stab-b{font-size:8px;padding:9px 4px}
-.stab-b.on{background:#3C8527;border-color:#2A5E1B #5DB33F #5DB33F #2A5E1B}
 .drawer-b .sh.first{margin-top:4px;border-top:0;padding-top:0}
 .qmenu{position:absolute;z-index:40;display:grid;min-width:170px;background:#C6C6C6;border:3px solid;border-color:#fff #555 #555 #fff;box-shadow:0 0 0 3px #000,0 6px 0 rgba(0,0,0,.3)}
 .qmenu button{font:19px/1.2 var(--vt);text-align:left;background:none;border:0;border-bottom:2px solid #A6A6A6;padding:8px 12px;color:#1E1E1E;cursor:pointer}
@@ -60,7 +57,6 @@ details.rules>summary h2{flex:1}
 .packs.wel{margin:10px 0}
 .packs.wel .stone.on{background:#3C8527;border-color:#2A5E1B #5DB33F #5DB33F #2A5E1B}
 .stone:disabled{opacity:.5;cursor:default}
-.help-g .sh2:first-child{margin-top:0}
 .mhead{font-family:"Press Start 2P",monospace;font-size:11px;line-height:1.6;margin:0 0 10px;color:#3F3F3F}
 .mhead.good{color:#2E6B24}.mhead.bad{color:#9E2A1F}
 .mlist{display:grid;gap:4px;margin:10px 0}

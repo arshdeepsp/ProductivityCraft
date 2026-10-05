@@ -56,9 +56,3 @@ test("a today-only wake-up time moves today's midday alert", async ({ page }) =>
   expect((await page.evaluate(() => window.__ln)).find((x) => x.id === 2500).at).toContain("16:00");
 });
 
-test("the end-day reminder comes an hour before bedtime", async ({ page }) => {
-  await page.addInitScript(mock);
-  await openApp(page, { now: "2026-11-03T09:00:00-05:00", cfg: { quests: Q, nf: { on: true }, day: { wake: "07:00", bed: "22:30" } } });
-  await page.clock.runFor(2000);
-  expect((await page.evaluate(() => window.__ln)).find((x) => x.id === 2100).at).toContain("21:30");
-});

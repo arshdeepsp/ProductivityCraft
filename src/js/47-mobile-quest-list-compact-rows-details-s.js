@@ -15,7 +15,7 @@
       if(q.note)r("Note",esc(q.note));
       r("Days",q.days&&q.days.length&&q.days.length<7?q.days.map(function(d){return DN[d]}).join(" "):"Every day");
       if(lateStart(q,T))r("Counts from",q.type==="time"&&q.roll?"next week (added late in the week)":"tomorrow (added late in the day)");else if(q.opt)r("Optional","Yes");
-      var SLd=qSubjs(q);if(SLd.length)r(SLd.length>1?"Subjects":"Subject",SLd.map(function(id){return esc(subjById(id).name)}).join(", ")+(q.topic?" \u203a "+esc(topicName(q.topic)):""));
+      var SLd=qSubjs(q),TLd=qTopics(q);if(SLd.length)r(TLd.length?(TLd.length>1?"Topics":"Topic"):(SLd.length>1?"Subjects":"Subject"),SLd.map(function(id){var sj=subjById(id),tn=TLd.filter(function(t){return topicById(t).s.id===id}).map(function(t){return esc(topicName(t))});return esc(sj.name)+(tn.length?" \u203a "+tn.join(", "):"")}).join("; "));
       if(cq.fin)r("Done when",cq.fin.t==="total"?"Project total reached":(cq.fin.t==="topic"?"Topic reaches ":"Subject reaches ")+LV[cq.fin.lvl||4]);
       if(q.dl)r("Deadline",num(q.dl.total)+(q.ul?" "+esc(q.ul):"")+" by "+fmtD(q.dl.due));
       if(q.type!=="todo"&&strictOn())r("Change rules",(LOCKS.filter(function(L){return L[0]===lockOf(cq)})[0]||LOCKS[0])[1]);
@@ -41,9 +41,10 @@
   function runBox(id){var el=qEls[id];if(!el)return;var row=el.row,on=S.timer&&S.timer.id===id;row.classList.toggle("running",!!on);var rb=row.querySelector(".runbox");
     if(!on){if(rb)rb.remove();return}
     var q=activeDefs(todayKey()).filter(function(x){return x.id===id})[0];if(!q)return;
-    if(!rb){rb=document.createElement("div");rb.className="runbox";rb.innerHTML='<div class="rb-t"></div><div class="rb-s"></div><div class="rb-b"><i></i></div><div class="rb-f"></div>';el.tmr.parentNode.insertBefore(rb,el.tmr)}
+    if(!rb){rb=document.createElement("div");rb.className="runbox";rb.innerHTML='<div class="rb-t"></div><div class="rb-s"></div><div class="rb-b"><i></i></div><div class="rb-f"></div><div class="rb-tp" role="group" aria-label="Topic"></div>';rb.addEventListener("click",function(ev){var b=ev.target.closest("[data-rtp]");if(!b)return;ev.stopPropagation();haptic("light");switchTopic(b.getAttribute("data-rtp"))});el.tmr.parentNode.insertBefore(rb,el.tmr)}
     var e=S.days[todayKey()]||{},el2=Date.now()-S.timer.start,mins=Math.floor(el2/60000),lg=+e[q.id]||0,tg=S.timer.commit&&!S.timer.c5?S.timer.commit:(q.roll?0:q.min),tot=lg+mins;
-    rb.querySelector(".rb-t").textContent=fmtT(el2);
+    var rbt=rb.querySelector(".rb-t"),tx=fmtT(el2);rbt.textContent=tx;rbt.style.setProperty("--n",tx.length);
     rb.querySelector(".rb-s").textContent=S.timer.commit&&!S.timer.c5?"Just 5 minutes \u00b7 "+Math.max(0,5-mins)+" min to go":tg?hm(tot)+" of "+hm(tg)+(tot>=tg?" \u2714":""):hm(tot)+" today";
     rb.querySelector(".rb-b i").style.width=Math.min(100,tg?Math.round((S.timer.commit&&!S.timer.c5?mins/5:tot/tg)*100):100)+"%";
-    rb.querySelector(".rb-f").textContent=S.timer.first?"First: "+S.timer.first:"";}
+    rb.querySelector(".rb-f").textContent=S.timer.first?"First: "+S.timer.first:"";
+    var cur=S.timer.topic||"",pool=qTopicPool(q);Object.keys(S.timer.tacc||{}).concat(cur?[cur]:[]).forEach(function(x){if(pool.indexOf(x)<0&&topicById(x))pool.unshift(x)});var tp=rb.querySelector(".rb-tp"),sig=pool.join(",")+"|"+cur;if(tp.getAttribute("data-sig")!==sig){tp.setAttribute("data-sig",sig);tp.innerHTML=pool.length>1?pool.map(function(id){var on=id===cur;return '<button type="button" class="stone mini'+(on?' on':'')+'" data-rtp="'+id+'" aria-pressed="'+on+'">'+esc(topicName(id))+'</button>'}).join(""):pool.length?'<span class="rb-tp1">'+esc(topicName(pool[0]))+'</span>':''}}

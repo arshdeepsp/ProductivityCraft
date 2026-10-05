@@ -1,6 +1,6 @@
 /* ===== phone polish ===== */
 @media (max-width:720px){
-  .mbar{grid-template-columns:repeat(4,1fr);gap:6px;padding-left:8px;padding-right:8px}
+  .mbar{grid-template-columns:repeat(3,1fr);gap:6px;padding-left:8px;padding-right:8px}
   .mbar .stone{flex-direction:column;gap:4px;font-size:8px;padding:8px 2px;min-height:52px}
   .mbar .stone b{font-size:11px}
 

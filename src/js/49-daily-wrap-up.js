@@ -1,6 +1,6 @@
   /* ---- daily wrap-up ---- */
   var wrapBtn=document.getElementById("wrapBtn");
-  function wrapDay(){var T=todayKey(),k=ro()?viewKey:(endedT()?T:add(T,-1));return k>=START_KEY&&(k<T||(k===T&&endedT()))?k:null}
+  function wrapDay(){var T=todayKey(),k=ro()?viewKey:add(T,-1);return k>=START_KEY&&k<T?k:null}
   function wrapLabel(){var k=wrapDay();wrapBtn.disabled=!k;wrapBtn.textContent=k?"Wrap-up: "+fmtD(k):"Wrap-up unlocks at midnight";}
   var jspdfP=null;
   function loadPDF(){
@@ -177,7 +177,7 @@
   try{if(!localStorage.getItem("pc-welcomed")&&!(cfg().quests||[]).length)setTimeout(function(){openWelcome()},300)}catch(x){}
   var lastDay=todayKey();
   setInterval(elapsed,5000);
-  function lockIn(){if(ro()){document.getElementById("lockIn").textContent="Locked";return}if(endedT()){document.getElementById("lockIn").textContent="Ended";return}var n=new Date(),DE=dayEnd(),sd=new Date(n.getTime()-DE*3600000),m=new Date(sd.getFullYear(),sd.getMonth(),sd.getDate()+1,DE)-n,h=Math.floor(m/3600000),mm=Math.floor(m%3600000/60000);document.getElementById("lockIn").textContent="Locks in "+(h?h+"h ":"")+mm+"m"}
+  function lockIn(){if(ro()){document.getElementById("lockIn").textContent="Locked";return}var n=new Date(),DE=dayEnd(),sd=new Date(n.getTime()-DE*3600000),m=new Date(sd.getFullYear(),sd.getMonth(),sd.getDate()+1,DE)-n,h=Math.floor(m/3600000),mm=Math.floor(m%3600000/60000);document.getElementById("lockIn").textContent="Locks in "+(h?h+"h ":"")+mm+"m"}
   lockIn();
   setInterval(function(){lockIn();if(todayKey()!==lastDay){lastDay=todayKey();flush();render()}},15000);
 

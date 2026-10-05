@@ -21,7 +21,7 @@
     if(p)h+='<div class="edrow">'+p+'</div>';
     if(q.type!=="todo"){var T0=todayKey(),optsS=[["",'Today'],[add(T0,1),'Tomorrow'],[nextMonday(T0),'Next week']];if(NQ.startOn===undefined&&q.type==="time"&&q.roll&&lateInWeek(T0))NQ.startOn=nextMonday(T0);var cur=NQ.startOn||"";h+='<div class="sjfield"><span class="sjlab">Starts</span><div class="sjpick">'+optsS.map(function(o){return '<button type="button" class="stone mini'+(cur===o[0]?' on':'')+'" data-start="'+o[0]+'" aria-pressed="'+(cur===o[0])+'">'+o[1]+(o[0]?' <small>'+fmtD(o[0])+'</small>':'')+'</button>'}).join("")+'</div></div>'}
     if(q.type!=="todo"&&strictOn())h+='<div class="edrow"><label>Change rules<select id="nqLock">'+LOCKS.map(function(L){return '<option value="'+L[0]+'"'+((q.lock||"flex")===L[0]?" selected":"")+'>'+L[1]+'</option>'}).join("")+'</select></label></div>';
-    if(q.type!=="todo"&&subjList().length)h+='<div class="sjfield"><span class="sjlab">Feeds subjects (optional)</span>'+subjChips("data-nqsj",qSubjs(q))+'</div>';
+    if(q.type!=="todo"&&subjList().length)h+='<div class="sjfield"><span class="sjlab">Feeds topics (optional)</span>'+topicPick("data-nq",q)+'</div>';
     if(q.type!=="weekly"&&q.type!=="todo"){var days=q.days&&q.days.length?q.days:[0,1,2,3,4,5,6];h+='<div class="edrow"><div class="days" role="group" aria-label="Days">'+[1,2,3,4,5,6,0].map(function(d){return '<button type="button" class="stone mini'+(days.indexOf(d)>=0?' on':'')+'" data-d="'+d+'" aria-pressed="'+(days.indexOf(d)>=0)+'">'+DN[d].slice(0,2)+'</button>'}).join("")+'</div><button type="button" class="stone mini'+(q.opt?' on':'')+'" id="nqOpt" aria-pressed="'+!!q.opt+'">Optional</button></div>'}
     h+='<p class="cmsg2">'+esc(msg||"")+'</p><div class="edrow end"><button type="button" class="stone" id="nqCancel">Cancel</button><button type="button" class="stone save" id="nqSave">Add quest</button></div></div>';
     nqB.innerHTML=h;
@@ -29,7 +29,7 @@
     nqB.querySelector("#nqLib").addEventListener("change",function(){if(this.value==="")return;var x=clone(LIB[+this.value]);NQ=x;drawNQ()});
     nqB.querySelectorAll(".tcard").forEach(function(b){b.addEventListener("click",function(){var nm=NQ.label,al=NQ._all;NQ=nqDefaults(b.getAttribute("data-t"),nm);if(al)NQ._all=true;drawNQ();var c=nqB.querySelector('.tcard[data-t="'+NQ.type+'"]');if(c)c.focus()})});
     nqB.querySelector("#nqName").addEventListener("input",function(){NQ.label=this.value});
-    nqB.querySelectorAll("[data-nqsj]").forEach(function(x){x.addEventListener("click",function(){var id=x.getAttribute("data-nqsj"),L=qSubjs(NQ),k=L.indexOf(id);if(k>=0)L.splice(k,1);else L.push(id);setSubjs(NQ,L);drawNQ()})});
+    wireTopicPick(nqB,function(){return NQ},drawNQ);
     nqB.querySelectorAll("[data-start]").forEach(function(x){x.addEventListener("click",function(){var v=x.getAttribute("data-start");NQ.startOn=v||null;drawNQ()})});
     nqB.querySelectorAll("[data-goal]").forEach(function(x){x.addEventListener("click",function(){if(x.getAttribute("data-goal"))NQ.roll=NQ.roll||420;else delete NQ.roll;drawNQ()})});
     var nlk=nqB.querySelector("#nqLock");if(nlk)nlk.addEventListener("change",function(){NQ.lock=this.value});
@@ -46,7 +46,7 @@
       delete q._all;if(q.type==="weekly"||q.type==="todo"){delete q.days;delete q.opt}
       q.id=(q.type==="todo"?"td":"q")+Date.now().toString(36);
       var c=clone(cfg());c.quests.push(clone(q));saveCfg(c);var T=todayKey();
-      if(S.days[T]&&!S.days[T].ended){S.days[T]=Object.assign({},S.days[T],{q:activeDefs(T)});dirty[T]=true;cache();clearTimeout(timer);timer=setTimeout(flush,300)}
+      if(S.days[T]){S.days[T]=Object.assign({},S.days[T],{q:activeDefs(T)});dirty[T]=true;cache();clearTimeout(timer);timer=setTimeout(flush,300)}
       qSig="";closeNQ();render();setSync(q.label+" added");
     });
   }

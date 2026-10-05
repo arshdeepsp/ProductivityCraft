@@ -43,9 +43,7 @@ test("optional quests don't count toward the daily limit", async ({ page }) => {
 test("lowering the limit below a busy day explains which days to lighten", async ({ page }) => {
   await openApp(page, { cfg: { quests: mk(7, [1]), cap: 10 } });
   await page.click("#setBtn");
-  await page.click("[data-st='goals']");
-  await page.click("[data-panel=goals] .advtg");
-  await page.click("[data-st='goals']");
+  await page.click("[data-st='quests']");
   await page.selectOption("#setCap", "5");
   await expect(page.locator("#gTitle")).toHaveText("Too many quests on some days");
   await expect(page.locator("#gBody .dt-r")).toContainText("Mondays");
