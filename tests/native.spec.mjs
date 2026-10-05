@@ -122,6 +122,9 @@ test("the live notification gets a pixel sky: day with dark text, night with lig
   expect(day.bg.big.length).toBeGreaterThan(40);
   expect(day.bg.small.length).toBeGreaterThan(40);
   expect(day.next.bg).toEqual(day.bg);
+  const size = (b64) => page.evaluate((d) => new Promise((r) => { const i = new Image(); i.onload = () => r([i.width, i.height]); i.src = "data:image/png;base64," + d; }), b64);
+  expect(await size(day.bg.big)).toEqual([96, 54]);
+  expect(await size(day.bg.small)).toEqual([120, 16]);
 });
 
 test("at night the live notification uses the night sky", async ({ page }) => {

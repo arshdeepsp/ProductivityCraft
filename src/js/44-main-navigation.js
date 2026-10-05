@@ -46,7 +46,7 @@
       var base=H-3;for(var x=0;x<W;x++){var hh=Math.round(2+Math.sin(x/9)*1.2+Math.sin(x/23+1)*1.6);c.fillStyle=hill2;c.fillRect(x,base-hh-2,1,hh+2);var h2=Math.round(1+Math.sin(x/5)*1);c.fillStyle=hill;c.fillRect(x,base-h2,1,h2+1)}
       c.fillStyle=night?"#2F6B22":"#5E9E3A";c.fillRect(0,H-3,W,1);c.fillStyle=night?"#4A3322":"#79553A";c.fillRect(0,H-2,W,2);
       return cv.toDataURL("image/png").split(",")[1]||""}
-    try{out.big=scene(96,32,"bgB");out.small=scene(120,16,"bgS")}catch(x){return null}return focusBgCache[key]=out}
+    try{out.big=scene(96,54,"bgB");out.small=scene(120,16,"bgS")}catch(x){return null}return focusBgCache[key]=out}
   function timerGoal(q){var e=S.days[todayKey()]||{};if(q.roll)return schLen(q);var pl=planOf(q,e);return cfg().showPlan&&pl>q.min?pl:q.min}
   function growFor(from,mins){return mins>0?{from:Math.round(from),dur:Math.round(mins*60000),art:focusArt()}:null}
   function focusOff(){var FN=capPlugin("FocusNotify");if(FN&&FN.hide)FN.hide().catch(function(){});var ln=LN();if(ln&&ln.cancel)ln.cancel({notifications:[{id:900}]}).catch(function(){})}

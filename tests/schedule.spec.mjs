@@ -67,9 +67,10 @@ test("a 5-min start keeps its length fixed", async ({ page }) => {
   await expect(page.locator(".sch-b b")).toContainText("▶ 5");
 });
 
-test("dragging the bottom edge changes a range in 15-minute steps", async ({ page }) => {
+test("the corner tab of a selected block changes its length in 15-minute steps", async ({ page }) => {
   await open(page);
   await place(page, "cs", "10:00");
+  await page.click(".sch-b");
   const h = await page.locator(".sch-b .sch-h").boundingBox();
   await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2);
   await page.mouse.down();
@@ -332,3 +333,96 @@ for (const width of [320, 360]) {
     });
   });
 }
+
+test("the resize tab only appears on the selected block, in its bottom-right corner", async ({ page }) => {
+  await open(page);
+  await place(page, "cs", "10:00");
+  await place(page, "fr", "13:00");
+  await expect(page.locator(".sch-h")).toHaveCount(0);
+  await page.click(".sch-b >> nth=0");
+  await expect(page.locator(".sch-h")).toHaveCount(1);
+  const [b, h] = [await page.locator(".sch-b.on").boundingBox(), await page.locator(".sch-b.on .sch-h").boundingBox()];
+  expect(Math.round(b.x + b.width - (h.x + h.width))).toBeLessThanOrEqual(4);
+  expect(Math.round(b.y + b.height - (h.y + h.height))).toBeLessThanOrEqual(4);
+  expect(h.width).toBeGreaterThanOrEqual(40);
+  expect(h.height).toBeGreaterThanOrEqual(28);
+  await page.click(".sch-b.on .sch-h");
+  await expect(page.locator(".sch-b.on")).toHaveCount(1);
+});
+
+test("holding a dragged block at the bottom edge keeps scrolling the day, and the block stays under the pointer", async ({ page }) => {
+  await open(page);
+  await place(page, "cs", "10:00");
+  const b = await page.locator(".sch-b").boundingBox();
+  const sc = await page.locator("#schScroll").boundingBox();
+  await page.mouse.move(b.x + 40, b.y + 10);
+  await page.mouse.down();
+  await page.mouse.move(b.x + 40, sc.y + sc.height - 10, { steps: 8 });
+  await page.waitForTimeout(1500);
+  const top = await page.evaluate(() => document.getElementById("schScroll").scrollTop);
+  expect(top).toBeGreaterThan(100);
+  const under = await page.evaluate((y) => { const r = document.getElementById("schTl").getBoundingClientRect(); return 420 + Math.round((y - 10 - r.top) / 22) * 15; }, sc.y + sc.height - 10);
+  await page.mouse.up();
+  const f = (await sched(page))[0][1];
+  expect(f).toBeGreaterThanOrEqual(840);
+  expect(Math.abs(f - Math.min(under, 1380 - 60))).toBeLessThanOrEqual(15);
+});
+
+test.describe("touch", () => {
+  test.use({ viewport: { width: 390, height: 760 }, isMobile: true, hasTouch: true });
+  test("long-press drag to the bottom keeps scrolling with the block under the finger", async ({ page }) => {
+    await open(page);
+    await place(page, "cs", "10:00");
+    const cdp = await page.context().newCDPSession(page);
+    const b = await page.locator(".sch-b").boundingBox();
+    const sc = await page.locator("#schScroll").boundingBox();
+    const pt = (x, y) => [{ x, y, id: 1 }];
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: pt(b.x + 40, b.y + 10) });
+    await page.waitForTimeout(500);
+    for (let i = 1; i <= 8; i++) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: pt(b.x + 40, b.y + 10 + ((sc.y + sc.height - 8 - b.y - 10) * i) / 8) });
+    await page.waitForTimeout(1500);
+    expect(await page.evaluate(() => document.getElementById("schScroll").scrollTop)).toBeGreaterThan(100);
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    await expect.poll(async () => (await sched(page))[0][1]).toBeGreaterThanOrEqual(840);
+  });
+
+  test("a quick swipe over an unselected block scrolls instead of resizing it", async ({ page }) => {
+    await open(page);
+    await place(page, "cs", "10:00");
+    const cdp = await page.context().newCDPSession(page);
+    const b = await page.locator(".sch-b").boundingBox();
+    const pt = (x, y) => [{ x, y, id: 1 }];
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: pt(b.x + b.width - 10, b.y + b.height - 5) });
+    for (let i = 1; i <= 6; i++) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: pt(b.x + b.width - 10, b.y + b.height - 5 - i * 30) });
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    await page.waitForTimeout(300);
+    expect(await sched(page)).toEqual([["cs", 600, 660]]);
+  });
+});
+
+test("busy time can go on hours that have already passed; quests can't", async ({ page }) => {
+  await open(page);
+  await tapTime(page, "08:00");
+  await expect(page.locator("#schMsg")).toHaveText("That time has passed, so only busy time fits there.");
+  await expect(page.locator("[data-pk]")).toHaveCount(0);
+  await page.click("[data-bz='Class']");
+  expect((await raw(page)).sched.map((b) => [b.lb, b.f, b.t])).toEqual([["Class", 480, 540]]);
+  await tapTime(page, "07:00");
+  expect((await raw(page)).sched.map((b) => [b.lb, b.f, b.t])).toEqual([["Class", 420, 480]]);
+  await expect(page.locator(".sch-b.on")).toHaveCount(0);
+  await tapTime(page, "08:15");
+  await expect(page.locator(".sch-ft-h")).toContainText("Busy at 08:15");
+  await page.click("#schPkNo");
+  await tapTime(page, "10:00");
+  await expect(page.locator("[data-pk]")).toHaveCount(2);
+});
+
+test("a past busy block can repeat from today", async ({ page }) => {
+  await open(page);
+  await tapTime(page, "08:00");
+  await page.click("[data-bz='Class']");
+  await page.click("#schRepB");
+  await page.click("#schRepOk");
+  expect((await store(page)).cfg.rep[0]).toMatchObject({ lb: "Class", f: 480, t: 540, dows: [1] });
+  await expect(page.locator(".sch-b.rep")).toHaveCount(1);
+});
