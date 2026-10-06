@@ -32,7 +32,7 @@
     if(!f)return null;
     if(f.t==="total"&&q.total&&projSum(q.id)>=q.total)return "project total reached";
     if(f.t==="topic"){var TL=qTopics(q).map(function(x){return topicById(x).t});if(TL.length&&TL.every(function(t){return (t.p||0)>=(f.lvl||4)}))return (TL.length===1?TL[0].name:"All its topics")+" reached "+LV[f.lvl||4]}
-    if(f.t==="subject"&&q.subj){var sj2=subjById(q.subj);if(sj2&&(sj2.topics||[]).length&&Math.round(avgProf(sj2))>=(f.lvl||4))return sj2.name+" reached "+LV[f.lvl||4]}
+    if(f.t==="subject"&&qSubjs(q).length){var sj2=subjById(qSubjs(q)[0]);if(sj2&&(sj2.topics||[]).length&&Math.round(avgProf(sj2))>=(f.lvl||4))return sj2.name+" reached "+LV[f.lvl||4]}
     return null}
   function completeQuest(id,how,silent){var c=clone(cfg()),q=c.quests.filter(function(x){return x.id===id})[0];if(!q||q.completed)return;q.completed={on:todayKey(),how:how};saveCfg(c);qSig="";
     if(!silent&&how!=="archived"){sfx("level");showToast({icon:"trophy",kicker:"Quest complete!",title:q.label,desc:how!=="manual"?how:""});setSync("Quest complete: "+q.label+". It moves to Badges \u203a Completed from tomorrow.")}}
@@ -78,9 +78,9 @@
       var midAt=atMin(T,dayMidMin(T));
       var dq=tq.filter(function(q){return !q.roll&&q.min>0}),dDone=0,dNeed=0;dq.forEach(function(q){dDone+=e[q.id]|0;dNeed+=q.min});
       if(dNeed&&dDone<dNeed/2)push(2500,"Halfway through the day",hm(dDone)+" of "+hm(dNeed)+" done across your daily time quests.",midAt);
-      var ws=weekStart(T),thu=add(ws,3);
-      if(T<=thu){var wq=tq.filter(function(q){return q.roll&&!perOf(q)}),wDone=0,wNeed=0;wq.forEach(function(q){wNeed+=q.roll;for(var d=ws;d<=T;d=add(d,1))wDone+=(S.days[d]||{})[q.id]|0});
-        if(wNeed&&wDone<wNeed/2)push(2600,"Halfway through the week",hm(wDone)+" of "+hm(wNeed)+" done across your weekly time quests.",atTime(thu,"09:00"))}}
+      /* 2600: 09:00 on the next checkpoint (halfway, or the period's last day) that a total is still short for. */
+      var cp=null;periodList(T).forEach(function(q){var md=midDay(q,T),pe=perEnd(q,T),half=!!md&&md>=T&&md!==pe,d=half?md:pe,s=rollSum(q.id,T,q),nd=half?midNeed(q,T):weekTarget(q,T);if(!nd||s>=nd)return;if(!cp||d<cp.d)cp={d:d,L:[],h:0,f:0};if(d===cp.d){cp.L.push(q.label+" "+hm(s)+" of "+hm(nd));if(half)cp.h++;else cp.f++}});
+      if(cp){var cpw=cp.d===T?"today":DAYF[parse(cp.d).getDay()];push(2600,(cp.f?(cp.h?"Checkpoint ":"Total due "):"Halfway checkpoint ")+cpw,(cp.f?(cp.h?"By tonight you need: ":"By tonight you need the full total: "):"By tonight you need half: ")+cp.L.join(", ")+". Miss it and the "+(cp.f&&!cp.h?"whole period is":"days so far are")+" lost.",atTime(cp.d,"09:00"))}}
     if(n.sched)schNotifs(T,e,push);
     if(n.dl)(cfg().deadlines||[]).forEach(function(d,i){var dk=add(d.date,-1);if(dk>=T)push(3000+i,"Tomorrow: "+d.title,"Your deadline is tomorrow. Plan today\u2019s work around it.",atTime(dk,"18:00"),{dl:d.id})});
     if(n.review){var due=allTopics().filter(function(o){return topicStats(o.t).due}).length;if(due){var sun=add(weekStart(T),6);push(4001,"Topics due for review",due+" topic"+(due===1?"":"s")+" untouched for 2+ weeks. Pick for me can suggest one.",atTime(sun>=T?sun:add(sun,7),"10:00"))}}

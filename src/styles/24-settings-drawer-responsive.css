@@ -122,3 +122,4 @@
 .addbar .lt{padding:0 6px 0 0}
 @media (max-width:720px){.ln{grid-template-columns:1fr}.ln .lt{padding-top:0}.ln-card .lin,.ln-fact .lin{grid-template-columns:1fr}.lbtn{justify-content:flex-end}}
 
+.strip i.lost{background:repeating-linear-gradient(135deg,#7A2A22 0 4px,#9E3A2F 4px 8px)}

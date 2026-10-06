@@ -16,6 +16,7 @@
     Object.keys(wk).forEach(function(w){if(wk[w]>o.week)o.week=wk[w]});Object.keys(tt).forEach(function(id){if(tt[id]>o.maxtt)o.maxtt=tt[id]});
     subjList().forEach(function(s){(s.topics||[]).forEach(function(t){var p=t.p||0,h=t.hist||[];o.topics++;if(p>o.maxp)o.maxp=p;if(h.length&&h[0].p<p)o.levelup=1;if(t.target&&p>=t.target)o.goal=1})});
     o.finished=cfg().quests.filter(function(q){return q.completed&&q.completed.how!=="archived"}).length;return o}
+  function badgeStreak(st){return {best:st.best||0,total:st.total||0,streak:st.streak||0,resets:(st.resets||[]).length}}
   var BADGE_RULE={week:function(o){return [o.best,7,"d"]},"3weeks":function(o){return [o.best,21,"d"]},"3months":function(o){return [o.best,90,"d"]},"1year":function(o){return [o.best,365,"d"]},
     comeback:function(o){return [o.resets?o.streak:0,7,"d"]},clear50:function(o){return [o.total,50,"d"]},gold10:function(o){return [o.gold,10,"n"]},finisher:function(o){return [o.finished,1,"n"]},
     focus10:function(o){return [o.focus,600,"m"]},focus100:function(o){return [o.focus,6000,"m"]},deep:function(o){return [o.sess,90,"m"]},bigweek:function(o){return [o.week,900,"m"]},
@@ -24,11 +25,15 @@
   function badgeProg(a,o){var r=BADGE_RULE[a.id](o),h=Math.min(r[0],r[1]);return {have:h,need:r[1],pc:Math.floor(h/r[1]*100),txt:r[2]==="m"?hm(h)+" of "+hm(r[1]):r[2]==="d"?h+" of "+r[1]+" days":r[2]==="p"?h+" of "+r[1]:h+" of "+r[1]}}
   function badgesEarned(){return cfg().badges||{}}
   function nextBadge(o){var E=badgesEarned(),best=null;D.ach.forEach(function(a){if(E[a.id])return;var p=badgeProg(a,o);if(!best||p.pc>best.p.pc)best={a:a,p:p}});return best}
-  function renderBadges(st){var o=badgeStats(st),E=badgesEarned(),T=todayKey(),fresh=[];
-    D.ach.forEach(function(a){if(!E[a.id]&&BADGE_RULE[a.id](o)[0]>=BADGE_RULE[a.id](o)[1])fresh.push(a)});
+  /* Streak badges are only awarded from settled days: up to yesterday and before any total's period still running,
+     since a missed checkpoint can still take those days back. */
+  var STREAKY={week:1,"3weeks":1,"3months":1,"1year":1,comeback:1,clear50:1};
+  function settledAsOf(){var T=todayKey(),a=add(T,-1);periodList(T).forEach(function(q){var p=add(perStart(q,T),-1);if(p<a)a=p});return a}
+  function renderBadges(st){var o=badgeStats(st),E=badgesEarned(),T=todayKey(),fresh=[],so=null,wait={};
+    D.ach.forEach(function(a){var r=BADGE_RULE[a.id];if(E[a.id]||r(o)[0]<r(o)[1])return;if(STREAKY[a.id]){if(!so){var sa0=settledAsOf();so=sa0<START_KEY?badgeStreak({}):badgeStreak(compute(sa0))}if(!(r(Object.assign({},o,so))[0]>=r(o)[1])){wait[a.id]=1;return}}fresh.push(a)});
     if(fresh.length&&!locked()){var c2=clone(cfg());c2.badges=Object.assign({},c2.badges||{});fresh.forEach(function(a){c2.badges[a.id]=T});saveCfg(c2);E=c2.badges;var a0=fresh[fresh.length-1];showToast(fresh.length>1?{icon:a0.icon,title:fresh.length+" badges",desc:fresh.map(function(a){return a.title}).join(", ")}:a0)}
     var n=0;D.ach.forEach(function(a){var el=cards[a.id],u=!!E[a.id],p=badgeProg(a,o);if(u)n++;el.classList.toggle("locked",!u);
-      el.querySelector(".abar").hidden=u;el.querySelector(".abar i").style.width=p.pc+"%";el.querySelector(".st").textContent=u?"Earned "+fmtD(E[a.id]):p.txt;el.querySelector("button").hidden=!(u&&(dl||dlChecked))});
+      el.querySelector(".abar").hidden=u;el.querySelector(".abar i").style.width=p.pc+"%";el.querySelector(".st").textContent=u?"Earned "+fmtD(E[a.id]):wait[a.id]?"Earned once this period's totals are in":p.txt;el.querySelector("button").hidden=!(u&&(dl||dlChecked))});
     D.groups.forEach(function(g){var L=D.ach.filter(function(a){return a.group===g.id}),k=L.filter(function(a){return E[a.id]}).length;grid.querySelector('[data-bg="'+g.id+'"] small').textContent=k+"/"+L.length});
     var sumEl=document.getElementById("achSum");if(sumEl)sumEl.textContent=n+" of "+D.ach.length+" earned";
     var sa=document.getElementById("sideAch");if(sa){var nb=nextBadge(o),a=nb?nb.a:D.ach[D.ach.length-1];sa.className="sideach px"+(nb?" locked":"");

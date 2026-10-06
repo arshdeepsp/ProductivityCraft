@@ -9,7 +9,7 @@
     var nIn=daysBetween(ws0,T),thisW=span(ws0,T),lastW=span(add(ws0,-7),add(ws0,-7+nIn)),dW=thisW-lastW;
     var clr=0,dIn=0,deep=0,calls=0,ttW={},plN=0,plK=0;
     for(var d=ws0;d<=T;d=add(d,1)){if(d<START_KEY)continue;dIn++;if(st.marks[d]==="ok")clr++;var e=S.days[d]||{};deep+=(e.sess||[]).filter(function(z){return z.m>=90}).length;calls+=e.calls|0;Object.keys(e.tt||{}).forEach(function(id){ttW[id]=(ttW[id]||0)+(e.tt[id]|0)});var pk=planKept(d);if(pk!==null&&(d<T||pk)){plN++;if(pk)plK++}}
-    var ttTot=0,ttTop=null;Object.keys(ttW).forEach(function(id){ttTot+=ttW[id];if(topicById(id)&&(!ttTop||ttW[id]>ttW[ttTop]))ttTop=id});
+    var ttTot=0,ttTop=null;Object.keys(ttW).forEach(function(id){if(!topicById(id))return;ttTot+=ttW[id];if((!ttTop||ttW[id]>ttW[ttTop]))ttTop=id});
     var gold30=0,bestDay=0,bestDayK=null,longest=0,tt28={},hrs=[],lv30=0;for(var hz=0;hz<24;hz++)hrs.push(0);
     Object.keys(S.days).forEach(function(k){if(k<START_KEY||k>T)return;var e=S.days[k];if(k>=add(T,-29)&&gold(e))gold30++;var f=focusOf(k);if(f>bestDay){bestDay=f;bestDayK=k}(e.sess||[]).forEach(function(z){if(z.m>longest)longest=z.m});
       if(k>=add(T,-27))Object.keys(e.tt||{}).forEach(function(id){tt28[id]=(tt28[id]||0)+(e.tt[id]|0)});

@@ -117,7 +117,7 @@ test("once a week, the top 3 topics by time (an hour or more) get a rerate check
   await expect(page.locator("#gModal")).toBeHidden();
   const t = (await store(page)).cfg.subjects[0].topics;
   expect(t.find((x) => x.id === "c")).toMatchObject({ p: 4, hist: [{ d: "2026-11-02", p: 4 }] });
-  expect(t.find((x) => x.id === "d").hist).toEqual([{ d: "2026-11-02", p: 2 }]);
+  expect(t.find((x) => x.id === "d").hist).toEqual([]);
   expect(t.find((x) => x.id === "a").hist).toEqual([]);
   await page.reload();
   await page.waitForTimeout(1500);
@@ -227,4 +227,32 @@ test("the weekly check-in rates what you can do and points out flat topics", asy
   await expect(f.locator(".rr-flat")).toHaveText("Lots of time lately, level unchanged.");
   await f.locator("[data-pv='4']").click();
   await expect(f.locator(".rr-do")).toHaveText("I can apply it to new problems or explain it");
+});
+
+test.describe("phone keyboard", () => {
+  test.use({ viewport: { width: 390, height: 800 }, isMobile: true, hasTouch: true });
+  test("adding a topic, then closing the keyboard, brings the tab bar back", async ({ page }) => {
+    await page.addInitScript(() => { const v = new EventTarget(); v.height = 800; v.offsetTop = 0; v.width = 390; Object.defineProperty(window, "visualViewport", { configurable: true, value: v }); window.__kb = (h) => { v.height = h; v.dispatchEvent(new Event("resize")); }; });
+    await openApp(page, { cfg: { quests: [], subjects: SUBJ }, extra: { "pc-rerate": "2026-11-02" }, hash: "#subjects" });
+    const inp = page.locator("[data-tadd='s3']");
+    await inp.focus();
+    await page.evaluate(() => window.__kb(450));
+    await expect(page.locator("body")).toHaveClass(/typing/);
+    await inp.fill("Regression");
+    await inp.press("Enter");
+    await expect(page.locator(".sjsec[data-sid='s3'] .tr")).toHaveCount(1);
+    await expect(page.locator("body")).toHaveClass(/typing/);
+    await page.evaluate(() => window.__kb(800));
+    await expect(page.locator("body")).not.toHaveClass(/typing/);
+    await expect(page.locator("#mainnav")).toBeVisible();
+  });
+});
+
+test("a topic can be renamed from Edit", async ({ page }) => {
+  await openApp(page, { cfg: { quests: [], subjects: SUBJ }, extra: { "pc-rerate": "2026-11-02" }, hash: "#subjects" });
+  await page.click(".tr[data-tid='t2'] [data-tedit]");
+  await page.fill("[data-tname='s2,t2']", "Probability theory");
+  await page.locator("[data-tname='s2,t2']").press("Enter");
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("pc-cache-v1")).cfg.subjects[1].topics[0].name)).toBe("Probability theory");
+  await expect(page.locator(".tr[data-tid='t2'] .tr-n")).toHaveText("Probability theory");
 });

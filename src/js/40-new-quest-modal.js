@@ -27,7 +27,7 @@
     nqB.innerHTML=h;
     var mt=nqB.querySelector("#nqMore");if(mt)mt.addEventListener("click",function(){NQ._all=true;drawNQ()});
     nqB.querySelector("#nqLib").addEventListener("change",function(){if(this.value==="")return;var x=clone(LIB[+this.value]);NQ=x;drawNQ()});
-    nqB.querySelectorAll(".tcard").forEach(function(b){b.addEventListener("click",function(){var nm=NQ.label,al=NQ._all;NQ=nqDefaults(b.getAttribute("data-t"),nm);if(al)NQ._all=true;drawNQ();var c=nqB.querySelector('.tcard[data-t="'+NQ.type+'"]');if(c)c.focus()})});
+    nqB.querySelectorAll(".tcard").forEach(function(b){b.addEventListener("click",function(){var nm=NQ.label,al=NQ._all,old=NQ;NQ=nqDefaults(b.getAttribute("data-t"),nm);if(al)NQ._all=true;if(NQ.type!=="todo")["topics","subjs","subj"].forEach(function(f){if(old[f])NQ[f]=old[f]});if(old.days&&NQ.type!=="weekly"&&NQ.type!=="todo")NQ.days=old.days;drawNQ();var c=nqB.querySelector('.tcard[data-t="'+NQ.type+'"]');if(c)c.focus()})});
     nqB.querySelector("#nqName").addEventListener("input",function(){NQ.label=this.value});
     wireTopicPick(nqB,function(){return NQ},drawNQ);
     nqB.querySelectorAll("[data-start]").forEach(function(x){x.addEventListener("click",function(){var v=x.getAttribute("data-start");NQ.startOn=v||null;drawNQ()})});

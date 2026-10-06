@@ -153,11 +153,11 @@ test("the quest row shows its scheduled times", async ({ page }) => {
 });
 
 test("a schedule alone doesn't count as logging the day", async ({ page }) => {
-  const RQ = [{ id: "cs", type: "time", label: "CS work", min: 60, roll: 420 }];
-  const days = dayRange("2026-10-01", "2026-11-06", (k) => k <= "2026-11-02" ? { cs: k === "2026-11-02" ? 240 : 60, q: RQ, ended: true } : { q: RQ, sched: [{ id: "a", q: "cs", f: 600, t: 660 }] });
+  const RQ = [{ id: "cs", type: "time", label: "CS work", min: 60 }];
+  const days = dayRange("2026-10-01", "2026-11-06", (k) => k <= "2026-11-02" ? { cs: 60, q: RQ } : { q: RQ, sched: [{ id: "a", q: "cs", f: 600, t: 660 }] });
   await openApp(page, { now: "2026-11-07T09:00:00-05:00", cfg: { quests: RQ }, days });
   const marks = await page.evaluate(() => [...document.querySelectorAll("#strip i")].slice(-5, -1).map((i) => i.className));
-  expect(marks).toEqual(["carried", "carried", "carried", "grace"]);
+  expect(marks).toEqual(["grace", "frozen", "miss", "miss"]);
 });
 
 const mock = `window.__ln=[];window.Capacitor={isNativePlatform:()=>true,Plugins:{LocalNotifications:{requestPermissions:()=>Promise.resolve({display:'granted'}),createChannel:()=>Promise.resolve(),getPending:()=>Promise.resolve({notifications:[]}),cancel:()=>Promise.resolve(),schedule:(o)=>{o.notifications.forEach(n=>window.__ln.push({id:n.id,title:n.title,body:n.body,at:String(n.schedule.at),extra:n.extra}));return Promise.resolve()},addListener:(n,cb)=>{if(n==='localNotificationActionPerformed')window.__tap=cb;return Promise.resolve({})}},App:{addListener:()=>Promise.resolve({})},KeepAwake:{keepAwake:()=>Promise.resolve(),allowSleep:()=>Promise.resolve()}}};`;
@@ -261,6 +261,37 @@ test("skip one occurrence, or stop the repeat", async ({ page }) => {
   await page.click("#schStop");
   expect((await store(page)).cfg.rep).toBeUndefined();
   await expect(page.locator(".sch-b")).toHaveCount(0);
+});
+
+test("Repeat on a moved occurrence changes its series instead of adding a second one", async ({ page }) => {
+  await open(page, { cfg: { rep: REP } });
+  await page.click(".sch-b.rep");
+  await tapTime(page, "11:00");
+  await page.click("#schRepB");
+  await page.click("#schRepOk");
+  const st = await store(page);
+  expect(st.cfg.rep).toHaveLength(1);
+  expect(st.cfg.rep[0]).toMatchObject({ id: "r1", f: 660, t: 720 });
+  expect(st.days["2026-11-02"].sched).toBeUndefined();
+  expect(st.days["2026-11-02"].schSkip).toBeUndefined();
+  await expect(page.locator(".sch-b")).toHaveCount(1);
+});
+
+test("a repeat that would clash with a busy time on a later day is refused", async ({ page }) => {
+  await open(page, { cfg: { busy: [{ id: "zL", lb: "Lecture", f: 600, t: 690, dows: [3], from: "2026-10-01" }] } });
+  await place(page, "cs", "10:00");
+  await page.click(".sch-b:not(.ro)");
+  await page.click("#schRepB");
+  await page.click("[data-rd='3']");
+  await page.click("#schRepOk");
+  expect((await store(page)).cfg.rep).toBeUndefined();
+  await expect(page.locator("#schPage")).toContainText("That clashes with Lecture on Wed");
+});
+
+test("Auto-plan counts minutes already logged and ignores blocks already past", async ({ page }) => {
+  await open(page, { days: { "2026-11-02": { q: Q, cs: 40, sched: [{ id: "a", q: "cs", f: 450, t: 480 }] } } });
+  await page.click("#schAuto");
+  expect(await sched(page)).toEqual([["cs", 450, 480], ["cs", 540, 560], ["fr", 575, 635]]);
 });
 
 test("a repeated quest shot reminds you like any other", async ({ page }) => {
@@ -470,7 +501,7 @@ test("schema 10: old busy blocks and busy repeats move into Busy times", async (
   await page.click("#quests .q .act button[aria-label^='More']");
   await page.waitForTimeout(900);
   const st = await store(page);
-  expect(st.schema).toBe(11);
+  expect(st.schema).toBe(12);
   expect(st.cfg.rep.map((r) => r.id)).toEqual(["r2"]);
   expect(st.cfg.busy).toEqual([{ id: "zr1", lb: "Class", f: 600, t: 660, dows: [1, 3], from: "2026-11-02", until: "2026-11-29" }, { id: "zx", lb: "Lab", f: 480, t: 540, dows: [1], from: "2026-11-02", until: "2026-11-02" }]);
   expect(st.days["2026-11-02"].sched.map((b) => b.id)).toEqual(["y"]);

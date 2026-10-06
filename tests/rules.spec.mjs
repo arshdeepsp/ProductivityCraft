@@ -3,15 +3,34 @@ import { openApp, dayRange } from "./helpers.mjs";
 
 const RQ = [{ id: "cs", type: "time", label: "CS work", min: 60, roll: 420 }];
 
-test("weekly totals carry empty days only while the surplus lasts", async ({ page }) => {
-  const days = dayRange("2026-10-01", "2026-11-02", (k) => ({ cs: k === "2026-11-02" ? 240 : 60, q: RQ, ended: true }));
-  await openApp(page, { now: "2026-11-07T09:00:00-05:00", cfg: { quests: RQ }, days });
-  const marks = await page.evaluate(() => [...document.querySelectorAll("#strip i")].slice(-5, -1).map((i) => i.className));
-  expect(marks).toEqual(["carried", "carried", "carried", "grace"]);
-  await expect(page.locator("#carryNote")).toContainText("don’t cover today");
-  await page.click("#carryNote");
-  await expect(page.locator("#gBody")).toContainText("Right now: today isn’t covered.");
-  await expect(page.locator("#gBody")).not.toContainText("\\u2019");
+const JW = [{ id: "j", type: "check", label: "Journal" }, { id: "cs", type: "time", label: "CS work", min: 60, roll: 420, addedOn: "2026-10-26" }];
+const wk = (csPerDay) => dayRange("2026-10-26", "2026-11-01", () => ({ j: true, cs: csPerDay, q: JW }));
+const strip = (page) => page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#strip i[data-k]")].map((i) => [i.getAttribute("data-k"), i.className.split(" ")[0]])));
+
+test("weekly totals aren't required day to day: a day with only a total is a rest day", async ({ page }) => {
+  const W = [{ id: "cs", type: "time", label: "CS work", min: 60, roll: 420, addedOn: "2026-11-02" }];
+  await openApp(page, { now: "2026-11-04T09:00:00-05:00", cfg: { quests: [...W, { id: "j", type: "check", label: "Journal" }] }, days: { "2026-11-02": { j: true, q: W.concat([{ id: "j", type: "check", label: "Journal" }]) }, "2026-11-03": { j: true, q: W.concat([{ id: "j", type: "check", label: "Journal" }]) } } });
+  const m = await strip(page);
+  expect([m["2026-11-02"], m["2026-11-03"]]).toEqual(["ok", "ok"]);
+  await expect(page.locator("#qCount")).toHaveText("0/1 done");
+  await expect(page.locator("#carryNote")).toContainText("Keep this week: CS work 0m/3h 30m by Thu");
+});
+
+test("reaching the weekly total keeps the week's cleared days", async ({ page }) => {
+  await openApp(page, { now: "2026-11-03T09:00:00-05:00", cfg: { quests: JW, start: "2026-10-26T04:00:00.000Z" }, days: { ...wk(60), "2026-11-02": { j: true, q: JW } } });
+  const m = await strip(page);
+  expect(["2026-10-26", "2026-10-29", "2026-11-01", "2026-11-02"].map((d) => m[d])).toEqual(["ok", "ok", "ok", "ok"]);
+  await expect(page.locator("#gModal")).toBeHidden();
+});
+
+test("missing the weekly total loses the whole week and resets the streak", async ({ page }) => {
+  const days = dayRange("2026-10-26", "2026-11-01", (k) => ({ j: true, cs: k <= "2026-10-29" ? 60 : 0, q: JW }));
+  await openApp(page, { now: "2026-11-03T09:00:00-05:00", cfg: { quests: JW, start: "2026-10-26T04:00:00.000Z" }, days: { ...days, "2026-11-02": { j: true, q: JW } } });
+  const m = await strip(page);
+  expect(["2026-10-26", "2026-10-29", "2026-11-01", "2026-11-02"].map((d) => m[d])).toEqual(["lost", "lost", "lost", "ok"]);
+  await page.click("#strip i[data-k='2026-10-29']");
+  await expect(page.locator("#gBody .mhead")).toContainText("Lost: a weekly total was missed that period (CS work)");
+  await expect(page.locator("#gBody")).toContainText("1h · 4h of 7h this week");
 });
 
 test("strict mode adds the commitment check and weekly easing budget", async ({ page }) => {
@@ -149,4 +168,27 @@ test("during setup, a Sunday pause covers just today", async ({ page }) => {
   await page.click(".qmenu button:has-text('Pause for today')");
   await expect.poll(() => pq(page)).toEqual(["2026-11-08", "2026-11-09"]);
   await expect(page.locator("#pausedNote")).toContainText("Paused: CS work (until Nov 8)");
+});
+
+const MW = [{ id: "j", type: "check", label: "Journal" }, { id: "cs", type: "time", label: "Coursework", min: 60, roll: 1200, days: [1, 3, 5, 0], addedOn: "2026-10-26" }];
+test("halfway checkpoint: 20h over Mo/We/Fr/Su needs 10h by Wednesday, or Monday to Wednesday is lost at once", async ({ page }) => {
+  const d = (cs) => ({ j: true, cs, q: MW });
+  await openApp(page, { now: "2026-11-05T09:00:00-05:00", cfg: { quests: MW, start: "2026-11-02T05:00:00.000Z" }, days: { "2026-11-02": d(120), "2026-11-03": d(0), "2026-11-04": d(240) } });
+  const m = await strip(page);
+  expect(["2026-11-02", "2026-11-03", "2026-11-04"].map((k) => m[k])).toEqual(["lost", "lost", "lost"]);
+  await page.click("#strip i[data-k='2026-11-03']");
+  await expect(page.locator("#gBody .mhead")).toContainText("Lost: a weekly total was missed that halfway checkpoint (Coursework)");
+});
+
+test("halfway checkpoint met: the week carries on, and the banner shows the full total", async ({ page }) => {
+  const d = (cs) => ({ j: true, cs, q: MW });
+  await openApp(page, { now: "2026-11-05T09:00:00-05:00", cfg: { quests: MW, start: "2026-11-02T05:00:00.000Z" }, days: { "2026-11-02": d(300), "2026-11-03": d(0), "2026-11-04": d(300) } });
+  const m = await strip(page);
+  expect(["2026-11-02", "2026-11-03", "2026-11-04"].map((k) => m[k])).toEqual(["ok", "ok", "ok"]);
+  await expect(page.locator("#carryNote")).toContainText("Keep this week: Coursework 10h/20h by Sun");
+});
+
+test("before the checkpoint the banner asks for half by the middle work day", async ({ page }) => {
+  await openApp(page, { now: "2026-11-03T09:00:00-05:00", cfg: { quests: MW, start: "2026-11-02T05:00:00.000Z" }, days: { "2026-11-02": { j: true, cs: 120, q: MW } } });
+  await expect(page.locator("#carryNote")).toContainText("Coursework 2h/10h by Wed");
 });

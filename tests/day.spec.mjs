@@ -39,7 +39,7 @@ test("late at night, work still counts for the day before until bedtime", async 
   await expect(page.locator("#lockIn")).toHaveText(/Locks in (19|20)m/);
   await page.locator("#quests .q .sw").click();
   await page.waitForTimeout(200);
-  const days = await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem("pc-cache-v1")).days));
+  const days = await page.evaluate(() => { const D = JSON.parse(localStorage.getItem("pc-cache-v1")).days; return Object.keys(D).filter((k) => D[k].j); });
   expect(days).toEqual(["2026-11-02"]);
 });
 

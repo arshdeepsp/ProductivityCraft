@@ -10,11 +10,18 @@
     confirmCommit("timer",{label:q.label},startNow);
   }
   function stopTimer(){
-    var t=S.timer;if(!t)return;S.timer=null;cache();notifSync();setTimeout(function(){focusSync(true)},0);if(t.autoFocus){focusView=false;try{localStorage.setItem("pc-focusview","0")}catch(x){}applyHide()}var m=Math.round((Date.now()-t.start)/60000),T=todayKey();if(m>=1){addSession(T,t.id,t.start,Date.now());var tsp=topicSplit(t,Date.now());Object.keys(tsp).forEach(function(id){addTopicTime(T,id,tsp[id])})}if(!t.quick&&!t.noPenalty&&commitOn()&&m<COMMIT_MIN){setTimeout(function(){markBroken(T,"Early stop")},0)}
+    rollTimer();var t=S.timer;if(!t)return;S.timer=null;cache();notifSync();setTimeout(function(){focusSync(true)},0);if(t.autoFocus){focusView=false;try{localStorage.setItem("pc-focusview","0")}catch(x){}applyHide()}var m=Math.round((Date.now()-t.start)/60000),T=todayKey();if(!t.quick&&!t.noPenalty&&commitOn()&&m<COMMIT_MIN){setTimeout(function(){markBroken(T,"Early stop")},0)}
     if(m<1){setSync("Timer stopped (under a minute).");timerTick();return}
-    {var e=Object.assign({},S.days[T]||{});e.q=activeDefs(T);if(e.q.some(function(x){return x.id===t.id})){e[t.id]=Math.min(MAXM,(e[t.id]|0)+m);S.days[T]=e;dirty[T]=true;cache();clearTimeout(timer);timer=setTimeout(flush,300);render(true);setSync("+"+hm(m)+" added to "+t.label);return}}
+    if(logTimer(t,T,Date.now())){render(true);setSync("+"+hm(m)+" added to "+t.label);return}
     setSync("Timer stopped: "+hm(m)+" could not be added (day locked or quest not active).");render();
   }
+  /* Log a running timer's minutes from t.start to end onto day k: session, topic time and the quest's minutes. */
+  function logTimer(t,k,end){var m=Math.round((end-t.start)/60000);if(m<1)return false;addSession(k,t.id,t.start,end);var tsp=topicSplit(t,end);Object.keys(tsp).forEach(function(id){addTopicTime(k,id,tsp[id])});
+    var e=Object.assign({},S.days[k]||{}),past=k<todayKey();if(!past)e.q=activeDefs(k);var L=e.q||activeDefs(k);if(!L.some(function(x){return x.id===t.id}))return false;
+    e[t.id]=Math.min(MAXM,(e[t.id]|0)+m);S.days[k]=e;dirty[k]=true;cache();clearTimeout(timer);timer=setTimeout(flush,300);return true}
+  /* A timer still running when its day locks: the minutes up to the lock go to that day, the rest start fresh on today. */
+  function rollTimer(){var t=S.timer,T=todayKey();if(!t||!t.day||t.day>=T)return;var cut=atMin(add(t.day,1),dayEnd()*60),now=Date.now();cut=Math.max(t.start,Math.min(cut,now));
+    logTimer(t,t.day,cut);t.start=cut;t.day=T;t.tAt=cut;t.tacc={};t.noPenalty=true;var q=cfgQ(t.id),e0=S.days[T]||{};t.minHit=!!q&&(e0[t.id]|0)>=(q.min|0);t.planHit=!!q&&(e0[t.id]|0)>=planOf(q,e0);t.c5=true;cache();setTimeout(focusSync,0)}
   function timerGoals(){
     var t=S.timer;if(!t)return;if(t.commit&&!t.c5&&Date.now()-t.start>=t.commit*60000){t.c5=true;cache();sfx("chime");try{if(navigator.vibrate)navigator.vibrate([120,60,120])}catch(x){}setSync("5 minutes in! Keep going, or stop the timer to log it.")}var T=todayKey(),q=activeDefs(T).filter(function(x){return x.id===t.id})[0];if(!q||q.type!=="time")return;
     var e=S.days[T]||{},tot=(e[q.id]|0)+Math.floor((Date.now()-t.start)/60000),pl=planOf(q,e),hit=null;

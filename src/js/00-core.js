@@ -10,7 +10,7 @@
   var RANKS=[[0,"Apprentice","sprout"],[7,"Journeyman","sprout"],[21,"Session Player","flame"],[42,"Bandleader","metronome"],[90,"Virtuoso","dumbbell"],[180,"Master","trophy"],[365,"Maestro","star"]];
   var S={days:{},refl:{},cfg:null},db=null,uid=null,dl=null,dlChecked=false,view="today",dirty={},timer=null;
   /* Data schema. Bump SCHEMA and add a step to migrate() whenever the stored shape changes. */
-  var SCHEMA=11,RERATE_MIN=60;
+  var SCHEMA=12,RERATE_MIN=60;
   function migrate(c){c=c||{};var v=c.schema||2;
     if(v<3){if(c.cfg){delete c.cfg.bank;delete c.cfg.commitCheck}v=3}
     if(v<4){Object.keys(c.days||{}).forEach(function(k){var d=c.days[k],s=d&&d.sched;if(s&&!Array.isArray(s)&&typeof s==="object")d.sched=Object.keys(s).sort().map(function(id){return Object.assign({id:"b-"+id,q:id},s[id])})});v=4}
@@ -22,9 +22,14 @@
     if(v<10){var cf=c.cfg;if(cf){var B=cf.busy||[];(cf.rep||[]).forEach(function(r){if(r.lb)B.push({id:"z"+r.id,lb:r.lb,f:r.f,t:r.t,dows:r.dows.slice(),from:r.from,until:r.until})});if(cf.rep){cf.rep=cf.rep.filter(function(r){return !r.lb});if(!cf.rep.length)delete cf.rep}
       Object.keys(c.days||{}).forEach(function(k){var d=c.days[k];if(!d||!Array.isArray(d.sched))return;var keep=d.sched.filter(function(b){if(!b.lb)return true;B.push({id:"z"+b.id,lb:b.lb,f:b.f,t:b.t,dows:[parse(k).getDay()],from:k,until:k});return false});if(keep.length)d.sched=keep;else delete d.sched});if(B.length)cf.busy=B}v=10}
     if(v<11)v=11;
+    if(v<12)v=12;
     c.schema=v;return c}
-  try{var c=migrate(JSON.parse(localStorage.getItem("pc-cache-v1")||"{}"));S.days=c.days||{};S.refl=c.refl||{};S.cfg=c.cfg||null;S.timer=c.timer||null;S.sprint=c.sprint||null;if(c.spLen)S.spLen=c.spLen;if(c.spRounds!=null)S.spRounds=c.spRounds;if(c.spLongOn===false)S.spLongOn=false}catch(e){}
-  function cache(){try{S.schema=SCHEMA;localStorage.setItem("pc-cache-v1",JSON.stringify(S))}catch(e){}}
+  /* If saved data can't be read, or comes from a newer app version, a copy goes to pc-cache-rescue and nothing is saved
+     over it (cacheBlock) until a backup is imported. */
+  var cacheBlock="";
+  (function(){var raw=null;try{raw=localStorage.getItem("pc-cache-v1");var c0=JSON.parse(raw||"{}");if((c0.schema|0)>SCHEMA)throw "newer";var c=migrate(c0);S.days=c.days||{};S.refl=c.refl||{};S.cfg=c.cfg||null;S.timer=c.timer||null;S.sprint=c.sprint||null;if(c.spLen)S.spLen=c.spLen;if(c.spRounds!=null)S.spRounds=c.spRounds;if(c.spLongOn===false)S.spLongOn=false}
+    catch(e){S.days={};S.refl={};S.cfg=null;S.timer=null;S.sprint=null;if(raw){cacheBlock=e==="newer"?"newer":"error";try{if(!localStorage.getItem("pc-cache-rescue"))localStorage.setItem("pc-cache-rescue",raw)}catch(x){}}}})();
+  function cache(){if(cacheBlock)return;try{S.schema=SCHEMA;localStorage.setItem("pc-cache-v1",JSON.stringify(S))}catch(e){}}
   function key(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
   function parse(k){var p=k.split("-");return new Date(+p[0],p[1]-1,+p[2])}
   function add(k,n){var d=parse(k);d.setDate(d.getDate()+n);return key(d)}
@@ -55,11 +60,13 @@
   function lateStart(q,k){if(!q.addedOn||q.type==="todo"||q.type==="weekly")return false;
     if(q.startOn)return false;if(q.type==="time"&&q.roll)return false;
     return k===q.addedOn&&(q.addedMin||0)>=dayMidMin(k)}
-  function reqOf(d){return d.filter(function(q){return !q.opt&&q.type!=="weekly"&&q.type!=="todo"})}
+  /* Required each day: not optional, not X-times-a-week, not a to-do, and not a period total (q.roll): totals are judged
+     once, at the end of their period (see periodCheck in compute). */
+  function reqOf(d){return d.filter(function(q){return !q.opt&&q.type!=="weekly"&&q.type!=="todo"&&!(q.type==="time"&&q.roll)})}
   function reqDefsFor(k){if(isVac(k))return [];var e=S.days[k];return reqOf((e&&e.q)?e.q:(hasEntry(e)?LEGACY:activeDefs(k)))}
   function num(v){return Math.round((+v||0)*100)/100}
   function projSum(id,upto){var t=0;Object.keys(S.days).forEach(function(k){if(!upto||k<=upto)t+=+((S.days[k]||{})[id])||0});return num(t)}
-  function hasEntry(e){return !!e&&Object.keys(e).some(function(f){if(f==="top")return (e.top||[]).some(function(x){return x&&x.t});return f!=="q"&&f!=="sched"&&f!=="schSkip"&&f!=="calls"&&f.indexOf("plan_")!==0&&e[f]!==""&&e[f]!=null&&e[f]!==0&&e[f]!==false})}
+  function hasEntry(e){return !!e&&Object.keys(e).some(function(f){if(f==="top")return (e.top||[]).some(function(x){return x&&x.t});return f!=="q"&&f!=="sched"&&f!=="schSkip"&&f!=="calls"&&f!=="ck"&&f.indexOf("plan_")!==0&&e[f]!==""&&e[f]!=null&&e[f]!==0&&e[f]!==false})}
   function defsOf(e){return (e&&e.q)||(hasEntry(e)?LEGACY:activeDefs(todayKey()))}
   function metQ(q,e){e=e||{};var v=e[q.id];if(q.type==="wake"){if(!v)return q.id==="wakeAt"&&e.wake===true;var m=mins(v);return m>=mins(q.from)&&m<=mins(q.to)}if(q.type==="time")return timeMet(q,e);if(q.type==="limit")return (v|0)<=q.max;if(q.type==="check"||q.type==="weekly"||q.type==="todo")return v===true;if(q.type==="target")return num(v)>=q.min;if(q.type==="scale")return (v|0)>=q.min;return false}
   function overQ(q,e){return q.type==="limit"&&((e||{})[q.id]|0)>q.max}

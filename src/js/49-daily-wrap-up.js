@@ -176,6 +176,7 @@
   }catch(x){}},4000);
   try{if(!localStorage.getItem("pc-welcomed")&&!(cfg().quests||[]).length)setTimeout(function(){openWelcome()},300)}catch(x){}
   var lastDay=todayKey();
+  if(cacheBlock)setTimeout(function(){openG("Saved data not loaded",function(b){b.innerHTML='<p class="mhead bad">'+(cacheBlock==="newer"?"Your data is from a newer version of the app.":"Your saved data couldn\u2019t be read.")+'</p><p class="help">It\u2019s untouched, and a copy is kept on this device. Nothing will be saved over it until you '+(cacheBlock==="newer"?"update the app or ":"")+'import a backup (Settings \u203a Your data).</p><div class="edrow end"><button type="button" class="stone" id="cbOk">Got it</button></div>';b.querySelector("#cbOk").addEventListener("click",closeG)})},600);
   setInterval(elapsed,5000);
   function lockIn(){if(ro()){document.getElementById("lockIn").textContent="Locked";return}var n=new Date(),DE=dayEnd(),sd=new Date(n.getTime()-DE*3600000),m=new Date(sd.getFullYear(),sd.getMonth(),sd.getDate()+1,DE)-n,h=Math.floor(m/3600000),mm=Math.floor(m%3600000/60000);document.getElementById("lockIn").textContent="Locks in "+(h?h+"h ":"")+mm+"m"}
   lockIn();

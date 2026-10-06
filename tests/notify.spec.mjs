@@ -72,7 +72,7 @@ test("midday and weekly checks show progress bars", async ({ page }) => {
   await expect(page.locator("#gBody .nfrow")).toHaveText(["CS work30m / 1h"]);
   await page.click("#gClose");
   await tap(page, 2600);
-  await expect(page.locator("#gBody .nfrow")).toHaveText(["French20m / 5h"]);
+  await expect(page.locator("#gBody .nfrow")).toHaveText(["French (half by Wed)20m / 2h 30m"]);
 });
 
 test("deadline eve names the deadline and offers to plan today", async ({ page }) => {
@@ -141,9 +141,9 @@ test("the bonus is capped at 5 a day and needs a start, not just a tap", async (
 });
 
 test("an answered call alone doesn't count as logging the day", async ({ page }) => {
-  const RQ = [{ id: "cs", type: "time", label: "CS work", min: 60, roll: 420 }];
-  const days = dayRange("2026-10-01", "2026-11-06", (k) => k <= "2026-11-02" ? { cs: k === "2026-11-02" ? 240 : 60, q: RQ, ended: true } : { q: RQ, calls: 1 });
+  const RQ = [{ id: "cs", type: "time", label: "CS work", min: 60 }];
+  const days = dayRange("2026-10-01", "2026-11-06", (k) => k <= "2026-11-02" ? { cs: 60, q: RQ } : { q: RQ, calls: 1 });
   await openApp(page, { now: "2026-11-07T09:00:00-05:00", cfg: { quests: RQ }, days });
   const marks = await page.evaluate(() => [...document.querySelectorAll("#strip i")].slice(-5, -1).map((i) => i.className));
-  expect(marks).toEqual(["carried", "carried", "carried", "grace"]);
+  expect(marks).toEqual(["grace", "frozen", "miss", "miss"]);
 });

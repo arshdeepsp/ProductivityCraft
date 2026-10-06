@@ -15,7 +15,7 @@
       var j;try{j=JSON.parse(t)}catch(x){setSync("That file isn't valid JSON. Pick the .json file from Export backup.");throw 0}
       if(!j||j.app!=="personal-operating-playbook"||typeof j.days!=="object"){setSync("That file isn't a ProductivityCraft backup.");throw 0}
       if((j.schema||2)>SCHEMA){setSync("That backup is from a newer version of the app. Update first, then import.");throw 0}
-      j=migrate(j);
+      j=migrate(j);cacheBlock="";
       var MIG=[{"id":"wakeAt","type":"wake","label":"Wake-up time","from":"04:00","to":"06:00"},{"id":"grad","type":"time","label":"CS/Technical work","min":60},{"id":"music","type":"time","label":"Music Practice","min":60},{"id":"french","type":"time","label":"French Learning","min":30},{"id":"exercise","type":"time","label":"Exercise","min":30,"note":"walks count"},{"id":"mirror","type":"limit","label":"Mirror checks","max":3},{"id":"slipmin","type":"limit","label":"Digital slips","max":30,"unit":"min","note":"feeds, 2 screens, prompt & bolt"}],migIds=MIG.map(function(q){return q.id}),earliest=null,usedMig=false;
       var n=0;
       Object.keys(j.days).forEach(function(k){
@@ -24,6 +24,7 @@
         if(!b.q&&Object.keys(b).some(function(f){return migIds.indexOf(f)>=0})){b.q=MIG;usedMig=true}
         if(Object.keys(b).length&&(!earliest||k<earliest))earliest=k;
         Object.keys(b).forEach(function(f){var v=b[f];if(Array.isArray(v)){if(!a[f])m[f]=v}else if(typeof v==="string"&&/^\d{2}:\d{2}$/.test(v)){if(!a[f])m[f]=v}else if(typeof v==="boolean")m[f]=!!(a[f]||v);else if(typeof v==="number"&&isFinite(v))m[f]=Math.max(a[f]|0,Math.max(0,Math.min(9999,Math.round(v))))});
+        if(!hasEntry(a)){if(b.q)m.q=b.q;if(b.ck)m.ck=b.ck}
         if(JSON.stringify(m)!==JSON.stringify(a)){S.days[k]=m;dirty[k]=true;n++}
       });
       var r=0;if(j.refl&&typeof j.refl==="object"){S.refl=Object.assign({},S.refl);Object.keys(j.refl).forEach(function(k){if(!S.refl[k]&&j.refl[k]){S.refl[k]=j.refl[k];r++}})}

@@ -79,9 +79,10 @@ test("a shortfall is spread over the rest of the week, not dumped on the next da
   expect(r["This week"]).toBe("1h of 7h · need 2h 12m by today · 1h 12m more today keeps you on pace");
 });
 
-test("doing today's spread share clears the day after a miss", async ({ page }) => {
+test("doing today's spread share puts you back on pace", async ({ page }) => {
   await openApp(page, { now: "2026-11-04T20:00:00-05:00", cfg: { quests: W7, start: S2 }, days: { "2026-11-02": { w: 60, q: W7 }, "2026-11-04": { w: 72, q: W7 } } });
-  await expect(page.locator("#cleared")).toHaveText(/Day cleared!|Gold day!/);
+  const r = await details(page, "Reading");
+  expect(r["This week"]).toBe("2h 12m of 7h · need 2h 12m by today · on pace");
 });
 
 test("time banked earlier in the week still covers an empty day", async ({ page }) => {

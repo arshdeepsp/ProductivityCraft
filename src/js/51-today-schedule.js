@@ -17,7 +17,8 @@
   function schReps(){return cfg().rep||[]}
   function repById(id){return schReps().filter(function(r){return r.id===id})[0]}
   function repOn(r,k){return k>=r.from&&k<=r.until&&r.dows.indexOf(parse(k).getDay())>=0}
-  function repText(r){var d=r.dows.slice().sort(function(a,b){return ((a+6)%7)-((b+6)%7)}),w=d.length===7?"Every day":d.join()==="1,2,3,4,5"?"Weekdays":d.map(function(x){return DN[x]}).join(", ");return w+" until "+fmtD(r.until)}
+  function wkSort(L){var o=wkOrder();return L.slice().sort(function(a,b){return o.indexOf(a)-o.indexOf(b)})}
+  function repText(r){var d=wkSort(r.dows),w=d.length===7?"Every day":d.join()==="1,2,3,4,5"?"Weekdays":d.map(function(x){return DN[x]}).join(", ");return w+" until "+fmtD(r.until)}
   function schAll(k){var e=S.days[k]||{},sk=e.schSkip||[],out=schNorm(e.sched).slice(),Q=null;
     schReps().forEach(function(r){if(!repOn(r,k)||sk.indexOf(r.id)>=0)return;if(r.q){Q=Q||schQuests(k);if(!Q.some(function(q){return q.id===r.q}))return}var b={id:"r-"+r.id,rep:r.id,f:r.f,t:r.t};if(r.q)b.q=r.q;if(r.lb)b.lb=r.lb;if(r.j5)b.j5=true;out.push(b)});
     busyList().forEach(function(b){if(busyOn(b,k))out.push({id:"z-"+b.id,busy:b.id,lb:b.lb,f:b.f,t:b.t})});
@@ -26,11 +27,11 @@
   function busyList(){return cfg().busy||[]}
   function busyById(id){return busyList().filter(function(b){return b.id===id})[0]}
   function busyOn(b,k){return k>=b.from&&(!b.until||k<=b.until)&&b.dows.indexOf(parse(k).getDay())>=0}
-  function busyDaysText(dows){var d=dows.slice().sort(function(a,b){return ((a+6)%7)-((b+6)%7)});return d.length===7?"Every day":d.join()==="1,2,3,4,5"?"Weekdays":d.map(function(x){return DN[x]}).join(", ")}
+  function busyDaysText(dows){var d=wkSort(dows);return d.length===7?"Every day":d.join()==="1,2,3,4,5"?"Weekdays":d.map(function(x){return DN[x]}).join(", ")}
   function busyText(b){return busyDaysText(b.dows)+(b.until?" until "+fmtD(b.until):", every week")}
   function busyKey(wd){var T=todayKey();for(var i=1;i<=7;i++){var k=add(T,i);if(parse(k).getDay()===wd)return k}return T}
   function busyForWd(wd){var T=todayKey();return busyList().filter(function(b){return b.dows.indexOf(wd)>=0&&(!b.until||b.until>=T)}).map(function(b){return {id:b.id,lb:b.lb,f:b.f,t:b.t,tpl:true}}).sort(function(a,b){return a.f-b.f})}
-  function busySave(fn){if(locked())return;var c2=clone(cfg());c2.busy=c2.busy||[];var r=fn(c2.busy);if(r)c2.busy=r;if(!c2.busy.length)delete c2.busy;saveCfg(c2);nfSig="";qSig=""}
+  function busySave(fn){if(locked())return;var c2=clone(cfg()),T0=todayKey();c2.busy=(c2.busy||[]).filter(function(b){return !b.until||b.until>=T0});var r=fn(c2.busy);if(r)c2.busy=r;if(!c2.busy.length)delete c2.busy;saveCfg(c2);nfSig="";qSig=""}
   function busyRecent(){var out=[];function a(x){if(x&&out.indexOf(x)<0)out.push(x)}busyList().forEach(function(b){a(b.lb)});["Lecture","Meeting","Work","Commute"].forEach(function(x){if(out.length<4)a(x)});return out.slice(0,6)}
   function busyAdd(lb,m){var T=todayKey(),w=schWin(),L=busyForWd(schWd),f=m,t=Math.min(w.e,f+60);lb=(lb||"").trim().slice(0,30);if(!lb){schMsg="Give it a name.";return false}
     var nx=schNext(L,null,f,w.e);if(nx<t)t=nx;var c=schClash(L,null,f,t);if(c||t-f<SCH_STEP){schMsg="That overlaps "+schName(c)+". Pick a free time.";return false}
@@ -56,20 +57,25 @@
   /* Change one block. A repeat occurrence is first detached into a one-off for today (schDet offers "Every week"). */
   function schEdit(id,fn,offer){if(schMd==="busy"){var cur=busyById(id);if(!cur)return id;var nx=clone(cur);fn(nx,[]);var bad=null;nx.dows.forEach(function(d){var c=schClash(busyForWd(d),id,nx.f,nx.t);if(c&&!bad)bad={c:c,d:d}});
       if(bad){schMsg="That clashes with "+bad.c.lb+" on "+WDN[bad.d]+".";return id}busySave(function(B){B.forEach(function(x){if(x.id===id)fn(x,B)})});return id}var b=schAll(todayKey()).filter(function(x){return x.id===id})[0],out=id;if(!b)return id;
-    schSave(function(L,e){var x=L.filter(function(z){return z.id===id})[0];if(!x&&b.rep){x={id:schNewId(),f:b.f,t:b.t};if(b.q)x.q=b.q;if(b.lb)x.lb=b.lb;if(b.j5)x.j5=true;L.push(x);e.schSkip=(e.schSkip||[]).concat([b.rep]);out=x.id;schDet=offer?{rep:b.rep,id:x.id}:null}if(x)fn(x,L)});return out}
+    schSave(function(L,e){var x=L.filter(function(z){return z.id===id})[0];if(!x&&b.rep){x={id:schNewId(),f:b.f,t:b.t,src:b.rep};if(b.q)x.q=b.q;if(b.lb)x.lb=b.lb;if(b.j5)x.j5=true;L.push(x);e.schSkip=(e.schSkip||[]).concat([b.rep]);out=x.id;schDet=offer?{rep:b.rep,id:x.id}:null}if(x)fn(x,L)});return out}
   function schRepDays(b){var q=b.q?schQuests(todayKey()).filter(function(x){return x.id===b.q})[0]:null;return q&&q.days&&q.days.length?q.days:[0,1,2,3,4,5,6]}
   function schRepCount(b,dows,weeks){var T=todayKey(),u=add(T,weeks*7-1),ok=schRepDays(b),n=0;for(var d=T;d<=u;d=add(d,1)){var w=parse(d).getDay();if(dows.indexOf(w)>=0&&ok.indexOf(w)>=0)n++}return n}
-  function schRepSave(id,dows,weeks){var T=todayKey(),b=schAll(T).filter(function(x){return x.id===id})[0];if(!b||!dows.length||locked())return;var u=add(T,weeks*7-1),c2=clone(cfg()),R=c2.rep=(c2.rep||[]).filter(function(r){return r.until>=T}),rid=b.rep;
-    if(rid){R.forEach(function(r){if(r.id===rid){r.dows=dows.slice();r.until=u}})}
+  /* First clash a repeat would hit on a day after today (other blocks, repeats or busy times), as {b, k}. */
+  function repClash(rid,f,t,dows,until,qd){var T=todayKey();for(var d=add(T,1);d<=until;d=add(d,1)){var w=parse(d).getDay();if(dows.indexOf(w)<0||(qd&&qd.indexOf(w)<0))continue;var c=schClash(schAll(d).filter(function(x){return !rid||x.rep!==rid}),null,f,t);if(c)return {b:c,k:d}}return null}
+  function repClashMsg(c){return "That clashes with "+schName(c.b)+" on "+DAYF[parse(c.k).getDay()].slice(0,3)+" "+fmtD(c.k)+"."}
+  function schRepSave(id,dows,weeks){var T=todayKey(),b=schAll(T).filter(function(x){return x.id===id})[0];if(!b||!dows.length||locked())return;var u=add(T,weeks*7-1),c2=clone(cfg()),R=c2.rep=(c2.rep||[]).filter(function(r){return r.until>=T}),src=!b.rep&&b.src&&repById(b.src)?b.src:null,rid=b.rep||src;
+    var cl=repClash(rid,b.f,b.t,dows,u,b.q?schRepDays(b):null);if(cl){schMsg=repClashMsg(cl);schRep=null;return}
+    if(rid){R.forEach(function(r){if(r.id===rid){r.dows=dows.slice();r.until=u;if(src){r.f=b.f;r.t=b.t;if(b.j5)r.j5=true;else delete r.j5}}})}
     else{rid="r"+schNewId();var r={id:rid,f:b.f,t:b.t,dows:dows.slice(),from:T,until:u};if(b.q)r.q=b.q;if(b.lb)r.lb=b.lb;if(b.j5)r.j5=true;R.push(r)}
     saveCfg(c2);var today=dows.indexOf(parse(T).getDay())>=0;
-    if(!b.rep&&today)schSave(function(L){return L.filter(function(x){return x.id!==id})});
-    schSel=b.rep||today?"r-"+rid:id;schRep=null;schDet=null;schMsg="Repeats "+repText(repById(rid))+".";nfSig="";notifSync()}
+    if(!b.rep&&today)schSave(function(L,e){if(src&&e.schSkip)e.schSkip=e.schSkip.filter(function(x){return x!==src});return L.filter(function(x){return x.id!==id})});
+    var keep=null;if(b.rep&&!today){keep=schNewId();schSave(function(L){var x={id:keep,f:b.f,t:b.t,src:b.rep};if(b.q)x.q=b.q;if(b.lb)x.lb=b.lb;if(b.j5)x.j5=true;L.push(x)})}
+    schSel=keep||(b.rep||today?"r-"+rid:id);schRep=null;schDet=null;schMsg="Repeats "+repText(repById(rid))+".";nfSig="";notifSync()}
   function schRepStop(rid){var c2=clone(cfg());c2.rep=(c2.rep||[]).filter(function(r){return r.id!==rid});if(!c2.rep.length)delete c2.rep;saveCfg(c2);schSave(function(L,e){if(e.schSkip)e.schSkip=e.schSkip.filter(function(x){return x!==rid})});schSel=null;schDet=null;schMsg="Stopped repeating.";nfSig="";notifSync()}
-  function schRepEvery(){var d=schDet;if(!d)return;var b=schAll(todayKey()).filter(function(x){return x.id===d.id})[0];if(!b)return;var c2=clone(cfg());(c2.rep||[]).forEach(function(r){if(r.id!==d.rep)return;r.f=b.f;r.t=b.t;if(b.j5)r.j5=true;else delete r.j5});saveCfg(c2);
+  function schRepEvery(){var d=schDet;if(!d)return;var b=schAll(todayKey()).filter(function(x){return x.id===d.id})[0],r0=repById(d.rep);if(!b||!r0)return;var cl=repClash(d.rep,b.f,b.t,r0.dows,r0.until,b.q?schRepDays(b):null);if(cl){schMsg=repClashMsg(cl);return}var c2=clone(cfg());(c2.rep||[]).forEach(function(r){if(r.id!==d.rep)return;r.f=b.f;r.t=b.t;if(b.j5)r.j5=true;else delete r.j5});saveCfg(c2);
     schSave(function(L,e){if(e.schSkip)e.schSkip=e.schSkip.filter(function(x){return x!==d.rep});return L.filter(function(x){return x.id!==d.id})});schSel="r-"+d.rep;schDet=null;schMsg="Changed every week.";nfSig="";notifSync()}
   function schAdd(qid,m){var T=todayKey(),w=dayWin(T),q=schQuests(T).filter(function(x){return x.id===qid})[0];if(!q)return;
-    var L=schAll(T),left=schLen(q)-schPlaced(T,qid),len=left>=SCH_STEP?left:SCH_STEP*2,f=m,t=Math.min(w.e,f+len);
+    var L=schList(),left=schLen(q)-schPlaced(T,qid),len=left>=SCH_STEP?left:SCH_STEP*2,f=m,t=Math.min(w.e,f+len);
     if(f<schFloor()){schMsg="That time has already passed.";return}
     if(t-f<SCH_STEP){schMsg="That’s too close to bedtime.";return}
     var nx=schNext(L,null,f,w.e);if(nx<t)t=nx;
@@ -101,12 +107,14 @@
   function closeSchedule(){if(!schPg)return;if(schMd==="busy"&&schBack){schMd="today";schBack=false;schSel=null;schPick=null;schMsg="";schDraw(true);return}schPg.hidden=true;document.body.classList.remove("sch-open");schBody=null;schDrag=null;schSel=null;schPick=null;schMd="today";render();if(typeof renderSettings==="function"&&setTab==="day")renderSettings()}
   function schGeo(){var w=schWin(),s0=Math.floor(w.s/SCH_STEP)*SCH_STEP,e0=Math.ceil(w.e/SCH_STEP)*SCH_STEP;return{w:w,s0:s0,e0:e0,px:function(m){return (m-s0)/SCH_STEP*SCH_ROW}}}
   function schAt(clientY){var tl=schPg.querySelector("#schTl"),g=schGeo(),r=tl.getBoundingClientRect();return Math.min(g.e0-SCH_STEP,Math.max(g.s0,g.s0+Math.floor((clientY-r.top)/SCH_ROW)*SCH_STEP))}
-  function schLeft(T,q){return schLen(q)-schPlaced(T,q.id)}
+  /* What's left to place for a quest today: its daily share minus minutes already logged and blocks still ahead. */
+  function schAhead(L,qid,from){return L.filter(function(b){return b.q===qid&&b.t>from}).reduce(function(a,b){return a+b.t-Math.max(b.f,from)},0)}
+  function schLeft(T,q,L){var from=Math.floor(nowMinInDay()/SCH_STEP)*SCH_STEP;return schLen(q)-((S.days[T]||{})[q.id]|0)-schAhead(L||schAll(T),q.id,from)}
   function schFree(L,from,to,pad,minLen){var gaps=[],c=from;pad=pad||0;L.slice().sort(function(a,b){return a.f-b.f}).forEach(function(b){var bf=b.f-pad,bt=b.t+pad;if(bt<=c)return;if(bf>c)gaps.push([c,Math.min(bf,to)]);c=Math.max(c,bt)});if(c<to)gaps.push([c,to]);return gaps.filter(function(g){return g[1]-g[0]>=(minLen||SCH_STEP)})}
   function schAuto(){var T=todayKey(),w=dayWin(T),Q=schQuests(T),e=S.days[T]||{},from=Math.max(schFloor(),Math.floor(w.s/SCH_STEP)*SCH_STEP),n=0;/* each new shot keeps a 15-minute break from its neighbours and is at least 30m (or whatever is left) */
-    var RP=schAll(T).filter(function(b){return b.rep||b.busy});
-    schSave(function(L){Q.forEach(function(q){if(metQ(q,e))return;var left=schLen(q)-L.concat(RP).filter(function(b){return b.q===q.id}).reduce(function(a,b){return a+b.t-b.f},0);
-      while(left>=SCH_STEP){var g=schFree(L.concat(RP),from,w.e,SCH_STEP,Math.min(left,SCH_STEP*2))[0];if(!g)break;var len=Math.min(left,g[1]-g[0]);len=Math.max(SCH_STEP,Math.floor(len/5)*5);L.push({id:schNewId(),q:q.id,f:g[0],t:g[0]+len});n++;left-=len}})});
+    var RP=schAll(T).filter(function(b){return b.rep||b.busy}),vis=function(b){return !b.q||Q.some(function(q){return q.id===b.q})};
+    schSave(function(L0){var L=L0.filter(vis),hid=L0.filter(function(b){return !vis(b)});Q.forEach(function(q){if(metQ(q,e))return;var left=schLeft(T,q,L.concat(RP));
+      while(left>=SCH_STEP){var g=schFree(L.concat(RP),from,w.e,SCH_STEP,Math.min(left,SCH_STEP*2))[0];if(!g)break;var len=Math.min(left,g[1]-g[0]);len=Math.max(SCH_STEP,Math.floor(len/5)*5);L.push({id:schNewId(),q:q.id,f:g[0],t:g[0]+len});n++;left-=len}});return L.concat(hid)});
     schMsg=n?"Planned "+n+" shot"+(n===1?"":"s")+" with 15-minute breaks. Drag or tap to adjust.":"Nothing left to plan, or no free time left today."}
   function schWire(){var sc=schPg.querySelector("#schScroll"),tl=schPg.querySelector("#schTl"),lp=null;
     tl.addEventListener("click",function(ev){if(schDrag)return;var bk=ev.target.closest("[data-sb]");if(bk){var id=bk.getAttribute("data-sb");schSel=schSel===id?null:id;schPick=null;schRep=null;schDet=null;schMsg="";schDraw();return}
@@ -201,7 +209,7 @@
     else{on("schWkM",function(){schRep.weeks=Math.max(1,schRep.weeks-1);schDraw()});on("schWkP",function(){schRep.weeks=Math.min(REP_MAX,schRep.weeks+1);schDraw()})}
     on("schBzRm",function(){busyRemove(schSel);schDraw()});
     on("schRepNo",function(){schRep=null;schDraw()});on("schRepOk",function(){schRepSave(schRep.id,schRep.dows,schRep.weeks);schDraw()});
-    on("schRepB",function(){var b=L.filter(function(x){return x.id===schSel})[0],r=b&&b.rep?repById(b.rep):null;schRep={id:schSel,dows:r?r.dows.slice():[parse(T).getDay()].filter(function(d){return schRepDays(b).indexOf(d)>=0}),weeks:r?Math.max(1,Math.min(REP_MAX,Math.ceil((daysBetween(T,r.until)+1)/7))):4};schMsg="";schDraw()});
+    on("schRepB",function(){var b=L.filter(function(x){return x.id===schSel})[0],r=b&&(b.rep||b.src)?repById(b.rep||b.src):null;schRep={id:schSel,dows:r?r.dows.slice():[parse(T).getDay()].filter(function(d){return schRepDays(b).indexOf(d)>=0}),weeks:r?Math.max(1,Math.min(REP_MAX,Math.ceil((daysBetween(T,r.until)+1)/7))):4};schMsg="";schDraw()});
     on("schEvery",function(){schRepEvery();schDraw()});on("schStop",function(){var b=L.filter(function(x){return x.id===schSel})[0];if(b&&b.rep)schRepStop(b.rep);schDraw()});
     on("schPkNo",function(){schPick=null;schMsg="";schDraw()});
     on("schBzB",function(){openBusy(parse(T).getDay(),schPick,true)});on("schBzOpen",function(){openBusy(parse(T).getDay(),null,true)});on("schBzEdit",function(){var b=L.filter(function(x){return x.id===schSel})[0];openBusy(parse(T).getDay(),null,true);if(b&&b.busy){schSel=b.busy;schDraw()}});
@@ -214,5 +222,8 @@
   }
   function schRows(defs,k){defs.forEach(function(q){var el=qEls[q.id];if(!el||q.type!=="time")return;var L=schOfQ(k,q.id);if(!L.length)return;var txt=L.map(schText).join(", "),rq=el.row.querySelector(".req");if(rq&&rq.textContent.indexOf(txt)<0)rq.textContent+=" · "+txt})}
   function schNotifs(T,e,push){var Q=schQuests(T);schAll(T).forEach(function(bl,i){var q=Q.filter(function(x){return x.id===bl.q})[0];if(!q||metQ(q,e)||(S.timer&&S.timer.id===q.id))return;
-      push(3500+i,(bl.j5?"5 minutes on ":"Time for ")+q.label,bl.j5?"Tap to start a 5-minute timer. Planned until "+hhmmOf(bl.t)+".":hhmmOf(bl.f)+"–"+hhmmOf(bl.t)+". Tap to start the timer.",atMin(T,bl.f),{sched:q.id,j5:!!bl.j5})})}
+      push(3500+i,(bl.j5?"5 minutes on ":"Time for ")+q.label,bl.j5?"Tap to start a 5-minute timer. Planned until "+hhmmOf(bl.t)+".":hhmmOf(bl.f)+"–"+hhmmOf(bl.t)+". Tap to start the timer.",atMin(T,bl.f),{sched:q.id,j5:!!bl.j5})});
+    /* Repeats on the next 6 days are scheduled too (3700 + day×20 + n), so they remind even if the app isn't opened that day. */
+    for(var dd=1;dd<=6;dd++){var k=add(T,dd),Qk=schQuests(k),n=0;schAll(k).forEach(function(bl){if(!bl.rep||n>=20)return;var q=Qk.filter(function(x){return x.id===bl.q})[0];if(!q)return;
+      push(3700+dd*20+n++,(bl.j5?"5 minutes on ":"Time for ")+q.label,bl.j5?"Tap to start a 5-minute timer. Planned until "+hhmmOf(bl.t)+".":hhmmOf(bl.f)+"–"+hhmmOf(bl.t)+". Tap to start the timer.",atMin(k,bl.f),{sched:q.id,j5:!!bl.j5})})}}
   function schTap(x){var q=schQuests(todayKey()).filter(function(z){return z.id===x.sched})[0];if(!q||locked()||(S.timer&&S.timer.id===q.id))return;go("today");if(x.j5)start5(q);else toggleTimer(q)}

@@ -18,13 +18,14 @@
   document.getElementById("strip").addEventListener("click",function(ev){
     var k=ev.target&&ev.target.getAttribute&&ev.target.getAttribute("data-k");if(!k)return;
     selDay=k;viewKey=null;if(k>=START_KEY&&k<todayKey())setTimeout(function(){openDayModal(k)},0);var info=document.getElementById("dayInfo"),m=k>todayKey()?"future":k<START_KEY?"pre":(lastSt.marks[k]||"pend"),e=S.days[k]||{};
-    var label={carried:"Carried: no work logged, but your weekly total covered it (streak held, no XP)",frozen:"Missed (saved by a streak freeze)",rest:isVac(k)?"Vacation day":"Rest day (nothing required)",ok:gold(e)?"Cleared (gold day)":"Cleared",miss:"Missed",grace:"Missed (grace day)",pend:k===todayKey()?"In progress":"Not started",pre:"No data",future:"Coming up"}[m];
+    var label={lost:"Lost: a weekly total was missed, so this period no longer counts",carried:"Carried: no work logged, but your weekly total covered it (streak held, no XP)",frozen:"Missed (saved by a streak freeze)",rest:isVac(k)?"Vacation day":"Rest day (nothing required)",ok:gold(e)?"Cleared (gold day)":"Cleared",miss:"Missed",grace:"Missed (grace day)",pend:k===todayKey()?"In progress":"Not started",pre:"No data",future:"Coming up"}[m];
     var parts=m==="future"?[label,parse(k).toLocaleDateString("en-CA",{weekday:"short",month:"short",day:"numeric"})]:[parse(k).toLocaleDateString("en-CA",{weekday:"short",month:"short",day:"numeric"}),label];
     if(m!=="pre"&&m!=="future"&&(m!=="pend"||k===todayKey())){var dq=defsOf(e);parts.push(bases(e)+"/"+reqOf(dq).length+" done");
       var d=[];dq.forEach(function(q){var v=e[q.id];if(v==null||v===""||v===0||v===false)return;d.push(q.type==="wake"?q.label+" "+v:q.type==="time"?q.label+" "+hm(v):q.type==="check"?q.label:q.type==="scale"?q.label+" "+v+"/"+(q.scale||5):q.label+" "+(q.unit==="min"?hm(v):num(v)))});if(d.length)parts.push(d.join(", "))}
     info.textContent=parts.join(" \u00b7 ");render();
   });
   function render(fromClick){
+    try{lockPast();rollTimer()}catch(x){}
     try{if(S.cfg&&(S.cfg.quests||[]).some(function(q){return q.pending}))applyPending()}catch(x){}
     try{if(S.cfg)cleanDoneTodos()}catch(x){}
     var st=compute(),T=todayKey(),k=dayKey(),e=S.days[k]||{};

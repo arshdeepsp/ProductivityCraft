@@ -15,7 +15,7 @@ test("export then import round-trips data and stamps the schema", async ({ page 
   const file = join(tmpdir(), "pc-backup.json");
   await (await dl).saveAs(file);
   const data = JSON.parse(readFileSync(file, "utf8"));
-  expect(data.schema).toBe(11);
+  expect(data.schema).toBe(12);
   expect(data.days["2026-11-01"].cs).toBe(75);
   await page.evaluate(() => localStorage.clear());
   await page.reload();
@@ -42,7 +42,7 @@ test("old schema-2 backups import and lose retired settings", async ({ page }) =
   const st = await page.evaluate(() => JSON.parse(localStorage.getItem("pc-cache-v1")));
   expect(st.days["2026-10-30"].cs).toBe(60);
   expect(st.cfg.bank).toBeUndefined();
-  expect(st.schema).toBe(11);
+  expect(st.schema).toBe(12);
 });
 
 test("newer backups are refused", async ({ page }) => {
@@ -62,7 +62,7 @@ test("schema 4: a one-block-per-quest schedule becomes a list of shots", async (
   await page.click("#quests .q .act button[aria-label^='More']");
   await page.waitForTimeout(900);
   const st = await page.evaluate(() => JSON.parse(localStorage.getItem("pc-cache-v1")));
-  expect(st.schema).toBe(11);
+  expect(st.schema).toBe(12);
   expect(st.days["2026-11-02"].sched).toEqual([{ id: "b-cs", q: "cs", f: 600, t: 660, j5: true }]);
 });
 
@@ -74,7 +74,7 @@ test("schema 5: an old Day ends at becomes the bedtime, so the day still locks a
   const st = await page.evaluate(() => JSON.parse(localStorage.getItem("pc-cache-v1")));
   expect(st.cfg.dayEnd).toBeUndefined();
   expect(st.cfg.day).toEqual({ wake: "07:00", bed: "02:00" });
-  expect(Object.keys(st.days)).toEqual(["2026-11-02"]);
+  expect(Object.keys(st.days).filter((k) => st.days[k].cs)).toEqual(["2026-11-02"]);
 });
 
 test("schema 6: the old ended flag is dropped, so an already-ended today can be edited again", async ({ page }) => {
@@ -82,7 +82,7 @@ test("schema 6: the old ended flag is dropped, so an already-ended today can be 
   await page.click("#quests .q .act button[aria-label^='More']");
   await page.waitForTimeout(900);
   const st = await page.evaluate(() => JSON.parse(localStorage.getItem("pc-cache-v1")));
-  expect(st.days["2026-11-01"]).toEqual({ cs: 75, q: Q });
+  expect(st.days["2026-11-01"]).toEqual({ cs: 75, q: Q, ck: [] });
   expect(st.days["2026-11-02"].cs).toBe(20);
   expect(st.days["2026-11-02"].ended).toBeUndefined();
 });
@@ -98,7 +98,7 @@ test("schema 7: subject links become topic links, keeping a quest's old default 
   await page.click("#quests .q .act button[aria-label^='More']");
   await page.waitForTimeout(900);
   const st = await page.evaluate(() => JSON.parse(localStorage.getItem("pc-cache-v1")));
-  expect(st.schema).toBe(11);
+  expect(st.schema).toBe(12);
   const [cs, rd, sq] = st.cfg.quests;
   expect(cs).toMatchObject({ topics: ["t1", "t2", "t3"], subjs: ["s1", "s2"] });
   expect(rd).toMatchObject({ topics: ["t2"], subj: "s1", fin: { t: "topic", lvl: 4 } });
@@ -112,6 +112,6 @@ test("schema 9: custom achievements are dropped", async ({ page }) => {
   await page.click("#quests .q .act button[aria-label^='More']");
   await page.waitForTimeout(900);
   const st = await page.evaluate(() => JSON.parse(localStorage.getItem("pc-cache-v1")));
-  expect(st.schema).toBe(11);
+  expect(st.schema).toBe(12);
   expect(st.cfg.customAch).toBeUndefined();
 });
