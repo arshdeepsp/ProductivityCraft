@@ -69,3 +69,23 @@ test("a new quest can total over a month, and the editor can switch it to every 
   expect(q.per).toBe("2w");
   expect(q.roll).toBe(1110);
 });
+
+const W7 = [{ id: "w", type: "time", label: "Reading", min: 30, roll: 420 }];
+const S2 = "2026-11-02T05:00:00.000Z";
+
+test("a shortfall is spread over the rest of the week, not dumped on the next day", async ({ page }) => {
+  await openApp(page, { now: "2026-11-04T09:00:00-05:00", cfg: { quests: W7, start: S2 }, days: { "2026-11-02": { w: 60, q: W7 } } });
+  const r = await details(page, "Reading");
+  expect(r["This week"]).toBe("1h of 7h · need 2h 12m by today · 1h 12m more today keeps you on pace");
+});
+
+test("doing today's spread share clears the day after a miss", async ({ page }) => {
+  await openApp(page, { now: "2026-11-04T20:00:00-05:00", cfg: { quests: W7, start: S2 }, days: { "2026-11-02": { w: 60, q: W7 }, "2026-11-04": { w: 72, q: W7 } } });
+  await expect(page.locator("#cleared")).toHaveText(/Day cleared!|Gold day!/);
+});
+
+test("time banked earlier in the week still covers an empty day", async ({ page }) => {
+  await openApp(page, { now: "2026-11-04T09:00:00-05:00", cfg: { quests: W7, start: S2 }, days: { "2026-11-02": { w: 180, q: W7 } } });
+  const r = await details(page, "Reading");
+  expect(r["This week"]).toBe("3h of 7h · need 3h by today · on pace");
+});

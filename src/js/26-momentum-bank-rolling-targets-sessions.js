@@ -29,7 +29,10 @@
   var firstSeenCache={},firstSeenSig="";
   function firstSeen(id){var sig=Object.keys(S.days).length+"";if(sig!==firstSeenSig){firstSeenCache={};firstSeenSig=sig}if(id in firstSeenCache)return firstSeenCache[id];var best=null;Object.keys(S.days).forEach(function(d){if(best&&d>=best)return;var e=S.days[d];if(e&&defsOf(e).some(function(q){return q.id===id}))best=d});return (firstSeenCache[id]=best)}
   function rollFrom(q){var f=q.startOn||q.addedOn||firstSeen(q.id)||START_KEY;return f>START_KEY?f:START_KEY}
-  function rollNeed(q,k){return Math.round(q.roll*workDaysIn(q,weekFrom(q,k),k)/perWorkDays(q,k))}
+  /* Pace needed by the end of day k: the straight-line share (so a surplus covers later empty days), but if you're
+     behind, the shortfall is spread over the period's remaining work days instead of landing on the next one. */
+  function rollNeed(q,k){var lin=Math.round(q.roll*workDaysIn(q,weekFrom(q,k),k)/perWorkDays(q,k)),before=rollSum(q.id,k,q)-((S.days[k]||{})[q.id]|0);
+    if(!scheduled(q,k))return Math.min(lin,before);var left=workDaysIn(q,k,perEnd(q,k));if(left<1)return lin;return Math.min(lin,Math.round(before+Math.max(0,weekTarget(q,k)-before)/left))}
   function timeMet(q,e){var v=e[q.id]|0;if(q.roll){var k=eKey.get(e);if(!k)return false;return rollSum(q.id,k,q)>=rollNeed(q,k)}var c=(bankCov.get(e)||{})[q.id]||0;return v+c>=q.min}
   function addSession(T,id,start,end){var e=Object.assign({},S.days[T]||{}),ss=(e.sess||[]).slice(),m=Math.round((end-start)/60000);if(m<1)return;var last=ss[ss.length-1];
     if(last&&last.id===id&&start-last.e<120000){last=Object.assign({},last,{e:end,m:last.m+m});ss[ss.length-1]=last}else ss.push({id:id,s:start,e:end,m:m});e.sess=ss;S.days[T]=e;dirty[T]=true;cache()}
