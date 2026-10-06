@@ -9,20 +9,28 @@
       bankCov.set(e,cov)});
     bankNow=bal;
   }
-  function carriedOK(k){var rq=reqDefsFor(k);if(!rq.length)return false;var anyRoll=false;for(var i=0;i<rq.length;i++){var q=rq[i];if(q.type==="limit")continue;if(q.type==="time"&&q.roll){anyRoll=true;if(rollSum(q.id,k)<rollNeed(q,k))return false;continue}return false}return anyRoll}
+  function carriedOK(k){var rq=reqDefsFor(k);if(!rq.length)return false;var anyRoll=false;for(var i=0;i<rq.length;i++){var q=rq[i];if(q.type==="limit")continue;if(q.type==="time"&&q.roll){anyRoll=true;if(rollSum(q.id,k,q)<rollNeed(q,k))return false;continue}return false}return anyRoll}
   function rollOnlyDay(k){var rq=reqDefsFor(k).filter(function(q){return q.type!=="limit"});return rq.length&&rq.every(function(q){return q.type==="time"&&q.roll})?rq:null}
-  function emptyCover(fromK){var rq=rollOnlyDay(fromK);if(!rq)return null;var best=99;rq.forEach(function(q){var n=0,ws=weekStart(fromK),s=0;for(var dd=ws;dd<fromK;dd=add(dd,1))s+=(S.days[dd]||{})[q.id]|0;for(var d=0;d<7;d++){var k=add(fromK,d);if(weekStart(k)!==ws)break;if(s>=rollNeed(q,k))n++;else break}best=Math.min(best,n)});return best}
-  /* Weekly totals run on a fixed Mon–Sun week. */
-  function rollSum(id,k){var s=0,ws=weekStart(k);for(var d=ws;d<=k;d=add(d,1)){if(d<START_KEY)continue;s+=(S.days[d]||{})[id]|0}return s}
-  function weekFrom(q,k){var ws=weekStart(k),f=rollFrom(q);return f>ws?f:ws}
+  function emptyCover(fromK){var rq=rollOnlyDay(fromK);if(!rq)return null;var best=99;rq.forEach(function(q){var n=0,ws=perStart(q,fromK),s=0;for(var dd=ws;dd<fromK;dd=add(dd,1))s+=(S.days[dd]||{})[q.id]|0;for(var d=0;d<31;d++){var k=add(fromK,d);if(perStart(q,k)!==ws)break;if(s>=rollNeed(q,k))n++;else break}best=Math.min(best,n)});return best}
+  /* Time totals run over a period: the calendar week (default), two weeks (q.per "2w", counted from the week the
+     quest started) or the calendar month (q.per "month"). Pace spreads the total across the period's work days. */
+  var PER_NAME={"":"week","2w":"2 weeks",month:"month"};
+  function perOf(q){return q&&(q.per==="2w"||q.per==="month")?q.per:""}
+  function perStart(q,k){var p=perOf(q);if(p==="month")return k.slice(0,8)+"01";var ws=weekStart(k);if(p==="2w"){var n=Math.round(daysBetween(weekStart(rollFrom(q)),ws)/7);if(((n%2)+2)%2===1)ws=add(ws,-7)}return ws}
+  function perEnd(q,k){var p=perOf(q),s=perStart(q,k);if(p==="month"){var d=parse(s);return key(new Date(d.getFullYear(),d.getMonth()+1,0))}return add(s,p==="2w"?13:6)}
+  function perWorkDays(q,k){return workDaysIn(q,perStart(q,k),perEnd(q,k))||1}
+  function perWord(q){return PER_NAME[perOf(q)]}
+  function cfgQ(id){return cfg().quests.filter(function(q){return q.id===id})[0]}
+  function rollSum(id,k,q){q=q||cfgQ(id);var s=0,ws=q?perStart(q,k):weekStart(k);for(var d=ws;d<=k;d=add(d,1)){if(d<START_KEY)continue;s+=(S.days[d]||{})[id]|0}return s}
+  function weekFrom(q,k){var ws=perStart(q,k),f=rollFrom(q);return f>ws?f:ws}
   function workDaysIn(q,a,b){var n=0;for(var d=a;d<=b;d=add(d,1))if(scheduled(q,d))n++;return n}
   function weekWorkDays(q){return q.days&&q.days.length?q.days.length:7}
-  function weekTarget(q,k){var ws=weekStart(k),f=weekFrom(q,k);return Math.round(q.roll*workDaysIn(q,f,add(ws,6))/weekWorkDays(q))}
+  function weekTarget(q,k){var f=weekFrom(q,k);return Math.round(q.roll*workDaysIn(q,f,perEnd(q,k))/perWorkDays(q,k))}
   var firstSeenCache={},firstSeenSig="";
   function firstSeen(id){var sig=Object.keys(S.days).length+"";if(sig!==firstSeenSig){firstSeenCache={};firstSeenSig=sig}if(id in firstSeenCache)return firstSeenCache[id];var best=null;Object.keys(S.days).forEach(function(d){if(best&&d>=best)return;var e=S.days[d];if(e&&defsOf(e).some(function(q){return q.id===id}))best=d});return (firstSeenCache[id]=best)}
   function rollFrom(q){var f=q.startOn||q.addedOn||firstSeen(q.id)||START_KEY;return f>START_KEY?f:START_KEY}
-  function rollNeed(q,k){return Math.round(q.roll*workDaysIn(q,weekFrom(q,k),k)/weekWorkDays(q))}
-  function timeMet(q,e){var v=e[q.id]|0;if(q.roll){var k=eKey.get(e);if(!k)return false;return rollSum(q.id,k)>=rollNeed(q,k)}var c=(bankCov.get(e)||{})[q.id]||0;return v+c>=q.min}
+  function rollNeed(q,k){return Math.round(q.roll*workDaysIn(q,weekFrom(q,k),k)/perWorkDays(q,k))}
+  function timeMet(q,e){var v=e[q.id]|0;if(q.roll){var k=eKey.get(e);if(!k)return false;return rollSum(q.id,k,q)>=rollNeed(q,k)}var c=(bankCov.get(e)||{})[q.id]||0;return v+c>=q.min}
   function addSession(T,id,start,end){var e=Object.assign({},S.days[T]||{}),ss=(e.sess||[]).slice(),m=Math.round((end-start)/60000);if(m<1)return;var last=ss[ss.length-1];
     if(last&&last.id===id&&start-last.e<120000){last=Object.assign({},last,{e:end,m:last.m+m});ss[ss.length-1]=last}else ss.push({id:id,s:start,e:end,m:m});e.sess=ss;S.days[T]=e;dirty[T]=true;cache()}
   function heat(){var T=todayKey(),now=Date.now(),h=0,hr=(S.days[T]||{}).heatReset||0;((S.days[T]||{}).sess||[]).forEach(function(s){if(s.e<=hr)return;var age=Math.max(0,(now-s.e)/60000);h+=s.m*Math.exp(-age/90)});

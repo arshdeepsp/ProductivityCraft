@@ -79,7 +79,7 @@
       var dq=tq.filter(function(q){return !q.roll&&q.min>0}),dDone=0,dNeed=0;dq.forEach(function(q){dDone+=e[q.id]|0;dNeed+=q.min});
       if(dNeed&&dDone<dNeed/2)push(2500,"Halfway through the day",hm(dDone)+" of "+hm(dNeed)+" done across your daily time quests.",midAt);
       var ws=weekStart(T),thu=add(ws,3);
-      if(T<=thu){var wq=tq.filter(function(q){return q.roll}),wDone=0,wNeed=0;wq.forEach(function(q){wNeed+=q.roll;for(var d=ws;d<=T;d=add(d,1))wDone+=(S.days[d]||{})[q.id]|0});
+      if(T<=thu){var wq=tq.filter(function(q){return q.roll&&!perOf(q)}),wDone=0,wNeed=0;wq.forEach(function(q){wNeed+=q.roll;for(var d=ws;d<=T;d=add(d,1))wDone+=(S.days[d]||{})[q.id]|0});
         if(wNeed&&wDone<wNeed/2)push(2600,"Halfway through the week",hm(wDone)+" of "+hm(wNeed)+" done across your weekly time quests.",atTime(thu,"09:00"))}}
     if(n.sched)schNotifs(T,e,push);
     if(n.dl)(cfg().deadlines||[]).forEach(function(d,i){var dk=add(d.date,-1);if(dk>=T)push(3000+i,"Tomorrow: "+d.title,"Your deadline is tomorrow. Plan today\u2019s work around it.",atTime(dk,"18:00"),{dl:d.id})});

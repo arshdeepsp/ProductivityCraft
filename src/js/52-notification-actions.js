@@ -37,7 +37,7 @@
     if(id===2400){go("today");return reviewTodos("notif")}
     if(id===2500){var T2=todayKey(),e2=S.days[T2]||{},D2=activeDefs(T2).filter(function(q){return q.type==="time"&&!q.roll&&!q.opt});
       return nfCall("Midday check","metronome","Halfway through the day.",D2.map(function(q){return nfBar(q.label,e2[q.id]|0,q.min)}).join(""),[nfJust5(nfBehind()),["Schedule",openSchedule],["Later"]].filter(Boolean))}
-    if(id===2600){var T3=todayKey(),W3=activeDefs(T3).filter(function(q){return q.type==="time"&&q.roll});var b3=W3.filter(function(q){return !q.off&&!metQ(q,S.days[T3]||{})})[0];
+    if(id===2600){var T3=todayKey(),W3=activeDefs(T3).filter(function(q){return q.type==="time"&&q.roll&&!perOf(q)});var b3=W3.filter(function(q){return !q.off&&!metQ(q,S.days[T3]||{})})[0];
       return nfCall("Weekly check","dumbbell","Halfway through the week.",W3.map(function(q){return nfBar(q.label,rollSum(q.id,T3),weekTarget(q,T3))}).join(""),[nfJust5(b3),["Schedule today",openSchedule],["Later"]].filter(Boolean))}
     if(id>=3000&&id<3500){var d=(cfg().deadlines||[]).filter(function(z){return z.id===x.dl})[0];if(!d){nfGo();return}var dq=cfg().quests.filter(function(q){return q.dl&&q.dl.id===d.id})[0],body='';
       if(dq){var s=0;for(var k=dq.dl.from;k<=todayKey();k=add(k,1))s+=+((S.days[k]||{})[dq.id])||0;body='<p class="help">'+num(s)+' of '+num(dq.dl.total)+(dq.ul?' '+esc(dq.ul):'')+' done so far.</p>'}

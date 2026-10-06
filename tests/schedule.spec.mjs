@@ -208,58 +208,11 @@ for (const width of [360, 390]) {
 const store = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("pc-cache-v1")));
 const raw = async (page, k = "2026-11-02") => ((await store(page)).days[k] || {});
 
-test("a free time can be blocked as busy with one tap, and Auto-plan works around it", async ({ page }) => {
-  await open(page);
-  await tapTime(page, "10:00");
-  await page.click("#schBzB");
-  await expect(page.locator("[data-bz]")).toHaveText(["Class", "Work", "Meal", "Commute"]);
-  await page.click("[data-bz='Class']");
-  expect((await raw(page)).sched.map((b) => [b.lb, b.f, b.t])).toEqual([["Class", 600, 660]]);
-  await expect(page.locator(".sch-b.busy b")).toHaveText("Class");
-  await page.click("#schDesel");
-  await page.click("#schAuto");
-  const s = (await raw(page)).sched;
-  expect(s.filter((b) => b.q).every((b) => b.t <= 600 || b.f >= 660)).toBe(true);
-  expect(s.filter((b) => b.q).length).toBeGreaterThan(0);
-});
-
-test("a busy block can have its own name, and it's never a reminder", async ({ page }) => {
-  await page.addInitScript(mock);
-  await open(page, { cfg: { nf: { on: true } } });
-  await tapTime(page, "14:00");
-  await page.click("#schBzB");
-  await page.fill("#schBzIn", "Lab meeting");
-  await page.click("#schBzAdd");
-  expect((await raw(page)).sched.map((b) => b.lb)).toEqual(["Lab meeting"]);
-  await page.click("#schOk");
-  await page.clock.runFor(2000);
-  expect((await page.evaluate(() => window.__ln)).filter((x) => x.id >= 3500 && x.id < 4000)).toEqual([]);
-});
-
-test("a block repeats on picked weekdays for a number of weeks", async ({ page }) => {
-  await open(page);
-  await tapTime(page, "10:00");
-  await page.click("#schBzB");
-  await page.click("[data-bz='Class']");
-  await page.click("#schRepB");
-  await expect(page.locator("[data-rd='1']")).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator("#schWkN")).toHaveText("4 weeks");
-  await page.click("[data-rd='3']");
-  await page.click("#schWkP");
-  await expect(page.locator("#schRepSum")).toHaveText("10 times, until Dec 6");
-  await page.click("#schRepOk");
-  const st = await store(page);
-  expect(st.cfg.rep.map(({ lb, f, t, dows, from, until }) => ({ lb, f, t, dows, from, until }))).toEqual([{ lb: "Class", f: 600, t: 660, dows: [1, 3], from: "2026-11-02", until: "2026-12-06" }]);
-  expect(st.days["2026-11-02"].sched).toBeUndefined();
-  await expect(page.locator(".sch-b.rep")).toHaveCount(1);
-  await expect(page.locator(".sch-rep")).toHaveText("↻ Mon, Wed until Dec 6");
-});
-
-const REP = [{ id: "r1", lb: "Class", f: 600, t: 660, dows: [1, 3], from: "2026-11-02", until: "2026-11-29" }];
+const REP = [{ id: "r1", q: "cs", f: 600, t: 660, dows: [1, 3], from: "2026-11-02", until: "2026-11-29" }];
 for (const [now, n] of [["2026-11-04T08:00:00-05:00", 1], ["2026-11-03T08:00:00-05:00", 0], ["2026-11-30T08:00:00-05:00", 0]]) {
   test(`repeats show on the right days only (${now.slice(0, 10)})`, async ({ page }) => {
     await open(page, { now, cfg: { rep: REP } });
-    await expect(page.locator(".sch-b.busy")).toHaveCount(n);
+    await expect(page.locator(".sch-b.rep")).toHaveCount(n);
   });
 }
 
@@ -278,11 +231,11 @@ test("a repeated quest shot can only repeat on the quest's own days", async ({ p
 
 test("moving one repeat changes today only, with one tap to change every week", async ({ page }) => {
   await open(page, { cfg: { rep: REP } });
-  await page.click(".sch-b.busy");
+  await page.click(".sch-b.rep");
   await tapTime(page, "11:00");
   let d = await raw(page);
   expect(d.schSkip).toEqual(["r1"]);
-  expect(d.sched.map((b) => [b.lb, b.f, b.t])).toEqual([["Class", 660, 720]]);
+  expect(d.sched.map((b) => [b.q, b.f, b.t])).toEqual([["cs", 660, 720]]);
   await expect(page.locator(".sch-help")).toHaveText("Changed for today only.");
   await page.click("#schEvery");
   const st = await store(page);
@@ -295,7 +248,7 @@ test("moving one repeat changes today only, with one tap to change every week", 
 
 test("skip one occurrence, or stop the repeat", async ({ page }) => {
   await open(page, { cfg: { rep: REP } });
-  await page.click(".sch-b.busy");
+  await page.click(".sch-b.rep");
   await page.click("#schRm");
   expect((await raw(page)).schSkip).toEqual(["r1"]);
   await expect(page.locator(".sch-b")).toHaveCount(0);
@@ -304,7 +257,7 @@ test("skip one occurrence, or stop the repeat", async ({ page }) => {
   await page.evaluate(() => { const c = JSON.parse(localStorage.getItem("pc-cache-v1")); delete c.days["2026-11-02"].schSkip; localStorage.setItem("pc-cache-v1", JSON.stringify(c)); });
   await page.reload();
   await page.click("#schBtn");
-  await page.click(".sch-b.busy");
+  await page.click(".sch-b.rep");
   await page.click("#schStop");
   expect((await store(page)).cfg.rep).toBeUndefined();
   await expect(page.locator(".sch-b")).toHaveCount(0);
@@ -323,7 +276,7 @@ for (const width of [320, 360]) {
     test.use({ viewport: { width, height: 700 }, isMobile: true, hasTouch: true });
     test("the repeat controls fit and are thumb-sized", async ({ page }) => {
       await open(page, { cfg: { rep: REP } });
-      await page.locator(".sch-b.busy").click();
+      await page.locator(".sch-b.rep").click();
       await page.click("#schRepB");
       const r = await page.evaluate(() => {
         const ft = document.getElementById("schFt").getBoundingClientRect(), btns = [...document.querySelectorAll("#schFt button")];
@@ -400,29 +353,125 @@ test.describe("touch", () => {
   });
 });
 
-test("busy time can go on hours that have already passed; quests can't", async ({ page }) => {
-  await open(page);
+const BUSY = [{ id: "zL", lb: "Lecture", f: 600, t: 690, dows: [1, 3], from: "2026-10-01" }];
+async function openBusyFromSettings(page, opts = {}) {
+  const errors = await openApp(page, { ...opts, cfg: { quests: Q, ...(opts.cfg || {}) }, hash: "#settings" });
+  await page.click("[data-st='day']");
+  await page.click("#setBusy");
+  await expect(page.locator("#schTitle")).toHaveText("Busy times");
+  return errors;
+}
+
+test("busy times are set on their own weekday timeline in Settings, including hours already past", async ({ page }) => {
+  const errors = await openBusyFromSettings(page);
+  await expect(page.locator("[data-wd='1']")).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator(".sch-past")).toHaveCount(0);
   await tapTime(page, "08:00");
-  await expect(page.locator("#schMsg")).toHaveText("That time has passed, so only busy time fits there.");
-  await expect(page.locator("[data-pk]")).toHaveCount(0);
-  await page.click("[data-bz='Class']");
-  expect((await raw(page)).sched.map((b) => [b.lb, b.f, b.t])).toEqual([["Class", 480, 540]]);
-  await tapTime(page, "07:00");
-  expect((await raw(page)).sched.map((b) => [b.lb, b.f, b.t])).toEqual([["Class", 420, 480]]);
-  await expect(page.locator(".sch-b.on")).toHaveCount(0);
-  await tapTime(page, "08:15");
-  await expect(page.locator(".sch-ft-h")).toContainText("Busy at 08:15");
-  await page.click("#schPkNo");
-  await tapTime(page, "10:00");
-  await expect(page.locator("[data-pk]")).toHaveCount(2);
+  await expect(page.locator(".sch-ft-h")).toContainText("Busy at 08:00 on Mondays");
+  await page.click("[data-bz='Lecture']");
+  const b = (await store(page)).cfg.busy;
+  expect(b.map(({ lb, f, t, dows, from }) => ({ lb, f, t, dows, from }))).toEqual([{ lb: "Lecture", f: 480, t: 540, dows: [1], from: "2026-11-02" }]);
+  await expect(page.locator("#schMsg")).toHaveText("Applies from today.");
+  await expect(page.locator(".sch-b.on .sch-h")).toHaveCount(1);
+  await page.click("[data-wd='2']");
+  await expect(page.locator(".sch-b")).toHaveCount(0);
+  await page.click("#schOk");
+  await expect(page.locator("#schPage")).toBeHidden();
+  await expect(page.locator("#settingsBody, #setPage").first()).toContainText("1 block · Mon");
+  expect(errors).toEqual([]);
 });
 
-test("a past busy block can repeat from today", async ({ page }) => {
+test("a busy block can be resized from its corner tab, renamed, and given more days", async ({ page }) => {
+  await openBusyFromSettings(page, { cfg: { busy: BUSY } });
+  await page.click(".sch-b");
+  const h = await page.locator(".sch-b.on .sch-h").boundingBox();
+  expect(await page.evaluate(({ x, y }) => !!document.elementFromPoint(x, y).closest(".sch-h"), { x: h.x + h.width / 2, y: h.y + h.height / 2 })).toBe(true);
+  await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2 + 22 * 2, { steps: 4 });
+  await page.mouse.up();
+  await expect.poll(async () => (await store(page)).cfg.busy[0].t).toBe(720);
+  await page.fill("#schBzName", "Algorithms lecture");
+  await page.locator("#schBzName").press("Enter");
+  await expect.poll(async () => (await store(page)).cfg.busy[0].lb, { timeout: 10000 }).toBe("Algorithms lecture");
+  await expect(page.locator(".sch-b.on b")).toHaveText("Algorithms lecture");
+  await page.click("[data-bd='5']");
+  await page.click("#schWkP");
+  const z = (await store(page)).cfg.busy[0];
+  expect(z).toMatchObject({ lb: "Algorithms lecture", f: 600, t: 720, dows: [1, 3, 5] });
+  expect(z.until).toBeTruthy();
+  await page.click("#schBzAlways");
+  expect((await store(page)).cfg.busy[0].until).toBeUndefined();
+  await expect(page.locator("#schBzAlways")).toHaveAttribute("aria-pressed", "true");
+});
+
+test("touch: the corner tab resizes a busy block", async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 760 }, isMobile: true, hasTouch: true });
+  const page = await ctx.newPage();
+  await openBusyFromSettings(page, { cfg: { busy: BUSY } });
+  await page.locator(".sch-b").tap();
+  const h = await page.locator(".sch-b.on .sch-h").boundingBox();
+  const cdp = await ctx.newCDPSession(page);
+  const pt = (y) => [{ x: h.x + h.width / 2, y, id: 1 }];
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: pt(h.y + h.height / 2) });
+  for (let i = 1; i <= 4; i++) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: pt(h.y + h.height / 2 + i * 11) });
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  await expect.poll(async () => (await store(page)).cfg.busy[0].t).toBe(720);
+  await ctx.close();
+});
+
+test("adding a day that clashes with another busy block is refused", async ({ page }) => {
+  await openBusyFromSettings(page, { cfg: { busy: [...BUSY, { id: "zM", lb: "Meeting", f: 630, t: 660, dows: [2], from: "2026-10-01" }] } });
+  await page.click(".sch-b");
+  await page.click("[data-bd='2']");
+  await expect(page.locator("#schMsg")).toHaveText("That clashes with Meeting on Tuesdays.");
+});
+
+test("on Today, busy times are read-only, planned around, and shots placed before them stay", async ({ page }) => {
+  await open(page, { cfg: { busy: BUSY }, days: { "2026-11-02": { q: Q, sched: [{ id: "a", q: "cs", f: 630, t: 690 }] } } });
+  await expect(page.locator(".sch-b.busy.ro")).toHaveCount(1);
+  await expect(page.locator(".sch-b.clash")).toHaveCount(1);
+  await page.click(".sch-b.clash");
+  await expect(page.locator(".sch-clash")).toHaveText("Overlaps Lecture. It stays for today, but can’t be moved onto busy time.");
+  await page.click("#schDesel");
+  await page.locator(".sch-b.busy").click({ position: { x: 20, y: 10 } });
+  await expect(page.locator(".sch-b.busy .sch-h")).toHaveCount(0);
+  await expect(page.locator("#schBzEdit")).toBeVisible();
+  await tapTime(page, "12:00");
+  await expect(page.locator(".sch-b.on")).toHaveCount(0);
+  await expect(page.locator(".sch-ft-h")).toHaveText("Add at 12:00");
+  await page.click("#schPkNo");
+  await page.click("#schAuto");
+  const s = (await raw(page)).sched.filter((b) => b.id !== "a");
+  expect(s.every((b) => b.t <= 600 || b.f >= 690)).toBe(true);
+  expect(s.length).toBeGreaterThan(0);
+  await page.locator(".sch-b.busy").click({ position: { x: 20, y: 10 } });
+  await page.click("#schBzEdit");
+  await expect(page.locator("#schTitle")).toHaveText("Busy times");
+  await expect(page.locator(".sch-b.on")).toHaveCount(1);
+  await page.click("#schOk");
+  await expect(page.locator("#schTitle")).toHaveText("Today’s schedule");
+});
+
+test("tapping a past time on Today offers to block it as busy", async ({ page }) => {
   await open(page);
   await tapTime(page, "08:00");
-  await page.click("[data-bz='Class']");
-  await page.click("#schRepB");
-  await page.click("#schRepOk");
-  expect((await store(page)).cfg.rep[0]).toMatchObject({ lb: "Class", f: 480, t: 540, dows: [1] });
-  await expect(page.locator(".sch-b.rep")).toHaveCount(1);
+  await expect(page.locator("[data-pk]")).toHaveCount(0);
+  await page.click("#schBzB");
+  await expect(page.locator("#schTitle")).toHaveText("Busy times");
+  await expect(page.locator(".sch-ft-h")).toContainText("Busy at 08:00 on Mondays");
+  await page.click("[data-bz='Lecture']");
+  await page.click("#schOk");
+  await expect(page.locator(".sch-b.busy")).toHaveCount(1);
+});
+
+test("schema 10: old busy blocks and busy repeats move into Busy times", async ({ page }) => {
+  await openApp(page, { cfg: { quests: Q, rep: [{ id: "r1", lb: "Class", f: 600, t: 660, dows: [1, 3], from: "2026-11-02", until: "2026-11-29" }, { id: "r2", q: "cs", f: 900, t: 960, dows: [1], from: "2026-11-02", until: "2026-11-29" }] }, days: { "2026-11-02": { q: Q, sched: [{ id: "x", lb: "Lab", f: 480, t: 540 }, { id: "y", q: "cs", f: 780, t: 840 }] } } });
+  await page.click("#quests .q .act button[aria-label^='More']");
+  await page.waitForTimeout(900);
+  const st = await store(page);
+  expect(st.schema).toBe(11);
+  expect(st.cfg.rep.map((r) => r.id)).toEqual(["r2"]);
+  expect(st.cfg.busy).toEqual([{ id: "zr1", lb: "Class", f: 600, t: 660, dows: [1, 3], from: "2026-11-02", until: "2026-11-29" }, { id: "zx", lb: "Lab", f: 480, t: 540, dows: [1], from: "2026-11-02", until: "2026-11-02" }]);
+  expect(st.days["2026-11-02"].sched.map((b) => b.id)).toEqual(["y"]);
 });

@@ -23,12 +23,12 @@
       var p=isPaused(q,T),par="";
       if(q.type==="todo")par='<label>Due (optional)<input type="date" data-p="due" data-i="'+i+'" value="'+esc(q.due||"")+'"></label>'+(q.doneOn?'<span class="pz ok">Done '+fmtD(q.doneOn)+'</span>':"");
       else if(q.type==="weekly")par=numIn("Times per week","min",i,q.min,1,1,7);
-      else if(q.type==="time")par='<label>Goal type<select data-p="rollmode" data-i="'+i+'"><option value=""'+(q.roll?"":" selected")+'>Daily minimum</option><option value="roll"'+(q.roll?" selected":"")+'>Weekly total (Mon\u2013Sun)</option></select></label>'+(q.roll?numIn("Weekly total (hours)","rollh",i,num(q.roll/60),"any",0.5):numIn("Min (minutes)","min",i,q.min,10,10,960))+numIn("Project total, hours (optional)","totalh",i,q.total?num(q.total/60):"","any",0);
+      else if(q.type==="time")par='<label>Goal type<select data-p="rollmode" data-i="'+i+'"><option value=""'+(q.roll?"":" selected")+'>Daily minimum</option><option value="roll"'+(q.roll&&!perOf(q)?" selected":"")+'>Weekly total ('+wkSpan()+')</option><option value="roll2w"'+(q.roll&&perOf(q)==="2w"?" selected":"")+'>Total every 2 weeks</option><option value="rollm"'+(q.roll&&perOf(q)==="month"?" selected":"")+'>Monthly total</option></select></label>'+(q.roll?numIn("Total per "+perWord(q)+" (hours)","rollh",i,num(q.roll/60),"any",0.5):numIn("Min (minutes)","min",i,q.min,10,10,960))+numIn("Project total, hours (optional)","totalh",i,q.total?num(q.total/60):"","any",0);
       else if(q.type==="target")par=numIn("Goal","min",i,q.min,"any",0)+txtIn("Unit","ul",i,q.ul,"glasses")+numIn("Step","step",i,q.step||1,"any",0)+numIn("Project total (optional)","total",i,q.total||"","any",0);
       else if(q.type==="limit")par=numIn("Max","max",i,q.max,1,0,999)+'<label>Counts<select data-p="unit" data-i="'+i+'"><option value=""'+(q.unit==="min"?"":" selected")+'>number</option><option value="min"'+(q.unit==="min"?" selected":"")+'>minutes</option></select></label>'+(q.unit==="min"?"":txtIn("Unit","ul",i,q.ul,"cups"));
       else if(q.type==="wake")par='<label>From<input type="time" data-p="from" data-i="'+i+'" value="'+q.from+'"></label><label>To<input type="time" data-p="to" data-i="'+i+'" value="'+q.to+'"></label>';
       else if(q.type==="scale")par='<label>Out of<select data-p="scale" data-i="'+i+'"><option value="5"'+((q.scale||5)==5?" selected":"")+'>5</option><option value="10"'+(q.scale==10?" selected":"")+'>10</option></select></label>'+numIn("Pass at","min",i,q.min,1,1,q.scale||5);
-      var days=q.days&&q.days.length?q.days:[0,1,2,3,4,5,6],dh='<div class="days" role="group" aria-label="Days">';[1,2,3,4,5,6,0].forEach(function(d){dh+='<button type="button" class="stone mini'+(days.indexOf(d)>=0?' on':'')+'" data-day="'+i+','+d+'" aria-pressed="'+(days.indexOf(d)>=0)+'">'+DN[d].slice(0,2)+'</button>'});dh+='</div>';
+      var days=q.days&&q.days.length?q.days:[0,1,2,3,4,5,6],dh='<div class="days" role="group" aria-label="Days">';wkOrder().forEach(function(d){dh+='<button type="button" class="stone mini'+(days.indexOf(d)>=0?' on':'')+'" data-day="'+i+','+d+'" aria-pressed="'+(days.indexOf(d)>=0)+'">'+DN[d].slice(0,2)+'</button>'});dh+='</div>';
       if(q.completed)return;
       var sjs=subjList(),sl=qSubjs(q),sjo=sl.length?subjById(sl[0]):null,tl=qTopics(q),linkH='';
       if(q.type!=="todo"){linkH=(sjs.length?'<div class="sjfield"><span class="sjlab">Feeds topics</span>'+topicPick('data-lq="'+i+'"',q)+'</div>':'')+'<div class="edrow">'+
@@ -48,7 +48,7 @@
       if(f==="lock"){q.lock=v;drawMgr();return}
       if(f==="fin"){if(v)q.fin={t:v,lvl:(q.fin&&q.fin.lvl)||4};else delete q.fin;drawMgr();return}
       if(f==="finlvl"){if(q.fin)q.fin.lvl=+v;return}
-      if(f==="rollmode"){if(v)q.roll=q.roll||Math.max(60,(q.min||30)*7);else delete q.roll;drawMgr();return}
+      if(f==="rollmode"){var was=perOf(q);if(v){var per=v==="roll2w"?"2w":v==="rollm"?"month":"",k0={"":1,"2w":2,month:4.3};q.roll=q.roll?Math.round(q.roll/k0[was]*k0[per]/30)*30||q.roll:Math.max(60,(q.min||30)*7*k0[per]);if(per)q.per=per;else delete q.per}else{delete q.roll;delete q.per}drawMgr();return}
       if(f==="rollh"){var rh=num(v);if(rh>0)q.roll=Math.round(rh*60);return}
       if(f==="total"||f==="totalh"){var tv=num(v);if(tv>0)q.total=f==="totalh"?Math.round(tv*60):tv;else delete q.total;return}
       if(f==="min"||f==="max"||f==="step"){v=(q.type==="target"||f==="step")?num(v):Math.max(0,Math.round(+v||0))}

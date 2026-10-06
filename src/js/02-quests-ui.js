@@ -6,7 +6,7 @@
     var t;
     if(q.type==="todo"){t="to-do";if(q.due){var dd=daysBetween(todayKey(),q.due);t+=" \u00b7 "+(dd<0?"overdue "+(-dd)+"d":dd===0?"due today":dd===1?"due tomorrow":"due in "+dd+"d")}if(q.note)t+=", "+q.note;return t}
     if(q.type==="weekly")t=q.min+"x per week, any days";
-    else if(q.type==="time")t=q.roll?hmL(q.roll)+" per week":"min "+hmL(q.min);
+    else if(q.type==="time")t=q.roll?hmL(q.roll)+" per "+perWord(q):"min "+hmL(q.min);
     else if(q.type==="limit")t="max "+(q.unit==="min"?hmL(q.max):q.max+(q.ul?" "+q.ul:""));
     else if(q.type==="wake")t="between "+q.from+"-"+q.to;
     else if(q.type==="target")t="goal "+num(q.min)+(q.ul?" "+q.ul:"")+(q.dl?" today \u00b7 "+num(q.dl.total)+" total by "+fmtD(q.dl.due):"");

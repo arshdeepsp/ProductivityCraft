@@ -10,7 +10,7 @@
   var RANKS=[[0,"Apprentice","sprout"],[7,"Journeyman","sprout"],[21,"Session Player","flame"],[42,"Bandleader","metronome"],[90,"Virtuoso","dumbbell"],[180,"Master","trophy"],[365,"Maestro","star"]];
   var S={days:{},refl:{},cfg:null},db=null,uid=null,dl=null,dlChecked=false,view="today",dirty={},timer=null;
   /* Data schema. Bump SCHEMA and add a step to migrate() whenever the stored shape changes. */
-  var SCHEMA=9,RERATE_MIN=60;
+  var SCHEMA=11,RERATE_MIN=60;
   function migrate(c){c=c||{};var v=c.schema||2;
     if(v<3){if(c.cfg){delete c.cfg.bank;delete c.cfg.commitCheck}v=3}
     if(v<4){Object.keys(c.days||{}).forEach(function(k){var d=c.days[k],s=d&&d.sched;if(s&&!Array.isArray(s)&&typeof s==="object")d.sched=Object.keys(s).sort().map(function(id){return Object.assign({id:"b-"+id,q:id},s[id])})});v=4}
@@ -19,6 +19,9 @@
     if(v<7){var SJ7=(c.cfg&&c.cfg.subjects)||[];((c.cfg&&c.cfg.quests)||[]).forEach(function(q){var L=q.subjs&&q.subjs.length?q.subjs:(q.subj?[q.subj]:[]);if(!L.length||q.topics){delete q.topic;return}var T=[];if(q.topic)T=[q.topic];else L.forEach(function(sid){var sj=SJ7.filter(function(x){return x.id===sid})[0];((sj&&sj.topics)||[]).forEach(function(t){T.push(t.id)})});if(T.length)q.topics=T;delete q.topic});v=7}
     if(v<8)v=8;
     if(v<9){if(c.cfg)delete c.cfg.customAch;v=9}
+    if(v<10){var cf=c.cfg;if(cf){var B=cf.busy||[];(cf.rep||[]).forEach(function(r){if(r.lb)B.push({id:"z"+r.id,lb:r.lb,f:r.f,t:r.t,dows:r.dows.slice(),from:r.from,until:r.until})});if(cf.rep){cf.rep=cf.rep.filter(function(r){return !r.lb});if(!cf.rep.length)delete cf.rep}
+      Object.keys(c.days||{}).forEach(function(k){var d=c.days[k];if(!d||!Array.isArray(d.sched))return;var keep=d.sched.filter(function(b){if(!b.lb)return true;B.push({id:"z"+b.id,lb:b.lb,f:b.f,t:b.t,dows:[parse(k).getDay()],from:k,until:k});return false});if(keep.length)d.sched=keep;else delete d.sched});if(B.length)cf.busy=B}v=10}
+    if(v<11)v=11;
     c.schema=v;return c}
   try{var c=migrate(JSON.parse(localStorage.getItem("pc-cache-v1")||"{}"));S.days=c.days||{};S.refl=c.refl||{};S.cfg=c.cfg||null;S.timer=c.timer||null;S.sprint=c.sprint||null;if(c.spLen)S.spLen=c.spLen;if(c.spRounds!=null)S.spRounds=c.spRounds;if(c.spLongOn===false)S.spLongOn=false}catch(e){}
   function cache(){try{S.schema=SCHEMA;localStorage.setItem("pc-cache-v1",JSON.stringify(S))}catch(e){}}
@@ -33,7 +36,7 @@
   function clone(x){return JSON.parse(JSON.stringify(x))}
   function cfg(){if(!S.cfg){S.cfg={quests:[],rules:null,start:START_AT.toISOString(),updated:""};cache()}if(!S.cfg.start)S.cfg.start=START_AT.toISOString();return S.cfg}
   function isPaused(q,k){return !!q.pausedUntil&&k<q.pausedUntil&&(!q.pausedFrom||k>=q.pausedFrom)}
-  function slim(q){var o={id:q.id,type:q.type,label:q.label};["min","max","from","to","unit","note","days","opt","ul","step","scale","total","due","roll","dl","subj","subjs","topics","fin","lock","pending","addedOn","addedMin","startOn"].forEach(function(f){if(q[f]!=null&&q[f]!=="")o[f]=q[f]});return o}
+  function slim(q){var o={id:q.id,type:q.type,label:q.label};["min","max","from","to","unit","note","days","opt","ul","step","scale","total","due","roll","per","dl","subj","subjs","topics","fin","lock","pending","addedOn","addedMin","startOn"].forEach(function(f){if(q[f]!=null&&q[f]!=="")o[f]=q[f]});return o}
   function scheduled(q,k){return !q.days||!q.days.length||q.days.indexOf(parse(k).getDay())>=0}
   function activeDefs(k){var vc=isVac(k),c0=cfg(),LD=(c0.lockDay&&c0.lockDay.date===k)?c0.lockDay.defs:null,src=c0.quests.map(function(q){return LD&&LD[q.id]?LD[q.id]:q});if(LD)Object.keys(LD).forEach(function(id){if(!c0.quests.some(function(q){return q.id===id}))src.push(LD[id])});return src.filter(function(q){if(q.completed&&q.completed.on<k)return false;if(q.startOn&&k<q.startOn&&q.type!=="todo")return false;if(q.type==="todo")return !q.doneOn||q.doneOn===k;if(q.dl&&(k>q.dl.due||k<q.dl.from))return false;return !isPaused(q,k)&&(scheduled(q,k)||(q.type==="time"&&q.roll))}).map(function(q){var o=slim(q);if(q.type==="time"&&q.roll&&!scheduled(q,k)){o.opt=true;o.off=true}if(q.dl){o.min=dlMin(q,k);if(!o.min)o.opt=true}if(vc)o.opt=true;if(lateStart(q,k))o.opt=true;return o})}
   function localKey(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
@@ -65,7 +68,13 @@
   function limBroken(e){return !!e&&reqOf(defsOf(e)).some(function(q){return overQ(q,e)})}
   function gold(e){return ok(e)&&reqOf(defsOf(e)).every(function(q){return q.type!=="time"||q.roll||(e[q.id]|0)>=planOf(q,e)})}
   function dayXP(e){if(!e)return 0;var x=0;defsOf(e).forEach(function(q){if(q.type!=="time"){if(metQ(q,e)&&q.type!=="limit"&&q.type!=="wake"&&hasEntry(e))x+=q.opt?10:20;return}var d=Math.min(240,e[q.id]|0);x+=d;if(d>0&&d>=planOf(q,e))x+=30});x+=(e.sess||[]).filter(function(z){return z.m>=90}).length*25;x-=(e.brk||0)*BREAK_XP;x+=Math.min(CALL_CAP,e.calls|0)*CALL_XP;x+=(e.top||[]).filter(function(t){return t&&t.t&&t.d}).length*5;if(ok(e))x+=50;if(gold(e))x+=100;return Math.max(0,x)}
-  function weekStart(k){return add(k,-((parse(k).getDay()+6)%7))}
+  /* The week starts on Monday (cfg.weekStart 1, default) or Sunday (0). Every weekly rule goes through weekStart. */
+  function wkS(){var c=S.cfg;return c&&c.weekStart===0?0:1}
+  function weekStart(k){return add(k,-((parse(k).getDay()-wkS()+7)%7))}
+  function wkOrder(){return wkS()===1?[1,2,3,4,5,6,0]:[0,1,2,3,4,5,6]}
+  function wkEndDay(){return (wkS()+6)%7}
+  function wkSpan(){return wkS()===1?"Mon\u2013Sun":"Sun\u2013Sat"}
+  var DAYF=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
   function weekCount(id,k,upto){var s0=weekStart(k),n=0;for(var i=0;i<7;i++){var d=add(s0,i);if(upto&&d>k)break;if((S.days[d]||{})[id]===true)n++}return n}
   function totalXP(){var t=todayKey(),x=completionXP();Object.keys(S.days).forEach(function(k){if(k>=START_KEY&&k<=t){var e=S.days[k];x+=dayXP(e);if(e)defsOf(e).forEach(function(q){if(q.type==="weekly"&&e[q.id]===true&&weekCount(q.id,k,true)===q.min)x+=100})}});return x}
   function level(x){var l=1,need=300;while(x>=need){x-=need;l++;need=300*l}return{l:l,cur:x,need:need}}

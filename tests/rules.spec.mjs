@@ -120,3 +120,33 @@ test("first-week target counts remaining work days", async ({ page }) => {
   await page.click(".qmenu button:has-text('View details')");
   await expect(page.locator("#gBody .dt-r", { hasText: "This week’s target" })).toContainText("4h (started Nov 11, so 2 of 3 work days)");
 });
+
+const PQ = [{ id: "cs", type: "time", label: "CS work", min: 60 }, { id: "j", type: "check", label: "Journal" }];
+const pq = (page) => page.evaluate(() => { const q = JSON.parse(localStorage.getItem("pc-cache-v1")).cfg.quests[0]; return [q.pausedFrom || null, q.pausedUntil || null]; });
+async function menu(page) {
+  await page.locator("#quests .q", { hasText: "CS work" }).locator(".pzb").click();
+  return page.locator(".qmenu button").allTextContents();
+}
+for (const [now, from, until] of [["2026-11-04T09:00:00-05:00", "2026-11-05", "2026-11-09"], ["2026-11-07T09:00:00-05:00", "2026-11-08", "2026-11-09"]]) {
+  test(`pausing lasts until Sunday of this week (${now.slice(0, 10)})`, async ({ page }) => {
+    await openApp(page, { now, cfg: { quests: PQ } });
+    expect(await menu(page)).toContain("Pause until Sunday");
+    await page.click(".qmenu button:has-text('Pause until Sunday')");
+    await expect.poll(() => pq(page)).toEqual([from, until]);
+    await expect(page.locator("#sync")).toContainText("from tomorrow through Sunday");
+  });
+}
+
+test("on a Sunday there's nothing left to pause this week", async ({ page }) => {
+  await openApp(page, { now: "2026-11-08T09:00:00-05:00", cfg: { quests: PQ } });
+  const items = await menu(page);
+  expect(items.some((t) => /^Pause/.test(t))).toBe(false);
+});
+
+test("during setup, a Sunday pause covers just today", async ({ page }) => {
+  await openApp(page, { now: "2026-11-08T09:00:00-05:00", cfg: { quests: PQ, start: "2026-11-05T05:00:00.000Z" } });
+  await menu(page);
+  await page.click(".qmenu button:has-text('Pause for today')");
+  await expect.poll(() => pq(page)).toEqual(["2026-11-08", "2026-11-09"]);
+  await expect(page.locator("#pausedNote")).toContainText("Paused: CS work (until Nov 8)");
+});
