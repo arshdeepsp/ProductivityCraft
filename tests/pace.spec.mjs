@@ -25,13 +25,13 @@ test("no daily alert once half the combined daily total is done", async ({ page 
   expect((await page.evaluate(() => window.__ln)).some((x) => x.id === 2500)).toBe(false);
 });
 
-test("halfway-checkpoint alert on the middle work day when a total is under half", async ({ page }) => {
+test("halfway-checkpoint alert on the middle work day when a total is under a third", async ({ page }) => {
   await page.addInitScript(mock);
   await openApp(page, { now: "2026-11-03T09:00:00-05:00", cfg: { quests: Q, nf: { on: true } }, days: { "2026-11-02": { fr: 30, q: Q } } });
   await page.clock.runFor(2000);
   const n = (await page.evaluate(() => window.__ln)).find((x) => x.id === 2600);
   expect(n.title).toBe("Halfway checkpoint Thursday");
-  expect(n.body).toBe("By tonight you need half: French 30m of 1h 45m. Miss it and the days so far are lost.");
+  expect(n.body).toBe("By tonight you need a third: French 30m of 1h 10m. Miss it and the days so far are lost.");
   expect(n.at).toContain("Thu Nov 05 2026 09:00");
 });
 
@@ -46,7 +46,7 @@ test("after the halfway checkpoint the alert moves to the period's last day, eve
   expect(n.at).toContain("Sun Nov 08 2026 09:00");
 });
 
-test("once half is done, the alert waits for the period's last day", async ({ page }) => {
+test("once a third is done, the alert waits for the period's last day", async ({ page }) => {
   await page.addInitScript(mock);
   await openApp(page, { now: "2026-11-03T09:00:00-05:00", cfg: { quests: Q, nf: { on: true } }, days: { "2026-11-02": { fr: 120, q: Q } } });
   await page.clock.runFor(2000);

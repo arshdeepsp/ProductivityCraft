@@ -5,7 +5,7 @@
     var el=document.getElementById("trendsBody");if(!el)return;var T=todayKey(),st=lastSt||compute(),ws0=weekStart(T);
     function focusOf(d){var e=S.days[d]||{},m=0;defsOf(e).forEach(function(q){if(q.type==="time")m+=e[q.id]|0});return m}
     function span(a,b){var s=0;for(var d=a;d<=b;d=add(d,1))if(d>=START_KEY)s+=focusOf(d);return s}
-    function planKept(d){var e=S.days[d]||{},bl=schAll(d).filter(function(b){return b.q});if(!bl.length)return null;var D2=defsOf(e),qs=bl.map(function(b){return b.q}).filter(function(x,i,a){return a.indexOf(x)===i});return qs.every(function(id){var q=D2.filter(function(x){return x.id===id})[0];return q&&metQ(q,e)})}
+    function planKept(d){var e=S.days[d]||{},D2=defsOf(e),bl=schAll(d).filter(function(b){return b.q&&!D2.some(function(x){return x.id===b.q&&x.ign})});if(!bl.length)return null;qs=bl.map(function(b){return b.q}).filter(function(x,i,a){return a.indexOf(x)===i});return qs.every(function(id){var q=D2.filter(function(x){return x.id===id})[0];return q&&metQ(q,e)})}
     var nIn=daysBetween(ws0,T),thisW=span(ws0,T),lastW=span(add(ws0,-7),add(ws0,-7+nIn)),dW=thisW-lastW;
     var clr=0,dIn=0,deep=0,calls=0,ttW={},plN=0,plK=0;
     var off=rewardsOff(),lgd=0;for(var d=ws0;d<=T;d=add(d,1)){if(d<START_KEY)continue;dIn++;if(st.marks[d]==="ok")clr++;if(hasEntry(S.days[d]))lgd++;var e=S.days[d]||{};deep+=(e.sess||[]).filter(function(z){return z.m>=90}).length;calls+=e.calls|0;Object.keys(e.tt||{}).forEach(function(id){ttW[id]=(ttW[id]||0)+(e.tt[id]|0)});var pk=planKept(d);if(pk!==null&&(d<T||pk)){plN++;if(pk)plK++}}

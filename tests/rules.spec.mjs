@@ -13,7 +13,7 @@ test("weekly totals aren't required day to day: a day with only a total is a res
   const m = await strip(page);
   expect([m["2026-11-02"], m["2026-11-03"]]).toEqual(["ok", "ok"]);
   await expect(page.locator("#qCount")).toHaveText("0/1 done");
-  await expect(page.locator("#carryNote")).toContainText("Keep this week: CS work 0m/3h 30m by Thu");
+  await expect(page.locator("#carryNote")).toContainText("Keep this week: CS work 0m/2h 20m by Thu");
 });
 
 test("reaching the weekly total keeps the week's cleared days", async ({ page }) => {
@@ -171,7 +171,7 @@ test("during setup, a Sunday pause covers just today", async ({ page }) => {
 });
 
 const MW = [{ id: "j", type: "check", label: "Journal" }, { id: "cs", type: "time", label: "Coursework", min: 60, roll: 1200, days: [1, 3, 5, 0], addedOn: "2026-10-26" }];
-test("halfway checkpoint: 20h over Mo/We/Fr/Su needs 10h by Wednesday, or Monday to Wednesday is lost at once", async ({ page }) => {
+test("halfway checkpoint: 20h over Mo/We/Fr/Su needs a third (6h 40m) by Wednesday, or Monday to Wednesday is lost at once", async ({ page }) => {
   const d = (cs) => ({ j: true, cs, q: MW });
   await openApp(page, { now: "2026-11-05T09:00:00-05:00", cfg: { quests: MW, start: "2026-11-02T05:00:00.000Z" }, days: { "2026-11-02": d(120), "2026-11-03": d(0), "2026-11-04": d(240) } });
   const m = await strip(page);
@@ -188,7 +188,7 @@ test("halfway checkpoint met: the week carries on, and the banner shows the full
   await expect(page.locator("#carryNote")).toContainText("Keep this week: Coursework 10h/20h by Sun");
 });
 
-test("before the checkpoint the banner asks for half by the middle work day", async ({ page }) => {
+test("before the checkpoint the banner asks for a third by the middle work day", async ({ page }) => {
   await openApp(page, { now: "2026-11-03T09:00:00-05:00", cfg: { quests: MW, start: "2026-11-02T05:00:00.000Z" }, days: { "2026-11-02": { j: true, cs: 120, q: MW } } });
-  await expect(page.locator("#carryNote")).toContainText("Coursework 2h/10h by Wed");
+  await expect(page.locator("#carryNote")).toContainText("Coursework 2h/6h 40m by Wed");
 });

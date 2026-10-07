@@ -183,3 +183,28 @@ test("the row menu ignores too, and switching streaks back on clears the list", 
   expect(c.ignore).toBeUndefined();
   expect(c.noStreak).toEqual([{ from: "2026-11-01", to: "2026-11-02" }]);
 });
+
+test("while paused, totals show done out of target, with no pace or need figures", async ({ page }) => {
+  const CS = { id: "cs", type: "time", label: "Coursework", min: 30, roll: 900, days: [1, 2, 3, 4, 5], addedOn: "2026-10-01" };
+  await openApp(page, { now: "2026-11-04T09:00:00-05:00", cfg: { quests: [J, CS], noStreak: [{ from: "2026-11-01" }] }, days: { "2026-11-02": { cs: 60, q: [J, CS] } } });
+  await expect(page.locator("#quests .q", { hasText: "Coursework" }).locator(".req")).toContainText("1h of 15h done this week");
+  await expect(page.locator("#carryNote")).toBeHidden();
+  await page.locator("#quests .q", { hasText: "Coursework" }).locator(".pzb").click();
+  await page.click(".qmenu button:has-text('View details')");
+  const row = await page.locator("#gBody .dt-r").filter({ has: page.locator("span", { hasText: /^This week$/ }) }).textContent();
+  expect(row).toContain("1h of 15h done");
+  expect(row).not.toContain("need");
+  expect(row).not.toContain("pace");
+});
+
+test("on the day before a pause starts, a checkpoint due today still shows", async ({ page }) => {
+  const CS = { id: "cs", type: "time", label: "Coursework", min: 30, roll: 900, days: [1, 2, 3, 4, 5], addedOn: "2026-10-01" };
+  await openApp(page, { now: "2026-11-04T09:00:00-05:00", cfg: { quests: [J, CS], noStreak: [{ from: "2026-11-05" }] }, days: { "2026-11-02": { j: true, cs: 60, q: [J, CS] } } });
+  await expect(page.locator("#carryNote")).toContainText("Checkpoint today: Coursework 1h/5h");
+});
+
+test("Trends' plan kept leaves out shots for ignored quests", async ({ page }) => {
+  const CS = { id: "cs", type: "time", label: "Coursework", min: 60 };
+  await openApp(page, { cfg: { quests: [J, CS], noStreak: [{ from: "2026-11-01" }], ignore: ["cs"], addTrends: true }, days: { "2026-11-02": { q: [J, { ...CS, opt: true, ign: true }], sched: [{ id: "a", q: "cs", f: 600, t: 660 }] } }, extra: { "pc-rerate": "2026-11-02" }, hash: "#trends" });
+  await expect(page.locator(".ttile", { hasText: "Plan kept" }).locator(".tt-v")).toHaveText("—");
+});

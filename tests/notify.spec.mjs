@@ -72,7 +72,7 @@ test("midday and weekly checks show progress bars", async ({ page }) => {
   await expect(page.locator("#gBody .nfrow")).toHaveText(["CS work30m / 1h"]);
   await page.click("#gClose");
   await tap(page, 2600);
-  await expect(page.locator("#gBody .nfrow")).toHaveText(["French (half by Wed)20m / 2h 30m"]);
+  await expect(page.locator("#gBody .nfrow")).toHaveText(["French (a third by Wed)20m / 1h 40m"]);
 });
 
 test("deadline eve names the deadline and offers to plan today", async ({ page }) => {

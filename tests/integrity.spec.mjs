@@ -29,13 +29,13 @@ test("a total paused before the end of the week is still checked at the end, pro
 test("pausing never moves the halfway checkpoint onto a day already gone", async ({ page }) => {
   const CS = { id: "cs", type: "time", label: "Coursework", min: 30, roll: 600, days: [1, 2, 3, 4, 5], addedOn: "2026-10-01" };
   await openApp(page, { now: "2026-11-04T09:00:00-05:00", cfg: { quests: [J, CS] }, days: { "2026-11-02": { j: true, q: [J, CS] }, "2026-11-03": { j: true, q: [J, CS] } } });
-  await expect(page.locator("#carryNote")).toContainText("Checkpoint today: Coursework 0m/5h");
+  await expect(page.locator("#carryNote")).toContainText("Checkpoint today: Coursework 0m/3h 20m");
   await page.locator("#quests .q", { hasText: "Coursework" }).locator(".pzb").click();
   await page.click(".qmenu button:has-text('Pause')");
   await page.waitForTimeout(300);
   const m = await strip(page);
   expect([m["2026-11-02"], m["2026-11-03"]]).toEqual(["ok", "ok"]);
-  await expect(page.locator("#carryNote")).toContainText("Checkpoint today: Coursework 0m/3h");
+  await expect(page.locator("#carryNote")).toContainText("Checkpoint today: Coursework 0m/2h");
 });
 
 test("a total marked optional is never judged, not even on its off days", async ({ page }) => {

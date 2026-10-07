@@ -51,17 +51,17 @@
   function workOn(q,d){var x=dayDefMap(d)[q.id];return !!x&&!x.off&&scheduled(x,d)&&!isVac(d)}
   function workDaysIn(q,a,b){var n=0;for(var d=a;d<=b;d=add(d,1))if(workOn(q,d))n++;return n}
   /* Halfway checkpoint: the ceil(n/2)-th work day of the period (from the quest's start in a first period). By the end
-     of it you need half the period's target, so work can't all pile up at the end. Once a day has passed with the
+     of it you need a third (MID_FRAC) of the period's target, so work can't all pile up at the end. Once a day has passed with the
      checkpoint on it, that's fixed (e.ck); if a later change would move it onto a day already gone, it's today. */
   function midAt(q,k,now){var f=weekFrom(q,k),e=perEnd(q,k),L=[],cf=S.cfg&&S.cfg.ckFrom;if(cf&&perStart(q,k)<cf)return null;for(var d=f;d<=e;d=add(d,1)){if(d<now){var x=S.days[d];if(x&&x.ck&&x.ck.indexOf(q.id)>=0)return d}if(workOn(q,d))L.push(d)}
     if(!L.length)return null;var m=L[Math.ceil(L.length/2)-1];return m<now?(now<=e?now:null):m}
   function midDay(q,k){return midAt(q,k,todayKey())}
-  function midNeed(q,k){return Math.round(weekTarget(q,k)/2)}
+  function midNeed(q,k){return Math.round(weekTarget(q,k)*MID_FRAC)}
   /* Totals judged in the period around day k: every total on the list on any day of the period so far or still to
      come (so pausing it or deleting it doesn't skip the check), unless it's marked optional. Latest version wins. */
   function periodList(k){var C={},T=todayKey();cfg().quests.forEach(function(q){if(q.type==="time"&&q.roll)C[q.id]=q});for(var d=add(k,-31);d<k;d=add(d,1)){var e=S.days[d];((e&&e.q)||[]).forEach(function(q){if(q.type==="time"&&q.roll&&!C[q.id])C[q.id]=q})}
     var out=[];Object.keys(C).forEach(function(id){var q0=C[id],last=null,uo=false;for(var d=perStart(q0,k),e=perEnd(q0,k);d<=e;d=add(d,1)){var x=dayDefMap(d)[id];if(!x)continue;last=x;if(x.uopt)uo=true;else if(!isVac(d)&&!x.off)uo=!!x.opt}
-      if(last&&!uo&&!noStreakIn(weekFrom(q0,k),perEnd(q0,k)))out.push(slim(cfgQ(id)||last))});return out}
+      var md0=midDay(q0,k),upto=md0&&md0>=k?md0:perEnd(q0,k);if(last&&!uo&&!noStreakIn(weekFrom(q0,k),upto))out.push(slim(cfgQ(id)||last))});return out}
   function weekWorkDays(q){return q.days&&q.days.length?q.days.length:7}
   function weekTarget(q,k){var f=weekFrom(q,k);return Math.round(q.roll*workDaysIn(q,f,perEnd(q,k))/perWorkDays(q,k))}
   var firstSeenCache={},firstSeenSig="";
