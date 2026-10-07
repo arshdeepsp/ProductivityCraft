@@ -18,9 +18,9 @@
   function nfTimer(kind){var T=todayKey(),t=S.timer;if(!t){nfGo();setSync("That timer has already stopped.");return}
     go("today");var q=activeDefs(T).filter(function(x){return x.id===t.id})[0];if(!q){nfGo();return}
     var e=S.days[T]||{},mins=Math.floor((Date.now()-t.start)/60000),tot=(e[q.id]|0)+mins,goal=timerGoal(q);
-    var head={min:"Minimum cleared!",plan:"Plan reached: gold pace!",five:"5 minutes in. You started, and that’s the hard part.",live:"Welcome back. Still going."}[kind]||"Still going.";
+    var head={min:q.roll?"Today\u2019s share done!":"Minimum cleared!",plan:"Plan reached: gold pace!",five:"5 minutes in. You started, and that’s the hard part.",live:"Welcome back. Still going."}[kind]||"Still going.";
     var icon={min:"trophy",plan:"star",five:"flame",live:"sprout"}[kind]||"sprout";
-    var body='<p class="help">'+esc(q.label)+': '+hm(mins)+' this session.</p>'+nfBar("Toward today’s goal",tot,goal)+(kind==="min"?'<p class="help">Every minute from here grows your tree toward your plan.</p>':'');
+    var body='<p class="help">'+esc(q.label)+': '+hm(mins)+' this session.</p>'+nfBar("Toward today’s goal",tot,goal)+(kind==="min"&&!q.roll?'<p class="help">Every minute from here grows your tree toward your plan.</p>':'');
     nfCall(t.label,icon,head,body,[["Stop &amp; log",function(){if(S.timer&&S.timer.id===q.id)toggleTimer(q)},"del"],["Keep going",null,"save"]])}
   function nfSprint(){if(S.sprint){go("today");if(!gEl.hidden)closeG();spShow()}else nfGo()}
   function nfQuestsLeft(title,icon,head,extra){var T=todayKey(),e=S.days[T]||{},L=nfOpen(),q=nfBehind();

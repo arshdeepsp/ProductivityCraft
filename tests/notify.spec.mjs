@@ -147,3 +147,16 @@ test("an answered call alone doesn't count as logging the day", async ({ page })
   const marks = await page.evaluate(() => [...document.querySelectorAll("#strip i")].slice(-5, -1).map((i) => i.className));
   expect(marks).toEqual(["grace", "frozen", "miss", "miss"]);
 });
+
+test("a weekly total's timer celebrates today's share, not its leftover 30-minute minimum", async ({ page }) => {
+  await page.addInitScript(mock(null));
+  const TW = [{ id: "tw", type: "time", label: "Thesis Work", min: 30, roll: 1800, days: [1, 2, 3, 4], addedOn: "2026-10-01" }];
+  const state = { days: {}, cfg: { quests: TW, rules: [], idleGrove: 0, start: "2026-10-01T04:00:00.000Z", updated: "2026-10-01T10:00:00Z", nf: { on: true } }, timer: { id: "tw", label: "Thesis Work", start: Date.parse("2026-11-02T08:20:00-05:00"), day: "2026-11-02" } };
+  await page.addInitScript((s) => { if (!localStorage.getItem("pc-cache-v1")) localStorage.setItem("pc-cache-v1", s); }, JSON.stringify(state));
+  await openApp(page, { cfg: { quests: TW, nf: { on: true } } });
+  await page.clock.runFor(2000);
+  await expect(page.locator("#sync")).not.toContainText("Minimum reached");
+  await tap(page, 1001);
+  await expect(page.locator("#gBody .mhead")).toHaveText("Today’s share done!");
+  await expect(page.locator("#gBody")).toContainText("40m / 7h 30m");
+});

@@ -5,7 +5,7 @@
     if(S.timer&&S.timer.id===q.id){var el0=(Date.now()-S.timer.start)/60000;if(commitOn()&&S.timer.quick&&S.timer.commit&&el0<S.timer.commit){var left=Math.max(1,Math.ceil(S.timer.commit-el0));openG("Almost there",function(b){b.innerHTML='<p class="mhead">Only '+left+' more minute'+(left===1?'':'s')+' to your 5.</p><p class="help">No penalty either way, but reaching the chime is the whole point. Keep going?</p><div class="edrow end"><button type="button" class="stone" id="j5Stop">Stop now</button><button type="button" class="stone save" id="j5Keep">Keep going</button></div>';b.querySelector("#j5Keep").addEventListener("click",closeG);b.querySelector("#j5Stop").addEventListener("click",function(){closeG();stopTimer()})});return}
     if(commitOn()&&!S.timer.quick&&el0<COMMIT_MIN){openG("Stop early?",function(b){b.innerHTML='<p class="mhead bad">You committed to '+COMMIT_MIN+' minutes.</p><p class="help">You\u2019re '+Math.floor(el0)+' minutes in. Stopping now counts as an early stop: \u2212'+BREAK_XP+' XP and your momentum resets. Your '+Math.round(el0)+' minutes still count toward the quest.</p><div class="edrow end"><button type="button" class="stone del" id="esStop">Stop anyway</button><button type="button" class="stone save" id="esKeep">Keep going</button></div>';b.querySelector("#esKeep").addEventListener("click",closeG);b.querySelector("#esStop").addEventListener("click",function(){closeG();stopTimer()})});return}stopTimer();return}
     var quick=!!S.noTopicAsk;
-    function startNow(first){var now2=Date.now();if(S.timer)stopTimer();var e0=S.days[T]||{},lg=e0[q.id]|0;S.timer={id:q.id,label:q.label,start:now2,day:T,minHit:lg>=q.min,planHit:lg>=planOf(q,e0),first:first||null,quick:quick,autoFocus:!focusView};timerTopicStart(q);callCheck();if(!focusView){focusView=true;applyHide()}cache();timerTick();setSync(first?"Timer started. First step: "+first:"Timer started: "+q.label);notifSync();setTimeout(focusSync,0)}
+    function startNow(first){var now2=Date.now();if(S.timer)stopTimer();var e0=S.days[T]||{},lg=e0[q.id]|0;S.timer={id:q.id,label:q.label,start:now2,day:T,minHit:lg>=timerMin(q),planHit:lg>=planOf(q,e0),first:first||null,quick:quick,autoFocus:!focusView};timerTopicStart(q);callCheck();if(!focusView){focusView=true;applyHide()}cache();timerTick();setSync(first?"Timer started. First step: "+first:"Timer started: "+q.label);notifSync();setTimeout(focusSync,0)}
     if(quick){startNow("");return}
     confirmCommit("timer",{label:q.label},startNow);
   }
@@ -23,14 +23,17 @@
   /* A timer still running when its day locks: the minutes up to the lock go to that day, the rest start fresh on today
      (from today's start, so a timer forgotten for days doesn't pile the gap onto today). */
   function rollTimer(){var t=S.timer,T=todayKey();if(!t||!t.day||t.day>=T)return;var cut=atMin(add(t.day,1),dayEnd()*60),now=Date.now();cut=Math.max(t.start,Math.min(cut,now));
-    logTimer(t,t.day,cut);cut=Math.min(now,Math.max(cut,atMin(T,dayEnd()*60)));t.start=cut;t.day=T;t.tAt=cut;t.tacc={};t.noPenalty=true;var q=cfgQ(t.id),e0=S.days[T]||{};t.minHit=!!q&&(e0[t.id]|0)>=(q.min|0);t.planHit=!!q&&(e0[t.id]|0)>=planOf(q,e0);t.c5=true;cache();setTimeout(focusSync,0)}
+    logTimer(t,t.day,cut);cut=Math.min(now,Math.max(cut,atMin(T,dayEnd()*60)));t.start=cut;t.day=T;t.tAt=cut;t.tacc={};t.noPenalty=true;var q=cfgQ(t.id),e0=S.days[T]||{};t.minHit=!!q&&(e0[t.id]|0)>=timerMin(q);t.planHit=!!q&&(e0[t.id]|0)>=planOf(q,e0);t.c5=true;cache();setTimeout(focusSync,0)}
+  /* The first goal a running timer celebrates: a daily quest's minimum, or a period total's daily share (its own min field
+     is only a leftover default and means nothing for totals). */
+  function timerMin(q){return q.roll?schLen(q):q.min}
   function timerGoals(){
     var t=S.timer;if(!t)return;if(t.commit&&!t.c5&&Date.now()-t.start>=t.commit*60000){t.c5=true;cache();sfx("chime");try{if(navigator.vibrate)navigator.vibrate([120,60,120])}catch(x){}setSync("5 minutes in! Keep going, or stop the timer to log it.")}var T=todayKey(),q=activeDefs(T).filter(function(x){return x.id===t.id})[0];if(!q||q.type!=="time")return;
     var e=S.days[T]||{},tot=(e[q.id]|0)+Math.floor((Date.now()-t.start)/60000),pl=planOf(q,e),hit=null;
-    if(!t.minHit&&tot>=q.min){t.minHit=true;hit="Minimum reached for "+q.label+" ("+hmL(q.min)+")"}
-    if(cfg().showPlan&&pl>q.min&&!t.planHit&&tot>=pl){t.planHit=true;t.minHit=true;hit="Plan reached for "+q.label+" ("+hm(pl)+")"}
+    var mn=timerMin(q);if(!t.minHit&&tot>=mn){t.minHit=true;hit=(q.roll?"Today\u2019s share done for ":"Minimum reached for ")+q.label+" ("+hmL(mn)+")"}
+    if(cfg().showPlan&&!q.roll&&pl>q.min&&!t.planHit&&tot>=pl){t.planHit=true;t.minHit=true;hit="Plan reached for "+q.label+" ("+hm(pl)+")"}
     if(hit){cache();sfx("chime");try{if(navigator.vibrate)navigator.vibrate([120,60,120,60,200])}catch(x){}setSync(hit+". Keep going or stop the timer to log it.")}
-    var el=qEls[t.id];if(el&&el.tmr){el.tmr.classList.toggle("hit",!!t.minHit&&tot>=q.min);el.tmr.classList.toggle("gold",!!t.planHit&&pl>q.min&&tot>=pl)}
+    var el=qEls[t.id];if(el&&el.tmr){el.tmr.classList.toggle("hit",!!t.minHit&&tot>=mn);el.tmr.classList.toggle("gold",!!t.planHit&&pl>q.min&&tot>=pl)}
   }
   function timerTick(){var tmOn=!!(S.timer&&qEls[S.timer.id]&&!ro());qWrap.classList.toggle("timing",tmOn);document.getElementById("gui").classList.toggle("timing",tmOn);timerGoals();Object.keys(qEls).forEach(function(id){runBox(id);var el=qEls[id];if(!el||!el.tmr)return;var on=S.timer&&S.timer.id===id;el.tmr.classList.toggle("on",!!on);el.tmr.querySelector("span").textContent=on?fmtT(Date.now()-S.timer.start):"";el.tmr.setAttribute("aria-label",(on?"Stop":"Start")+" focus timer")})}
   setInterval(function(){if(S.timer)timerTick();renderHeat()},1000);
