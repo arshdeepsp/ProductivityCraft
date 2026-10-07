@@ -11,7 +11,7 @@
      {id:"r-"+rep, rep, ...}. Editing one occurrence detaches it (a one-off copy + e.schSkip), with "Every week" to push
      the change back to the series. */
   var SCH_STEP=15,SCH_ROW=22,REP_MAX=26,schSel=null,schQ=null,schMsg="",schBody=null,schDrag=null,schDet=null,schRep=null,schMd="today",schWd=1,schBack=false,schShown=null;
-  function schQuests(k){return activeDefs(k).filter(function(q){return q.type==="time"&&!q.off})}
+  function schQuests(k){return activeDefs(k).filter(function(q){return q.type==="time"&&!q.off&&!q.ign})}
   function schLen(q){var m=q.roll?q.roll/perWorkDays(q,todayKey()):q.min;return Math.max(SCH_STEP,Math.ceil(m/5)*5)}
   function schNorm(s){if(Array.isArray(s))return s;var out=[];if(s&&typeof s==="object")Object.keys(s).sort().forEach(function(id){var b=s[id];if(b&&b.f!=null)out.push(Object.assign({id:"b-"+id,q:id},b))});return out}
   function schReps(){return cfg().rep||[]}

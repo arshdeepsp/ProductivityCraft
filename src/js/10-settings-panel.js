@@ -10,7 +10,7 @@
   function setStreaks(on){var c2=clone(cfg()),T=todayKey(),T1=add(T,1),L=(c2.noStreak||[]).slice(),st0=easeInfo().setup?T:T1;
     if(on){L=L.map(function(r){return !r.to||T<r.to?(r.from>=T?null:Object.assign({},r,{to:T})):r}).filter(Boolean)}
     else if(!L.some(function(r){return !r.to})){var j=L.filter(function(r){return r.to&&r.to>=st0})[0];if(j)delete j.to;else L.push({from:st0})}
-    if(L.length)c2.noStreak=L;else delete c2.noStreak;saveCfg(c2);qSig="";nfSig="";render();if(typeof renderSettings==="function")renderSettings();setSync(on?"Streaks back on. Your streak picks up where it was.":rewardsOff()?"Streaks paused: tracking only.":"Streaks pause from tomorrow: tracking only.")}
+    if(on)delete c2.ignore;if(L.length)c2.noStreak=L;else delete c2.noStreak;saveCfg(c2);qSig="";nfSig="";render();if(typeof renderSettings==="function")renderSettings();setSync(on?"Streaks back on. Your streak picks up where it was.":rewardsOff()?"Streaks paused: tracking only.":"Streaks pause from tomorrow: tracking only.")}
   function swc(id,on,label,attr){return '<button type="button" class="sw" role="switch" '+(id?'id="'+id+'" ':'')+(attr||'')+' aria-checked="'+!!on+'" aria-label="'+esc(label)+'"><span></span></button>'}
   function srow(title,hint,ctrl,cls){return '<div class="srow'+(cls?' '+cls:'')+'"><div class="srow-t"><b>'+title+'</b>'+(hint?'<small>'+hint+'</small>':'')+'</div>'+(ctrl?'<div class="srow-c">'+ctrl+'</div>':'')+'</div>'}
   function sgroup(title,rows,help){return '<section class="sgroup">'+(title?'<h3 class="sgroup-h"><span>'+title+'</span>'+(help?'<button type="button" class="sq" data-help="'+help+'" aria-label="How '+esc(title)+' works">?</button>':'')+'</h3>':'')+'<div class="scard">'+rows+'</div></section>'}

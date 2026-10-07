@@ -1,5 +1,5 @@
   /* ---- to-do lifecycle: done ones vanish after their day, open ones get a keep-or-clear review ---- */
-  function openTodos(){return cfg().quests.filter(function(q){return q.type==="todo"&&!q.doneOn&&!q.completed})}
+  function openTodos(){var T=todayKey();return cfg().quests.filter(function(q){return q.type==="todo"&&!q.doneOn&&!q.completed&&!ignoredOn(q.id,T)})}
   function cleanDoneTodos(){var T=todayKey(),c=cfg();if(!(c.quests||[]).some(function(q){return q.type==="todo"&&((q.doneOn&&q.doneOn<T)||!q.addedOn)}))return;var c2=clone(c);c2.quests=c2.quests.filter(function(q){return !(q.type==="todo"&&q.doneOn&&q.doneOn<T)}).map(function(q){if(q.type==="todo"&&!q.addedOn)q.addedOn=T;return q});saveCfg(c2);qSig=""}
   var todoReviewOpen=false;
   function reviewTodos(reason){

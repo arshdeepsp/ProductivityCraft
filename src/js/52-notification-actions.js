@@ -14,7 +14,7 @@
   function nfOpen(){var T=todayKey(),e=S.days[T]||{};return reqOf(activeDefs(T)).filter(function(q){return q.type!=="limit"&&!metQ(q,e)})}
   function nfGo(){go("today");if(!gEl.hidden)closeG()}
   function nfJust5(q){return q?["Just 5 on "+esc(q.label),function(){start5(q)},"save",1]:null}
-  function nfBehind(){var T=todayKey(),e=S.days[T]||{},best=null,gap=0;activeDefs(T).forEach(function(q){if(q.type!=="time"||q.off||metQ(q,e))return;var g=q.roll?rollNeed(q,T)-rollSum(q.id,T):q.min-(e[q.id]|0);if(!best||g>gap){best=q;gap=g}});return best}
+  function nfBehind(){var T=todayKey(),e=S.days[T]||{},best=null,gap=0;activeDefs(T).forEach(function(q){if(q.type!=="time"||q.off||q.ign||metQ(q,e))return;var g=q.roll?rollNeed(q,T)-rollSum(q.id,T):q.min-(e[q.id]|0);if(!best||g>gap){best=q;gap=g}});return best}
   function nfTimer(kind){var T=todayKey(),t=S.timer;if(!t){nfGo();setSync("That timer has already stopped.");return}
     go("today");var q=activeDefs(T).filter(function(x){return x.id===t.id})[0];if(!q){nfGo();return}
     var e=S.days[T]||{},mins=Math.floor((Date.now()-t.start)/60000),tot=(e[q.id]|0)+mins,goal=timerGoal(q);

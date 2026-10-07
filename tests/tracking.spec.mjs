@@ -119,3 +119,67 @@ for (const paused of [false, true]) {
     if (paused) await expect(page.locator("#gate")).toBeHidden(); else await expect(page.locator("#gate")).toBeVisible();
   });
 }
+
+test.describe("ignore list (phone)", () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const CS = { id: "cs", type: "time", label: "Coursework", min: 60 };
+  async function swipeRight(page, row) {
+    const b = await row.locator(".lbl").boundingBox();
+    const cdp = await page.context().newCDPSession(page);
+    const y = b.y + b.height / 2, x = b.x + 10;
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y, id: 1 }] });
+    for (let i = 1; i <= 6; i++) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: x + i * 20, y, id: 1 }] });
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    await page.waitForTimeout(300);
+  }
+
+  test("while paused, swipe right ignores a quest and swipe right in Ignored adds it back", async ({ page }) => {
+    await openApp(page, { cfg: { quests: [J, CS], noStreak: [{ from: "2026-11-01" }] } });
+    await swipeRight(page, page.locator("#quests .q", { hasText: "Coursework" }));
+    expect((await store(page)).cfg.ignore).toEqual(["cs"]);
+    await expect(page.locator("#ignSep")).toContainText("Ignored (1)");
+    await expect(page.locator("#quests .q", { hasText: "Coursework" })).toBeHidden();
+    await page.click("#ignSep");
+    await swipeRight(page, page.locator("#quests .q", { hasText: "Coursework" }));
+    expect((await store(page)).cfg.ignore).toBeUndefined();
+    await expect(page.locator("#ignSep")).toBeHidden();
+  });
+
+  test("with streaks on, swipe right still marks a check quest done instead", async ({ page }) => {
+    await openApp(page, { cfg: { quests: [J, CS] } });
+    await swipeRight(page, page.locator("#quests .q", { hasText: "Journal" }));
+    expect((await store(page)).cfg.ignore).toBeUndefined();
+    expect((await store(page)).days["2026-11-02"].j).toBe(true);
+  });
+});
+
+test("an ignored quest leaves the schedule, its reminders, Just 5 and the count", async ({ page }) => {
+  await page.addInitScript(`window.__ln=[];window.Capacitor={isNativePlatform:()=>true,Plugins:{LocalNotifications:{requestPermissions:()=>Promise.resolve({display:'granted'}),createChannel:()=>Promise.resolve(),getPending:()=>Promise.resolve({notifications:[]}),cancel:()=>Promise.resolve(),schedule:(o)=>{o.notifications.forEach(n=>window.__ln.push({id:n.id,title:n.title}));return Promise.resolve()},addListener:()=>Promise.resolve({})},App:{addListener:()=>Promise.resolve({})},KeepAwake:{keepAwake:()=>Promise.resolve(),allowSleep:()=>Promise.resolve()}}};`);
+  const CS = { id: "cs", type: "time", label: "Coursework", min: 60 }, FR = { id: "fr", type: "time", label: "French", min: 30 };
+  const rep = [{ id: "r1", q: "cs", f: 780, t: 840, dows: [1, 2, 3, 4, 5], from: "2026-11-02", until: "2026-11-29" }];
+  await openApp(page, { cfg: { quests: [CS, FR], rep, nf: { on: true }, noStreak: [{ from: "2026-11-01" }], ignore: ["cs"] }, days: { "2026-11-02": { q: [CS, FR], sched: [{ id: "a", q: "cs", f: 600, t: 660 }] } } });
+  await page.clock.runFor(2000);
+  const titles = (await page.evaluate(() => window.__ln)).filter((x) => x.id >= 3500 && x.id < 4000).map((x) => x.title);
+  expect(titles.some((t) => t.includes("Coursework"))).toBe(false);
+  await expect(page.locator("#qCount")).toHaveText("0/1 done");
+  await page.click("#schBtn");
+  await expect(page.locator(".sch-b")).toHaveCount(0);
+  await expect(page.locator("[data-sq='cs']")).toHaveCount(0);
+  await page.click("#schOk");
+  await page.click("#sp5Btn");
+  await expect.poll(async () => ((await store(page)).timer || {}).id).toBe("fr");
+});
+
+test("the row menu ignores too, and switching streaks back on clears the list", async ({ page }) => {
+  const CS = { id: "cs", type: "time", label: "Coursework", min: 60 };
+  await openApp(page, { cfg: { quests: [J, CS], noStreak: [{ from: "2026-11-01" }] } });
+  await page.locator("#quests .q", { hasText: "Coursework" }).locator(".pzb").click();
+  await page.click(".qmenu button:has-text('Ignore')");
+  expect((await store(page)).cfg.ignore).toEqual(["cs"]);
+  await page.goto("http://127.0.0.1:4173/index.html#settings");
+  await page.click("[data-st='quests']");
+  await page.click("#setStreak");
+  const c = (await store(page)).cfg;
+  expect(c.ignore).toBeUndefined();
+  expect(c.noStreak).toEqual([{ from: "2026-11-01", to: "2026-11-02" }]);
+});

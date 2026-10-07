@@ -10,7 +10,7 @@
   var RANKS=[[0,"Apprentice","sprout"],[7,"Journeyman","sprout"],[21,"Session Player","flame"],[42,"Bandleader","metronome"],[90,"Virtuoso","dumbbell"],[180,"Master","trophy"],[365,"Maestro","star"]];
   var S={days:{},refl:{},cfg:null},db=null,uid=null,dl=null,dlChecked=false,view="today",dirty={},timer=null;
   /* Data schema. Bump SCHEMA and add a step to migrate() whenever the stored shape changes. */
-  var SCHEMA=14,RERATE_MIN=60;
+  var SCHEMA=15,RERATE_MIN=60;
   function migrate(c){c=c||{};var v=c.schema||2;
     if(v<3){if(c.cfg){delete c.cfg.bank;delete c.cfg.commitCheck}v=3}
     if(v<4){Object.keys(c.days||{}).forEach(function(k){var d=c.days[k],s=d&&d.sched;if(s&&!Array.isArray(s)&&typeof s==="object")d.sched=Object.keys(s).sort().map(function(id){return Object.assign({id:"b-"+id,q:id},s[id])})});v=4}
@@ -25,6 +25,7 @@
     if(v<12)v=12;
     if(v<13)v=13;
     if(v<14){if(c.schema&&c.cfg&&!c.cfg.ckFrom){c.cfg.ckFrom=key(new Date());Object.keys(c.days||{}).forEach(function(d){var x=c.days[d];if(x&&x.ck&&d<c.cfg.ckFrom)x.ck=[]})}v=14}
+    if(v<15)v=15;
     c.schema=v;return c}
   /* If saved data can't be read, or comes from a newer app version, a copy goes to pc-cache-rescue and nothing is saved
      over it (cacheBlock) until a backup is imported. */
@@ -47,11 +48,14 @@
      period that touches one. The reward UI is hidden while today is paused (body.nostreak). SCHEMA 13 marks this. */
   function noStreakOn(k){return ((S.cfg&&S.cfg.noStreak)||[]).some(function(r){return k>=r.from&&(!r.to||k<r.to)})}
   function rewardsOff(){return noStreakOn(todayKey())}
+  /* Ignore list (cfg.ignore = quest ids), tracking-only mode: on a paused day an ignored quest is optional (o.ign) and kept
+     out of the main list, the schedule, Just 5, Pick and reminders. Cleared when streaks come back on. */
+  function ignoredOn(id,k){return noStreakOn(k)&&((S.cfg&&S.cfg.ignore)||[]).indexOf(id)>=0}
   function noStreakIn(a,b){return ((S.cfg&&S.cfg.noStreak)||[]).some(function(r){return r.from<=b&&(!r.to||r.to>a)})}
   function isPaused(q,k){return !!q.pausedUntil&&k<q.pausedUntil&&(!q.pausedFrom||k>=q.pausedFrom)}
   function slim(q){var o={id:q.id,type:q.type,label:q.label};["min","max","from","to","unit","note","days","opt","ul","step","scale","total","due","roll","per","dl","subj","subjs","topics","fin","lock","pending","addedOn","addedMin","startOn"].forEach(function(f){if(q[f]!=null&&q[f]!=="")o[f]=q[f]});return o}
   function scheduled(q,k){return !q.days||!q.days.length||q.days.indexOf(parse(k).getDay())>=0}
-  function activeDefs(k){var vc=isVac(k),c0=cfg(),LD=(c0.lockDay&&c0.lockDay.date===k)?c0.lockDay.defs:null,src=c0.quests.map(function(q){return LD&&LD[q.id]?LD[q.id]:q});if(LD)Object.keys(LD).forEach(function(id){if(!c0.quests.some(function(q){return q.id===id}))src.push(LD[id])});return src.filter(function(q){if(q.completed&&q.completed.on<k)return false;if(q.startOn&&k<q.startOn&&q.type!=="todo")return false;if(q.type==="todo")return !q.doneOn||q.doneOn===k;if(q.dl&&(k>q.dl.due||k<q.dl.from))return false;return !isPaused(q,k)&&(scheduled(q,k)||(q.type==="time"&&q.roll))}).map(function(q){var o=slim(q);if(q.type==="time"&&q.roll&&q.opt)o.uopt=true;if(q.type==="time"&&q.roll&&!scheduled(q,k)){o.opt=true;o.off=true}if(q.dl){o.min=dlMin(q,k);if(!o.min)o.opt=true}if(vc)o.opt=true;if(lateStart(q,k))o.opt=true;return o})}
+  function activeDefs(k){var vc=isVac(k),c0=cfg(),LD=(c0.lockDay&&c0.lockDay.date===k)?c0.lockDay.defs:null,src=c0.quests.map(function(q){return LD&&LD[q.id]?LD[q.id]:q});if(LD)Object.keys(LD).forEach(function(id){if(!c0.quests.some(function(q){return q.id===id}))src.push(LD[id])});return src.filter(function(q){if(q.completed&&q.completed.on<k)return false;if(q.startOn&&k<q.startOn&&q.type!=="todo")return false;if(q.type==="todo")return !q.doneOn||q.doneOn===k;if(q.dl&&(k>q.dl.due||k<q.dl.from))return false;return !isPaused(q,k)&&(scheduled(q,k)||(q.type==="time"&&q.roll))}).map(function(q){var o=slim(q);if(q.type==="time"&&q.roll&&q.opt)o.uopt=true;if(q.type==="time"&&q.roll&&!scheduled(q,k)){o.opt=true;o.off=true}if(q.dl){o.min=dlMin(q,k);if(!o.min)o.opt=true}if(vc)o.opt=true;if(lateStart(q,k))o.opt=true;if(ignoredOn(q.id,k)){o.opt=true;o.ign=true}return o})}
   function localKey(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
   function nowMinInDay(){var d=new Date(),T=todayKey(),m=d.getHours()*60+d.getMinutes();if(localKey(d)!==T)m+=1440;return m}
   /* Your day: waking hours used app-wide (schedule, midday point, reminders). cfg.day is the usual window; cfg.dayOv overrides one date. */
