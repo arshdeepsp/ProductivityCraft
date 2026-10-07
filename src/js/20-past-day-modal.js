@@ -1,9 +1,9 @@
   /* 2. past day modal */
   function openDayModal(k){
     var e=S.days[k]||{},st=lastSt||compute(),m=st.marks[k]||"miss",defs=defsOf(e);
-    var label={lost:"Lost: a weekly total was missed that "+(function(){var x=(st.lost||[]).filter(function(l){return k>=l.from&&k<=l.k})[0];return x?(x.mid?"halfway checkpoint":"period")+" ("+x.q.join(", ")+")":"period"})(),carried:"Carried by your weekly total (streak held, no XP)",frozen:"Missed, saved by a streak freeze",rest:isVac(k)?"Vacation day":"Rest day",ok:gold(e)?"Gold day":"Cleared",miss:"Missed",grace:"Missed (grace day)",pend:"Not logged"}[m]||"Missed";
+    var label={lost:"Lost: a weekly total was missed that "+(function(){var x=(st.lost||[]).filter(function(l){return k>=l.from&&k<=l.k})[0];return x?(x.mid?"halfway checkpoint":"period")+" ("+x.q.join(", ")+")":"period"})(),carried:"Carried by your weekly total (streak held, no XP)",frozen:"Missed, saved by a streak freeze",pause:"Streaks paused: tracking only",rest:isVac(k)?"Vacation day":"Rest day",ok:gold(e)?"Gold day":"Cleared",miss:"Missed",grace:"Missed (grace day)",pend:"Not logged"}[m]||"Missed";
     openG(parse(k).toLocaleDateString("en-CA",{weekday:"long",month:"long",day:"numeric"}),function(b){
-      var h='<p class="mhead '+(m==="ok"?"good":(m==="rest"||m==="frozen"||m==="carried")?"":"bad")+'">'+label+(m!=="rest"?' \u00b7 '+bases(e)+'/'+reqOf(defs).length+' done':'')+' \u00b7 +'+dayXP(e)+' XP</p>';
+      var h='<p class="mhead '+(m==="ok"?"good":(m==="rest"||m==="frozen"||m==="carried"||m==="pause")?"":"bad")+'">'+label+(m!=="rest"?' \u00b7 '+bases(e)+'/'+reqOf(defs).length+' done':'')+(m==="pause"?'':' \u00b7 +'+dayXP(e)+' XP')+'</p>';
       if(!hasEntry(e))h+='<p class="help">Nothing was logged this day.</p>';else h+=qList(e,defs);
       var tp=[];if(tp.length)h+='<p class="sh2">Top 3</p><ul class="ul">'+tp.map(function(x){return '<li>'+(x.d?"\u2713 ":"\u2717 ")+esc(x.t)+'</li>'}).join("")+'</ul>';
       if(S.refl[k])h+='<p class="sh2">Reflection</p><p class="help">'+esc(S.refl[k].text||"")+'</p>';

@@ -1,7 +1,7 @@
   /* ---- commitment checks ---- */
   var COMMIT_MIN=25,BREAK_XP=15;
   function strictOn(){return !!(S.cfg&&S.cfg.strict)}
-  function commitOn(){return strictOn()}
+  function commitOn(){return strictOn()&&!rewardsOff()}
   function first0(f){return f&&typeof f==="string"?f:null}
   function confirmCommit(kind,info,go){
     if(!commitOn()){go("");return}
@@ -16,4 +16,4 @@
       b.querySelector("#ccGo").addEventListener("click",function(){var f=b.querySelector("#ccFirst").value.trim();closeG();go(f)});
     });
   }
-  function markBroken(T,why){var e=Object.assign({},S.days[T]||{});e.brk=(e.brk||0)+1;e.heatReset=Date.now();S.days[T]=e;dirty[T]=true;cache();clearTimeout(timer);timer=setTimeout(flush,300);sfx("fail");render();setSync(why+": \u2212"+BREAK_XP+" XP, momentum reset.")}
+  function markBroken(T,why){if(rewardsOff())return;var e=Object.assign({},S.days[T]||{});e.brk=(e.brk||0)+1;e.heatReset=Date.now();S.days[T]=e;dirty[T]=true;cache();clearTimeout(timer);timer=setTimeout(flush,300);sfx("fail");render();setSync(why+": \u2212"+BREAK_XP+" XP, momentum reset.")}

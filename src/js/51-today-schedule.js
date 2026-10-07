@@ -63,7 +63,8 @@
   /* First clash a repeat would hit on a day after today (other blocks, repeats or busy times), as {b, k}. */
   function repClash(rid,f,t,dows,until,qd){var T=todayKey();for(var d=add(T,1);d<=until;d=add(d,1)){var w=parse(d).getDay();if(dows.indexOf(w)<0||(qd&&qd.indexOf(w)<0))continue;var c=schClash(schAll(d).filter(function(x){return !rid||x.rep!==rid}),null,f,t);if(c)return {b:c,k:d}}return null}
   function repClashMsg(c){return "That clashes with "+schName(c.b)+" on "+DAYF[parse(c.k).getDay()].slice(0,3)+" "+fmtD(c.k)+"."}
-  function schRepSave(id,dows,weeks){var T=todayKey(),b=schAll(T).filter(function(x){return x.id===id})[0];if(!b||!dows.length||locked())return;var u=add(T,weeks*7-1),c2=clone(cfg()),R=c2.rep=(c2.rep||[]).filter(function(r){return r.until>=T}),src=!b.rep&&b.src&&repById(b.src)?b.src:null,rid=b.rep||src;
+  /* keep = the week count wasn't touched, so an existing series keeps its end date. Days the quest doesn't run on are dropped. */
+  function schRepSave(id,dows,weeks,keep){var T=todayKey(),b=schAll(T).filter(function(x){return x.id===id})[0];if(!b||locked())return;if(b.q){var okd=schRepDays(b);dows=dows.filter(function(d){return okd.indexOf(d)>=0})}if(!dows.length)return;var c2=clone(cfg()),R=c2.rep=(c2.rep||[]).filter(function(r){return r.until>=T}),src=!b.rep&&b.src&&repById(b.src)?b.src:null,rid=b.rep||src,r0=rid?repById(rid):null,u=keep&&r0?r0.until:add(T,weeks*7-1);
     var cl=repClash(rid,b.f,b.t,dows,u,b.q?schRepDays(b):null);if(cl){schMsg=repClashMsg(cl);schRep=null;return}
     if(rid){R.forEach(function(r){if(r.id===rid){r.dows=dows.slice();r.until=u;if(src){r.f=b.f;r.t=b.t;if(b.j5)r.j5=true;else delete r.j5}}})}
     else{rid="r"+schNewId();var r={id:rid,f:b.f,t:b.t,dows:dows.slice(),from:T,until:u};if(b.q)r.q=b.q;if(b.lb)r.lb=b.lb;if(b.j5)r.j5=true;R.push(r)}
@@ -75,7 +76,7 @@
   function schRepEvery(){var d=schDet;if(!d)return;var b=schAll(todayKey()).filter(function(x){return x.id===d.id})[0],r0=repById(d.rep);if(!b||!r0)return;var cl=repClash(d.rep,b.f,b.t,r0.dows,r0.until,b.q?schRepDays(b):null);if(cl){schMsg=repClashMsg(cl);return}var c2=clone(cfg());(c2.rep||[]).forEach(function(r){if(r.id!==d.rep)return;r.f=b.f;r.t=b.t;if(b.j5)r.j5=true;else delete r.j5});saveCfg(c2);
     schSave(function(L,e){if(e.schSkip)e.schSkip=e.schSkip.filter(function(x){return x!==d.rep});return L.filter(function(x){return x.id!==d.id})});schSel="r-"+d.rep;schDet=null;schMsg="Changed every week.";nfSig="";notifSync()}
   function schAdd(qid,m){var T=todayKey(),w=dayWin(T),q=schQuests(T).filter(function(x){return x.id===qid})[0];if(!q)return;
-    var L=schList(),left=schLen(q)-schPlaced(T,qid),len=left>=SCH_STEP?left:SCH_STEP*2,f=m,t=Math.min(w.e,f+len);
+    var L=schList(),left=schLeft(T,q,L),len=left>=SCH_STEP?left:SCH_STEP*2,f=m,t=Math.min(w.e,f+len);
     if(f<schFloor()){schMsg="That time has already passed.";return}
     if(t-f<SCH_STEP){schMsg="That’s too close to bedtime.";return}
     var nx=schNext(L,null,f,w.e);if(nx<t)t=nx;
@@ -208,8 +209,8 @@
       nm.addEventListener("input",function(){clearTimeout(nmT);nmT=setTimeout(nmSave,400)});nm.addEventListener("change",nmSave);nm.addEventListener("keydown",function(ev){if(ev.key==="Enter"){nmSave();nm.blur()}})}
     else{on("schWkM",function(){schRep.weeks=Math.max(1,schRep.weeks-1);schDraw()});on("schWkP",function(){schRep.weeks=Math.min(REP_MAX,schRep.weeks+1);schDraw()})}
     on("schBzRm",function(){busyRemove(schSel);schDraw()});
-    on("schRepNo",function(){schRep=null;schDraw()});on("schRepOk",function(){schRepSave(schRep.id,schRep.dows,schRep.weeks);schDraw()});
-    on("schRepB",function(){var b=L.filter(function(x){return x.id===schSel})[0],r=b&&(b.rep||b.src)?repById(b.rep||b.src):null;schRep={id:schSel,dows:r?r.dows.slice():[parse(T).getDay()].filter(function(d){return schRepDays(b).indexOf(d)>=0}),weeks:r?Math.max(1,Math.min(REP_MAX,Math.ceil((daysBetween(T,r.until)+1)/7))):4};schMsg="";schDraw()});
+    on("schRepNo",function(){schRep=null;schDraw()});on("schRepOk",function(){schRepSave(schRep.id,schRep.dows,schRep.weeks,schRep.weeks===schRep.w0);schDraw()});
+    on("schRepB",function(){var b=L.filter(function(x){return x.id===schSel})[0],r=b&&(b.rep||b.src)?repById(b.rep||b.src):null;schRep={id:schSel,dows:r?r.dows.slice():[parse(T).getDay()].filter(function(d){return schRepDays(b).indexOf(d)>=0}),weeks:r?Math.max(1,Math.min(REP_MAX,Math.ceil((daysBetween(T,r.until)+1)/7))):4};schRep.w0=r?schRep.weeks:-1;schMsg="";schDraw()});
     on("schEvery",function(){schRepEvery();schDraw()});on("schStop",function(){var b=L.filter(function(x){return x.id===schSel})[0];if(b&&b.rep)schRepStop(b.rep);schDraw()});
     on("schPkNo",function(){schPick=null;schMsg="";schDraw()});
     on("schBzB",function(){openBusy(parse(T).getDay(),schPick,true)});on("schBzOpen",function(){openBusy(parse(T).getDay(),null,true)});on("schBzEdit",function(){var b=L.filter(function(x){return x.id===schSel})[0];openBusy(parse(T).getDay(),null,true);if(b&&b.busy){schSel=b.busy;schDraw()}});

@@ -20,7 +20,9 @@
   function perOf(q){return q&&(q.per==="2w"||q.per==="month")?q.per:""}
   function perStart(q,k){var p=perOf(q);if(p==="month")return k.slice(0,8)+"01";var ws=weekStart(k);if(p==="2w"){var n=Math.round(daysBetween(weekStart(rollFrom(q)),ws)/7);if(((n%2)+2)%2===1)ws=add(ws,-7)}return ws}
   function perEnd(q,k){var p=perOf(q),s=perStart(q,k);if(p==="month"){var d=parse(s);return key(new Date(d.getFullYear(),d.getMonth()+1,0))}return add(s,p==="2w"?13:6)}
-  function perWorkDays(q,k){var n=0;for(var d=perStart(q,k),e=perEnd(q,k);d<=e;d=add(d,1))if(scheduled(q,d))n++;return n||1}
+  /* Scheduled days in the period, each day judged by that day's version of the quest (so changing its days mid-period
+     keeps the target's numerator and denominator on the same footing). */
+  function perWorkDays(q,k){var n=0;for(var d=perStart(q,k),e=perEnd(q,k);d<=e;d=add(d,1))if(scheduled(dayDefMap(d)[q.id]||q,d))n++;return n||1}
   function perWord(q){return PER_NAME[perOf(q)]}
   function cfgQ(id){return cfg().quests.filter(function(q){return q.id===id})[0]}
   function rollSum(id,k,q){q=q||cfgQ(id);var s=0,ws=q?perStart(q,k):weekStart(k);for(var d=ws;d<=k;d=add(d,1)){if(d<START_KEY)continue;s+=(S.days[d]||{})[id]|0}return s}
@@ -29,9 +31,18 @@
      halfway checkpoints (e.ck = quest ids whose checkpoint fell on it), as they stood when the day ended. Later edits,
      pauses or deletions then never rewrite history. dayDefMap(d) = quests on day d: the snapshot for past days, the
      live settings for today and later. */
-  var lockedThru=null,lockDays=null,ddm={},ddmKey="";
-  function lockPast(){if(!S.cfg)return;if(lockDays!==S.days){lockDays=S.days;lockedThru=null}var T=todayKey(),d=lockedThru?add(lockedThru,1):START_KEY,ch=false;
-    for(;d<T;d=add(d,1)){var e=S.days[d];if(e&&e.ck)continue;if(!e||(!e.q&&!hasEntry(e))){e=S.days[d]=Object.assign({},e||{});e.q=activeDefs(d)}else e=S.days[d]=Object.assign({},e);ddm={};e.ck=[];
+  var lockedThru=null,lockDays=null,lockStart=null,ddm={},ddmKey="";
+  function lockReset(){lockedThru=null;ddm={}}
+  /* Quest list for a passed day: as the settings stood, with any scheduled (pending) change already due by then applied. */
+  function lockDefs(d){var P=S.cfg.quests.filter(function(q){return q.pending&&q.pending.due<=d});if(!P.length)return activeDefs(d);var c0=S.cfg;
+    try{var c1=clone(c0);c1.quests=pendingApplied(c1.quests,d);S.cfg=c1;return activeDefs(d)}finally{S.cfg=c0}}
+  /* Repeats that fell on a passed day are copied onto it (as one-offs with src, plus a skip), so stopping or editing a
+     repeat later never changes that day's plan or "Plan kept". */
+  function lockReps(d,e){if(!(S.cfg.rep||[]).length)return;var R=schAll(d).filter(function(b){return b.rep});if(!R.length)return;
+    e.sched=schNorm(e.sched).concat(R.map(function(b){var x={id:"x"+b.rep+d.replace(/-/g,""),f:b.f,t:b.t,src:b.rep};if(b.q)x.q=b.q;if(b.lb)x.lb=b.lb;if(b.j5)x.j5=true;return x}));e.schSkip=(e.schSkip||[]).concat(R.map(function(b){return b.rep}))}
+  function lockPast(){if(!S.cfg||cacheBlock)return;if(lockDays!==S.days||lockStart!==START_KEY){lockDays=S.days;lockStart=START_KEY;lockedThru=null}var T=todayKey(),d=lockedThru?add(lockedThru,1):START_KEY,ch=false;
+    if(!S.cfg.repFrozen){for(var r0=START_KEY;r0<T;r0=add(r0,1)){var e0=S.days[r0];if(e0&&e0.ck&&!(e0.schSkip||[]).length){e0=S.days[r0]=Object.assign({},e0);lockReps(r0,e0)}}S.cfg.repFrozen=true;ch=true}
+    for(;d<T;d=add(d,1)){var e=S.days[d];if(e&&e.ck)continue;if(!e||(!e.q&&!hasEntry(e))){e=S.days[d]=Object.assign({},e||{});e.q=lockDefs(d)}else e=S.days[d]=Object.assign({},e);ddm={};e.ck=[];lockReps(d,e);
       (e.q||[]).forEach(function(q){if(q.type==="time"&&q.roll&&midAt(q,d,d)===d)e.ck.push(q.id)});ch=true}
     if(d>=T)lockedThru=add(T,-1);if(ch){ddm={};cache()}}
   function dayDefMap(d){var T=todayKey(),kk=T+"|"+(S.cfg&&S.cfg.updated);if(kk!==ddmKey||ddm.__c!==S.cfg||ddm.__d!==S.days){ddm={__c:S.cfg,__d:S.days};ddmKey=kk}if(ddm[d])return ddm[d];
@@ -42,15 +53,15 @@
   /* Halfway checkpoint: the ceil(n/2)-th work day of the period (from the quest's start in a first period). By the end
      of it you need half the period's target, so work can't all pile up at the end. Once a day has passed with the
      checkpoint on it, that's fixed (e.ck); if a later change would move it onto a day already gone, it's today. */
-  function midAt(q,k,now){var f=weekFrom(q,k),e=perEnd(q,k),L=[];for(var d=f;d<=e;d=add(d,1)){if(d<now){var x=S.days[d];if(x&&x.ck&&x.ck.indexOf(q.id)>=0)return d}if(workOn(q,d))L.push(d)}
+  function midAt(q,k,now){var f=weekFrom(q,k),e=perEnd(q,k),L=[],cf=S.cfg&&S.cfg.ckFrom;if(cf&&perStart(q,k)<cf)return null;for(var d=f;d<=e;d=add(d,1)){if(d<now){var x=S.days[d];if(x&&x.ck&&x.ck.indexOf(q.id)>=0)return d}if(workOn(q,d))L.push(d)}
     if(!L.length)return null;var m=L[Math.ceil(L.length/2)-1];return m<now?(now<=e?now:null):m}
   function midDay(q,k){return midAt(q,k,todayKey())}
   function midNeed(q,k){return Math.round(weekTarget(q,k)/2)}
   /* Totals judged in the period around day k: every total on the list on any day of the period so far or still to
      come (so pausing it or deleting it doesn't skip the check), unless it's marked optional. Latest version wins. */
   function periodList(k){var C={},T=todayKey();cfg().quests.forEach(function(q){if(q.type==="time"&&q.roll)C[q.id]=q});for(var d=add(k,-31);d<k;d=add(d,1)){var e=S.days[d];((e&&e.q)||[]).forEach(function(q){if(q.type==="time"&&q.roll&&!C[q.id])C[q.id]=q})}
-    var out=[];Object.keys(C).forEach(function(id){var q0=C[id],last=null,uo=false;for(var d=perStart(q0,k),e=perEnd(q0,k);d<=e;d=add(d,1)){var x=dayDefMap(d)[id];if(!x)continue;last=x;if(!isVac(d))uo=!!x.opt&&!x.off}
-      if(last&&!uo)out.push(slim(cfgQ(id)||last))});return out}
+    var out=[];Object.keys(C).forEach(function(id){var q0=C[id],last=null,uo=false;for(var d=perStart(q0,k),e=perEnd(q0,k);d<=e;d=add(d,1)){var x=dayDefMap(d)[id];if(!x)continue;last=x;if(x.uopt)uo=true;else if(!isVac(d)&&!x.off)uo=!!x.opt}
+      if(last&&!uo&&!noStreakIn(weekFrom(q0,k),perEnd(q0,k)))out.push(slim(cfgQ(id)||last))});return out}
   function weekWorkDays(q){return q.days&&q.days.length?q.days.length:7}
   function weekTarget(q,k){var f=weekFrom(q,k);return Math.round(q.roll*workDaysIn(q,f,perEnd(q,k))/perWorkDays(q,k))}
   var firstSeenCache={},firstSeenSig="";

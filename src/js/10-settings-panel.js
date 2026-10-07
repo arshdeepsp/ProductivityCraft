@@ -6,6 +6,11 @@
   var setTab=null;
   var SET_CATS=[["day","Your day","sprout"],["quests","Quests & rules","dumbbell"],["alerts","Notifications","flame"],["look","Look","star"],["sound","Sound & touch","note"],["extras","Extras","trophy"],["data","Your data","metronome"]];
   function bind(id,ev,fn){var x=document.getElementById(id);if(x)x.addEventListener(ev,fn)}
+  /* Streaks and rewards on/off: pausing opens a cfg.noStreak range from today; resuming closes it today (same day = undo). */
+  function setStreaks(on){var c2=clone(cfg()),T=todayKey(),T1=add(T,1),L=(c2.noStreak||[]).slice(),st0=easeInfo().setup?T:T1;
+    if(on){L=L.map(function(r){return !r.to||T<r.to?(r.from>=T?null:Object.assign({},r,{to:T})):r}).filter(Boolean)}
+    else if(!L.some(function(r){return !r.to})){var j=L.filter(function(r){return r.to&&r.to>=st0})[0];if(j)delete j.to;else L.push({from:st0})}
+    if(L.length)c2.noStreak=L;else delete c2.noStreak;saveCfg(c2);qSig="";nfSig="";render();if(typeof renderSettings==="function")renderSettings();setSync(on?"Streaks back on. Your streak picks up where it was.":rewardsOff()?"Streaks paused: tracking only.":"Streaks pause from tomorrow: tracking only.")}
   function swc(id,on,label,attr){return '<button type="button" class="sw" role="switch" '+(id?'id="'+id+'" ':'')+(attr||'')+' aria-checked="'+!!on+'" aria-label="'+esc(label)+'"><span></span></button>'}
   function srow(title,hint,ctrl,cls){return '<div class="srow'+(cls?' '+cls:'')+'"><div class="srow-t"><b>'+title+'</b>'+(hint?'<small>'+hint+'</small>':'')+'</div>'+(ctrl?'<div class="srow-c">'+ctrl+'</div>':'')+'</div>'}
   function sgroup(title,rows,help){return '<section class="sgroup">'+(title?'<h3 class="sgroup-h"><span>'+title+'</span>'+(help?'<button type="button" class="sq" data-help="'+help+'" aria-label="How '+esc(title)+' works">?</button>':'')+'</h3>':'')+'<div class="scard">'+rows+'</div></section>'}
@@ -13,7 +18,7 @@
   var THEME_NAMES={"":"Auto",cycle:"Every hour",grass:"Grass",day:"Day",night:"Night",snow:"Snow",ocean:"Ocean",lava:"Lava",nether:"Nether",city:"City skyline",mountains:"Mountains",village:"Village"};
   function setSummary(id){var c=cfg(),w=dayWin(todayKey()),n=nf();
     if(id==="day"){var lk=dayEnd();return w.wake+"–"+w.bed+" · locks "+(lk?"at "+lk+":00 am":"at midnight")+(curVac()?" · vacation set":"")}
-    if(id==="quests")return ((STYLES[c.style]||{}).name||"No style")+" · limit "+capOf()+" a day"+(strictOn()?" · strict":"");
+    if(id==="quests")return ((STYLES[c.style]||{}).name||"No style")+" · limit "+capOf()+" a day"+(strictOn()?" · strict":"")+((c.noStreak||[]).some(function(r){return !r.to||todayKey()<r.to})?" · streaks paused":"");
     if(id==="alerts")return n.on?"On · check-in "+n.checkinAt:"Off";
     if(id==="look")return (THEME_NAMES[c.theme||""]||"Auto")+" theme";
     if(id==="sound")return (sfxOn?"Sound on":"Sound off")+" · vibration "+(c.haptics!==false?"on":"off");
@@ -38,6 +43,7 @@
       h+=sgroup("Start",srow("Started on","Days before this are ignored",'<input type="date" id="setStart" value="'+START_KEY+'">'))}
     else if(setTab==="quests"){var lkc=capLockedUntil(),lockedC=lkc&&T<lkc,bz=busiest();
       h+=sgroup("Work style",styleCards(c.style||"","data-sty")+'<p class="help sin">Changes defaults only. Your quests and history stay as they are.</p>');
+      var nsR=((c.noStreak||[]).filter(function(r){return !r.to||T<r.to})[0]);h+=sgroup("Streaks",srow("Streaks and rewards",nsR?(nsR.from>T?"Pauses from tomorrow":"Paused since "+fmtD(nsR.from))+": tracking only. Your streak picks up where it was.":"Streak, XP, ranks and badges. Off = tracking only, from tomorrow.",swc("setStreak",!nsR,"Streaks and rewards")));
       h+=sgroup("Rules",srow("Daily quest limit",lockedC?"Locked until "+fmtD(lkc):"Busiest day: "+WDS[bz.w]+" ("+bz.n+")",'<select id="setCap" aria-label="Max quests per day"'+(lockedC?' disabled':'')+'>'+opt([1,2,3,4,5,6,7,8,9,10].map(function(x){return [x,x]}),capOf())+'</select>')+srow("Plan counters","A stretch target above the minimum, for gold days",swc("setPlan",c.showPlan,"Plan counters"))+srow("Strict mode","Commitment checks and 3 easing changes a week",swc("setStrict",strictOn(),"Strict mode")),"changes");
       h+=sgroup("Deadlines",(c.deadlines||[]).slice().sort(function(a,b){return a.date<b.date?-1:1}).map(function(d){return '<div class="srow sdl"><input data-dt="'+esc(d.id)+'" value="'+esc(d.title)+'" aria-label="Deadline name"><input type="date" data-dd="'+esc(d.id)+'" value="'+esc(d.date)+'" aria-label="Deadline date"><button type="button" class="stone mini del" data-dx="'+esc(d.id)+'" aria-label="Remove deadline">✕</button></div>'}).join("")+'<div class="srow sdl"><input id="dlNewT" placeholder="Thesis draft due" aria-label="New deadline name"><input type="date" id="dlNewD" aria-label="New deadline date"><button type="button" class="stone mini save" id="dlAdd">Add</button></div>');
       if(!packsHidden())h+=sgroup("Starter packs",srow("Add a pack","Adds its quests and a rules section",'<select id="packSel" aria-label="Starter pack"><option value="">Choose…</option>'+Object.keys(PACKS).map(function(p){return '<option>'+p+'</option>'}).join("")+'</select><button type="button" class="stone mini" id="packAdd">Add</button>',"swrap"))}
@@ -87,6 +93,7 @@
       if(ov.length){openG("Too many quests on some days",function(b){b.innerHTML='<p class="mhead">A limit of '+v+' doesn\u2019t fit yet.</p><div class="dtl">'+ov.map(function(o){return '<div class="dt-r"><span>'+WDN[o.w]+'</span><b>'+o.n+' quests</b></div>'}).join("")+'</div><p class="help">Lighten those days first: untick them on some quests, make some optional, or pause or complete one. Then set the limit again.</p><div class="edrow end"><button type="button" class="stone" id="capNo">Cancel</button><button type="button" class="stone save" id="capEdit">Edit quests</button></div>';b.querySelector("#capNo").addEventListener("click",function(){closeG();renderSettings()});b.querySelector("#capEdit").addEventListener("click",function(){closeG();go("today");setTimeout(openMgr,50)})});return}
       if(!strictOn()){apply();return}
       openG("Set the limit to "+v+"?",function(b){b.innerHTML='<p class="mhead">This locks for 30 days.</p><p class="help">You won\u2019t be able to change it again until '+fmtD(add(todayKey(),30))+'.</p><div class="edrow end"><button type="button" class="stone" id="capNo">Cancel</button><button type="button" class="stone save" id="capGo">Set limit</button></div>';b.querySelector("#capNo").addEventListener("click",function(){closeG();renderSettings()});b.querySelector("#capGo").addEventListener("click",function(){closeG();apply()})})});
+    bind("setStreak","click",function(){var T=todayKey();setStreaks((cfg().noStreak||[]).some(function(r){return !r.to||T<r.to}))});
     bind("setStrict","click",function(){var c2=clone(cfg());c2.strict=!c2.strict;saveCfg(c2);qSig="";render();renderSettings();setSync("Strict mode "+(c2.strict?"on":"off"))});
     bind("setPlan","click",function(){var c2=clone(cfg());c2.showPlan=!c2.showPlan;saveCfg(c2);render();renderSettings()});
     bind("setSfx","click",function(){document.getElementById("sndBtn").click();renderSettings()});

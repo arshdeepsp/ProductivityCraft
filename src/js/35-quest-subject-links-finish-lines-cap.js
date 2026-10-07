@@ -31,14 +31,14 @@
   function finishMet(q){var f=q.fin;if(q.dl){var s=0,T=todayKey();for(var d=q.dl.from;d<=T;d=add(d,1))s+=+((S.days[d]||{})[q.id])||0;if(s>=q.dl.total)return "target met";if(T>q.dl.due)return "deadline passed";return null}
     if(!f)return null;
     if(f.t==="total"&&q.total&&projSum(q.id)>=q.total)return "project total reached";
-    if(f.t==="topic"){var TL=qTopics(q).map(function(x){return topicById(x).t});if(TL.length&&TL.every(function(t){return (t.p||0)>=(f.lvl||4)}))return (TL.length===1?TL[0].name:"All its topics")+" reached "+LV[f.lvl||4]}
-    if(f.t==="subject"&&qSubjs(q).length){var sj2=subjById(qSubjs(q)[0]);if(sj2&&(sj2.topics||[]).length&&Math.round(avgProf(sj2))>=(f.lvl||4))return sj2.name+" reached "+LV[f.lvl||4]}
+    if(f.t==="topic"){var TL=qTopicPool(q).map(function(x){return topicById(x).t});if(TL.length&&TL.every(function(t){return (t.p||0)>=(f.lvl||4)}))return (TL.length===1?TL[0].name:"All its topics")+" reached "+LV[f.lvl||4]}
+    if(f.t==="subject"){var SJ2=qSubjs(q).map(subjById).filter(function(s){return s&&(s.topics||[]).length});if(SJ2.length&&SJ2.every(function(s){return Math.round(avgProf(s))>=(f.lvl||4)}))return (SJ2.length===1?SJ2[0].name:"All its subjects")+" reached "+LV[f.lvl||4]}
     return null}
   function completeQuest(id,how,silent){var c=clone(cfg()),q=c.quests.filter(function(x){return x.id===id})[0];if(!q||q.completed)return;q.completed={on:todayKey(),how:how};saveCfg(c);qSig="";
-    if(!silent&&how!=="archived"){sfx("level");showToast({icon:"trophy",kicker:"Quest complete!",title:q.label,desc:how!=="manual"?how:""});setSync("Quest complete: "+q.label+". It moves to Badges \u203a Completed from tomorrow.")}}
+    if(!silent&&how!=="archived"){sfx("level");showToast({icon:"trophy",kicker:"Quest complete!",title:q.label,desc:how!=="manual"?how:""});setSync("Quest complete: "+q.label+"."+(rewardsOff()?"":" It moves to Badges \u203a Completed from tomorrow."))}}
   var finChecking=false;
   function checkFinish(){if(finChecking||locked())return;finChecking=true;try{cfg().quests.forEach(function(q){if(q.completed||q.type==="todo")return;var m=finishMet(q);if(m)completeQuest(q.id,m)})}finally{finChecking=false}}
-  function completionXP(){return cfg().quests.reduce(function(a,q){return a+(q.completed?(q.completed.how==="archived"?0:q.completed.how==="manual"?25:100):0)},0)}
+  function completionXP(upto){return cfg().quests.reduce(function(a,q){return a+(q.completed&&!noStreakOn(q.completed.on)&&(!upto||q.completed.on<=upto)?(q.completed.how==="archived"?0:q.completed.how==="manual"?25:100):0)},0)}
   function markCompleteManual(q){var cq=cfg().quests.filter(function(x){return x.id===q.id})[0];if(cq&&lockOf(cq)==="fortnight"&&!easeInfo().setup&&!finishMet(q)){var d2=queueChange(q.id,"complete");render();setSync(q.label+" is locked. Completion scheduled for "+fmtD(d2)+".");return}
     var met=finishMet(q);if(met){completeQuest(q.id,met);render();return}
     openG("Mark quest complete?",function(b){var inf=easeInfo();
@@ -71,7 +71,7 @@
       if(n.checkin){var left=today?reqOf(activeDefs(T)).filter(function(q){return q.type!=="limit"&&!metQ(q,e)}).length:null;if(!today||left>0)push(2000+i,"Evening check-in",today?left+" quest"+(left===1?"":"s")+" left today. Still time.":"How\u2019s today going? Open your quests.",atTime(k,n.checkinAt))}
       if(today&&n.todos){var otd=openTodos().length;if(otd){push(2400,"To-dos still open",otd+" to-do"+(otd===1?"":"s")+" not done today. Keep or clear them?",atMin(k,dayWin(k).e)-30*60000)}}}
     var cov=emptyCover(T);if(n.risk&&cov!=null&&cov<=1&&!hasEntry(e))push(2300,cov===0?"Empty today = a miss":"Covered today, not tomorrow",cov===0?"Your weekly totals don\u2019t cover an empty day today. Log something before the day ends.":"Today is covered by your weekly totals. Tomorrow an empty day would be a miss.",atTime(T,"18:00"));
-    if(n.risk&&st.miss===1&&!ok(e))push(2200,"Streak at risk","You missed yesterday. Clear today to keep your "+st.streak+"-day streak.",atTime(T,"12:00"));
+    if(n.risk&&!rewardsOff()&&st.miss===1&&!ok(e))push(2200,"Streak at risk","Your last required day was missed. Clear today to keep your "+st.streak+"-day streak.",atTime(T,"12:00"));
     if(n.pace){
       var tq=activeDefs(T).filter(function(q){return q.type==="time"&&!q.opt});
       
@@ -79,14 +79,14 @@
       var dq=tq.filter(function(q){return !q.roll&&q.min>0}),dDone=0,dNeed=0;dq.forEach(function(q){dDone+=e[q.id]|0;dNeed+=q.min});
       if(dNeed&&dDone<dNeed/2)push(2500,"Halfway through the day",hm(dDone)+" of "+hm(dNeed)+" done across your daily time quests.",midAt);
       /* 2600: 09:00 on the next checkpoint (halfway, or the period's last day) that a total is still short for. */
-      var cp=null;periodList(T).forEach(function(q){var md=midDay(q,T),pe=perEnd(q,T),half=!!md&&md>=T&&md!==pe,d=half?md:pe,s=rollSum(q.id,T,q),nd=half?midNeed(q,T):weekTarget(q,T);if(!nd||s>=nd)return;if(!cp||d<cp.d)cp={d:d,L:[],h:0,f:0};if(d===cp.d){cp.L.push(q.label+" "+hm(s)+" of "+hm(nd));if(half)cp.h++;else cp.f++}});
+      var cp=null;(rewardsOff()?[]:periodList(T)).forEach(function(q){var md=midDay(q,T),pe=perEnd(q,T),s=rollSum(q.id,T,q),half=!!md&&md>=T&&md!==pe&&s<midNeed(q,T),d=half?md:pe,nd=half?midNeed(q,T):weekTarget(q,T);if(!nd||s>=nd)return;if(!cp||d<cp.d)cp={d:d,L:[],h:0,f:0};if(d===cp.d){cp.L.push(q.label+" "+hm(s)+" of "+hm(nd));if(half)cp.h++;else cp.f++}});
       if(cp){var cpw=cp.d===T?"today":DAYF[parse(cp.d).getDay()];push(2600,(cp.f?(cp.h?"Checkpoint ":"Total due "):"Halfway checkpoint ")+cpw,(cp.f?(cp.h?"By tonight you need: ":"By tonight you need the full total: "):"By tonight you need half: ")+cp.L.join(", ")+". Miss it and the "+(cp.f&&!cp.h?"whole period is":"days so far are")+" lost.",atTime(cp.d,"09:00"))}}
     if(n.sched)schNotifs(T,e,push);
     if(n.dl)(cfg().deadlines||[]).forEach(function(d,i){var dk=add(d.date,-1);if(dk>=T)push(3000+i,"Tomorrow: "+d.title,"Your deadline is tomorrow. Plan today\u2019s work around it.",atTime(dk,"18:00"),{dl:d.id})});
     if(n.review){var due=allTopics().filter(function(o){return topicStats(o.t).due}).length;if(due){var sun=add(weekStart(T),6);push(4001,"Topics due for review",due+" topic"+(due===1?"":"s")+" untouched for 2+ weeks. Pick for me can suggest one.",atTime(sun>=T?sun:add(sun,7),"10:00"))}}
     return out}
   var nfT=0,nfSig="";
-  function notifSync(){clearTimeout(nfT);nfT=setTimeout(function(){var ln=LN();if(!ln)return;var plan=nfPlan(),sig=JSON.stringify(plan.map(function(x){return [x.id,Math.round(x.schedule.at.getTime()/60000),x.body]}));if(sig===nfSig)return;nfSig=sig;
+  function notifSync(){clearTimeout(nfT);nfT=setTimeout(function(){var ln=LN();if(!ln)return;var plan=nfPlan(),sig=JSON.stringify(plan.map(function(x){return [x.id,Math.round(x.schedule.at.getTime()/60000),x.title,x.body,JSON.stringify(x.extra||{})]}));if(sig===nfSig)return;nfSig=sig;
     Promise.resolve(ln.getPending?ln.getPending():{notifications:[]}).then(function(r){var ours=((r&&r.notifications)||[]).filter(function(x){return x.id>=1000&&x.id<5000}).map(function(x){return{id:x.id}});return ours.length?ln.cancel({notifications:ours}):null}).then(function(){return ensureChannels()}).then(function(){return plan.length?ln.schedule({notifications:plan}):null}).catch(function(err){console.warn("notif",err)})},800)}
   function notifEnable(on,cb){var ln=LN();if(!on||!ln){cb(on&&!ln?"app":null);return}Promise.resolve(ln.requestPermissions?ln.requestPermissions():{display:"granted"}).then(function(r){cb(r&&r.display==="granted"?null:"denied")}).catch(function(){cb("denied")})}
   var chReady=null;

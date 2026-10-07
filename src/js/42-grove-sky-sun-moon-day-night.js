@@ -53,6 +53,6 @@
   window.addEventListener("resize",function(){if(groveOpen)buildGrove()});
   var idleT=0;
   function idleMins(){var v=cfg().idleGrove;return v==null?3:+v}
-  function idleReset(){clearTimeout(idleT);var m=idleMins();if(!m)return;idleT=setTimeout(function(){var anyModal=!document.getElementById("gModal").hidden||!document.getElementById("nqModal").hidden||!document.getElementById("setDrawer").hidden;if(document.visibilityState==="visible"&&!anyModal&&!groveOpen&&!(S.sprint&&!spMin)&&!document.querySelector("#quests input:focus,#tdNew:focus,.t3i:focus"))openGrove(true);else idleReset()},m*60000)}
+  function idleReset(){clearTimeout(idleT);var m=idleMins();if(!m)return;idleT=setTimeout(function(){var anyModal=!document.getElementById("gModal").hidden||!document.getElementById("nqModal").hidden||!document.getElementById("setDrawer").hidden;if(document.visibilityState==="visible"&&!anyModal&&!groveOpen&&!rewardsOff()&&!(S.sprint&&!spMin)&&!document.querySelector("#quests input:focus,#tdNew:focus,.t3i:focus"))openGrove(true);else idleReset()},m*60000)}
   ["pointerdown","keydown","scroll","touchstart"].forEach(function(ev){window.addEventListener(ev,function(){if(!groveOpen)idleReset()},{passive:true})});
   idleReset();

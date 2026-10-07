@@ -10,12 +10,12 @@
       var b=el.querySelector("button");b.addEventListener("click",function(){certPDF(a,b)});
       grid.querySelector('[data-bgrid="'+a.group+'"]').appendChild(el);cards[a.id]=el})})();
   function badgeStats(st){var T=todayKey(),o={best:st.best||0,total:st.total||0,streak:st.streak||0,resets:(st.resets||[]).length,gold:0,focus:0,sess:0,week:0,calls:0,plan:0,topics:0,levelup:0,goal:0,maxp:0,maxtt:0,finished:0},wk={},tt={};
-    Object.keys(S.days).forEach(function(k){if(k<START_KEY||k>T)return;var e=S.days[k];if(!e)return;if(gold(e))o.gold++;var f=0,D2=defsOf(e);D2.forEach(function(q){if(q.type==="time")f+=e[q.id]|0});o.focus+=f;var ws=weekStart(k);wk[ws]=(wk[ws]||0)+f;
+    Object.keys(S.days).forEach(function(k){if(k<START_KEY||k>T||noStreakOn(k))return;var e=S.days[k];if(!e)return;if(gold(e))o.gold++;var f=0,D2=defsOf(e);D2.forEach(function(q){if(q.type==="time")f+=e[q.id]|0});o.focus+=f;var ws=weekStart(k);wk[ws]=(wk[ws]||0)+f;
       (e.sess||[]).forEach(function(z){if(z.m>o.sess)o.sess=z.m});o.calls+=e.calls|0;Object.keys(e.tt||{}).forEach(function(id){tt[id]=(tt[id]||0)+(e.tt[id]|0)});
       if(e.sched||cfg().rep){var bl=schAll(k).filter(function(b){return b.q}),qs=bl.map(function(b){return b.q}).filter(function(x,i,a){return a.indexOf(x)===i});if(bl.length>=2&&qs.every(function(id){var q=D2.filter(function(x){return x.id===id})[0];return q&&metQ(q,e)}))o.plan++}});
     Object.keys(wk).forEach(function(w){if(wk[w]>o.week)o.week=wk[w]});Object.keys(tt).forEach(function(id){if(tt[id]>o.maxtt)o.maxtt=tt[id]});
     subjList().forEach(function(s){(s.topics||[]).forEach(function(t){var p=t.p||0,h=t.hist||[];o.topics++;if(p>o.maxp)o.maxp=p;if(h.length&&h[0].p<p)o.levelup=1;if(t.target&&p>=t.target)o.goal=1})});
-    o.finished=cfg().quests.filter(function(q){return q.completed&&q.completed.how!=="archived"}).length;return o}
+    o.finished=cfg().quests.filter(function(q){return q.completed&&q.completed.how!=="archived"&&!noStreakOn(q.completed.on)}).length;return o}
   function badgeStreak(st){return {best:st.best||0,total:st.total||0,streak:st.streak||0,resets:(st.resets||[]).length}}
   var BADGE_RULE={week:function(o){return [o.best,7,"d"]},"3weeks":function(o){return [o.best,21,"d"]},"3months":function(o){return [o.best,90,"d"]},"1year":function(o){return [o.best,365,"d"]},
     comeback:function(o){return [o.resets?o.streak:0,7,"d"]},clear50:function(o){return [o.total,50,"d"]},gold10:function(o){return [o.gold,10,"n"]},finisher:function(o){return [o.finished,1,"n"]},
@@ -31,7 +31,7 @@
   function settledAsOf(){var T=todayKey(),a=add(T,-1);periodList(T).forEach(function(q){var p=add(perStart(q,T),-1);if(p<a)a=p});return a}
   function renderBadges(st){var o=badgeStats(st),E=badgesEarned(),T=todayKey(),fresh=[],so=null,wait={};
     D.ach.forEach(function(a){var r=BADGE_RULE[a.id];if(E[a.id]||r(o)[0]<r(o)[1])return;if(STREAKY[a.id]){if(!so){var sa0=settledAsOf();so=sa0<START_KEY?badgeStreak({}):badgeStreak(compute(sa0))}if(!(r(Object.assign({},o,so))[0]>=r(o)[1])){wait[a.id]=1;return}}fresh.push(a)});
-    if(fresh.length&&!locked()){var c2=clone(cfg());c2.badges=Object.assign({},c2.badges||{});fresh.forEach(function(a){c2.badges[a.id]=T});saveCfg(c2);E=c2.badges;var a0=fresh[fresh.length-1];showToast(fresh.length>1?{icon:a0.icon,title:fresh.length+" badges",desc:fresh.map(function(a){return a.title}).join(", ")}:a0)}
+    if(fresh.length&&!locked()&&!rewardsOff()){var c2=clone(cfg());c2.badges=Object.assign({},c2.badges||{});fresh.forEach(function(a){c2.badges[a.id]=T});saveCfg(c2);E=c2.badges;var a0=fresh[fresh.length-1];showToast(fresh.length>1?{icon:a0.icon,title:fresh.length+" badges",desc:fresh.map(function(a){return a.title}).join(", ")}:a0)}
     var n=0;D.ach.forEach(function(a){var el=cards[a.id],u=!!E[a.id],p=badgeProg(a,o);if(u)n++;el.classList.toggle("locked",!u);
       el.querySelector(".abar").hidden=u;el.querySelector(".abar i").style.width=p.pc+"%";el.querySelector(".st").textContent=u?"Earned "+fmtD(E[a.id]):wait[a.id]?"Earned once this period's totals are in":p.txt;el.querySelector("button").hidden=!(u&&(dl||dlChecked))});
     D.groups.forEach(function(g){var L=D.ach.filter(function(a){return a.group===g.id}),k=L.filter(function(a){return E[a.id]}).length;grid.querySelector('[data-bg="'+g.id+'"] small').textContent=k+"/"+L.length});

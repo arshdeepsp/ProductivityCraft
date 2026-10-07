@@ -2,6 +2,7 @@
   var VIEWS=["today","subjects","rules","achievements","trends","settings"],curView="today";
   (function(){var sb=document.getElementById("settingsBody"),sp=document.getElementById("setPage");if(sb&&sp)sp.appendChild(sb)})();
   function go(v,noHash){
+    if((v==="grove"||v==="achievements")&&rewardsOff())v="today";
     if(v==="grove"){openGrove(false);return}
     if(VIEWS.indexOf(v)<0)v="today";var prevView=curView;curView=v;
     document.querySelectorAll("[data-view]").forEach(function(el){el.hidden=el.getAttribute("data-view")!==v});

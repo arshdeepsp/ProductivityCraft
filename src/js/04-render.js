@@ -28,7 +28,7 @@
     try{lockPast();rollTimer()}catch(x){}
     try{if(S.cfg&&(S.cfg.quests||[]).some(function(q){return q.pending}))applyPending()}catch(x){}
     try{if(S.cfg)cleanDoneTodos()}catch(x){}
-    var st=compute(),T=todayKey(),k=dayKey(),e=S.days[k]||{};
+    var st=compute(),T=todayKey(),k=dayKey(),e=S.days[k]||{},off=rewardsOff();document.body.classList.toggle("nostreak",off);if(off&&(curView==="achievements"||groveOpen))setTimeout(function(){if(groveOpen)closeGrove();if(curView==="achievements")go("today")},0);
     // HUD
     var r=RANKS[0];RANKS.forEach(function(x){if(st.streak>=x[0])r=x});
     var rn=document.getElementById("rankName"),ri=document.getElementById("rankIcon");
@@ -39,7 +39,8 @@
     var note=document.getElementById("hudNote"),nx=null;
     RANKS.forEach(function(x){if(!nx&&x[0]>st.streak)nx=x});
     note.className="note";
-    if(st.gate){note.textContent="Streak lost. Log what broke it to unlock the quests.";note.className="note warn"}
+    if(off){note.textContent="Streaks paused: tracking only. Your streak picks up where it was when you switch them back on.";note.className="note"}
+    else if(st.gate){note.textContent="Streak lost. Log what broke it to unlock the quests.";note.className="note warn"}
     else if(st.rebase){note.textContent="Rebase: "+st.rc+"/3 clean days in a row. No grace day until then.";note.className="note warn"}
     else if(st.miss===1){note.textContent="Grace day used. Clear today to keep the streak.";note.className="note warn"}
     else note.textContent=nx?"Next rank: "+nx[1]+" in "+(nx[0]-st.streak)+" clean days":"Top rank reached.";
@@ -93,16 +94,18 @@
     document.getElementById("xpText").textContent=(nreq.length?"Today: "+n+" of "+nreq.length+" done":"Nothing required today")+(lb?" \u00b7 "+lb+" limit"+(lb===1?"":"s")+" broken":"");
     var cl=document.getElementById("cleared");
     var isGold=gold(e),isOk=ok(e),isLim=limBroken(e);
-    if(isOk){cl.textContent=isGold?"Gold day!":"Day cleared!";cl.className="cleared"+(isGold?" gold":"")+(fromClick&&(lastCleared===false||(isGold&&!lastEval.gold))?" pop":"")}
+    if(off){cl.textContent="";cl.className=""}
+    else if(isOk){cl.textContent=isGold?"Gold day!":"Day cleared!";cl.className="cleared"+(isGold?" gold":"")+(fromClick&&(lastCleared===false||(isGold&&!lastEval.gold))?" pop":"")}
     else if(isLim){cl.textContent="Limit broken: day failed";cl.className="failtxt"}
     else{cl.textContent="";cl.className=""}
     lastCleared=isOk;
     var xp=totalXP(),lv=level(xp);
-    document.getElementById("lvlNum").textContent="Lv "+lv.l;document.getElementById("hudLine").innerHTML='<span class="hl-r">'+esc(document.getElementById("rankName").textContent)+'</span><span>Streak <b>'+st.streak+'</b></span><span>Lv <b>'+lv.l+'</b></span><i class="hl-c" aria-hidden="true"></i>';
+    document.getElementById("lvlNum").textContent="Lv "+lv.l;document.getElementById("hudLine").innerHTML=off?'<span class="hl-r">Tracking only</span><span>Streaks paused</span><i class="hl-c" aria-hidden="true"></i>':'<span class="hl-r">'+esc(document.getElementById("rankName").textContent)+'</span><span>Streak <b>'+st.streak+'</b></span><span>Lv <b>'+lv.l+'</b></span><i class="hl-c" aria-hidden="true"></i>';
     document.getElementById("lvlText").textContent=lv.cur+" / "+lv.need+" XP";
     document.getElementById("xpFill").style.width=Math.round(lv.cur/lv.need*100)+"%";
     if(fromClick&&!past&&lastEval.set){
-      if(lv.l>lastEval.lvl){sfx("level");toast.innerHTML='<div class="ach px"><div class="slot">'+svg("trophy")+'</div><div><div class="t1">Level up!</div><div class="t2">Level '+lv.l+'</div><div class="t3">'+xp+' XP total</div></div></div>';requestAnimationFrame(function(){toast.classList.add("show")});setTimeout(function(){toast.classList.remove("show")},4000)}
+      if(off){if(n>lastEval.n)sfx("base")}
+      else if(lv.l>lastEval.lvl){sfx("level");toast.innerHTML='<div class="ach px"><div class="slot">'+svg("trophy")+'</div><div><div class="t1">Level up!</div><div class="t2">Level '+lv.l+'</div><div class="t3">'+xp+' XP total</div></div></div>';requestAnimationFrame(function(){toast.classList.add("show")});setTimeout(function(){toast.classList.remove("show")},4000)}
       else if(isGold&&!lastEval.gold)sfx("gold");
       else if(isOk&&!lastEval.ok)sfx("clear");
       else if(isLim&&!lastEval.lim)sfx("fail");

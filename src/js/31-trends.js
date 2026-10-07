@@ -8,20 +8,20 @@
     function planKept(d){var e=S.days[d]||{},bl=schAll(d).filter(function(b){return b.q});if(!bl.length)return null;var D2=defsOf(e),qs=bl.map(function(b){return b.q}).filter(function(x,i,a){return a.indexOf(x)===i});return qs.every(function(id){var q=D2.filter(function(x){return x.id===id})[0];return q&&metQ(q,e)})}
     var nIn=daysBetween(ws0,T),thisW=span(ws0,T),lastW=span(add(ws0,-7),add(ws0,-7+nIn)),dW=thisW-lastW;
     var clr=0,dIn=0,deep=0,calls=0,ttW={},plN=0,plK=0;
-    for(var d=ws0;d<=T;d=add(d,1)){if(d<START_KEY)continue;dIn++;if(st.marks[d]==="ok")clr++;var e=S.days[d]||{};deep+=(e.sess||[]).filter(function(z){return z.m>=90}).length;calls+=e.calls|0;Object.keys(e.tt||{}).forEach(function(id){ttW[id]=(ttW[id]||0)+(e.tt[id]|0)});var pk=planKept(d);if(pk!==null&&(d<T||pk)){plN++;if(pk)plK++}}
+    var off=rewardsOff(),lgd=0;for(var d=ws0;d<=T;d=add(d,1)){if(d<START_KEY)continue;dIn++;if(st.marks[d]==="ok")clr++;if(hasEntry(S.days[d]))lgd++;var e=S.days[d]||{};deep+=(e.sess||[]).filter(function(z){return z.m>=90}).length;calls+=e.calls|0;Object.keys(e.tt||{}).forEach(function(id){ttW[id]=(ttW[id]||0)+(e.tt[id]|0)});var pk=planKept(d);if(pk!==null&&(d<T||pk)){plN++;if(pk)plK++}}
     var ttTot=0,ttTop=null;Object.keys(ttW).forEach(function(id){if(!topicById(id))return;ttTot+=ttW[id];if((!ttTop||ttW[id]>ttW[ttTop]))ttTop=id});
     var gold30=0,bestDay=0,bestDayK=null,longest=0,tt28={},hrs=[],lv30=0;for(var hz=0;hz<24;hz++)hrs.push(0);
-    Object.keys(S.days).forEach(function(k){if(k<START_KEY||k>T)return;var e=S.days[k];if(k>=add(T,-29)&&gold(e))gold30++;var f=focusOf(k);if(f>bestDay){bestDay=f;bestDayK=k}(e.sess||[]).forEach(function(z){if(z.m>longest)longest=z.m});
+    Object.keys(S.days).forEach(function(k){if(k<START_KEY||k>T)return;var e=S.days[k];if(k>=add(T,-29)&&!noStreakOn(k)&&gold(e))gold30++;var f=focusOf(k);if(f>bestDay){bestDay=f;bestDayK=k}(e.sess||[]).forEach(function(z){if(z.m>longest)longest=z.m});
       if(k>=add(T,-27))Object.keys(e.tt||{}).forEach(function(id){tt28[id]=(tt28[id]||0)+(e.tt[id]|0)});
       if(k>=add(T,-29))(e.sess||[]).forEach(function(z){for(var t=z.s;t<z.e;){var dt=new Date(t),nx=new Date(dt.getFullYear(),dt.getMonth(),dt.getDate(),dt.getHours()+1).getTime(),en=Math.min(z.e,nx);hrs[dt.getHours()]+=(en-t)/60000;t=en}})});
     subjList().forEach(function(s){(s.topics||[]).forEach(function(t){var h=(t.hist||[]).filter(function(x){return x.d<add(T,-29)}).pop(),from=h?h.p:((t.hist||[])[0]||{p:t.p||0}).p;if((t.p||0)>from)lv30+=(t.p||0)-from})});
     var wk=[],labs=[],bestWeek=0;for(var i=7;i>=0;i--){var ws=add(ws0,-7*i);wk.push(ws);labs.push(parse(ws).toLocaleDateString("en-CA",{month:"short",day:"numeric"}));var wf=span(ws,add(ws,6));if(wf>bestWeek)bestWeek=wf}
-    var cleared=wk.map(function(ws){var n=0;for(var j=0;j<7;j++){var dd=add(ws,j);if(st.marks[dd]==="ok")n++}return n});
+    var cleared=wk.map(function(ws){var n=0;for(var j=0;j<7;j++){var dd=add(ws,j);if(rewardsOff()?dd>=START_KEY&&dd<=T&&hasEntry(S.days[dd]):st.marks[dd]==="ok")n++}return n});
     var done=cfg().quests.filter(function(q){return q.completed&&q.completed.how!=="archived"}).length;
     function tile(col,icon,label,big,sub,cls){return '<div class="ttile" style="--tc:'+col+'"><div class="tt-i">'+svg(icon)+'</div><div class="tt-b"><div class="tt-l">'+label+'</div><div class="tt-v">'+big+'</div>'+(sub?'<div class="tt-s '+(cls||'')+'">'+sub+'</div>':'')+'</div></div>'}
     var h='<div class="tsec"><div class="tsec-h">This week</div><div class="tgrid">'+
       tile("#3C8527","clock","Focus time",hm(thisW),(dW===0?"Same as last week":(dW>0?"▲ "+hm(dW):"▼ "+hm(-dW))+" vs last week"),dW>0?"up":dW<0?"dn":"")+
-      tile("#2C6FB0","metronome","Days cleared",clr+"/"+Math.max(1,dIn),clr===dIn&&dIn?"Perfect so far!":"Streak "+st.streak+"d")+
+      (off?tile("#2C6FB0","metronome","Days logged",lgd+"/"+Math.max(1,dIn),"Streaks paused"):tile("#2C6FB0","metronome","Days cleared",clr+"/"+Math.max(1,dIn),clr===dIn&&dIn?"Perfect so far!":"Streak "+st.streak+"d"))+
       tile("#8A3A9E","book","Topic time",hm(ttTot),ttTop?"Most: "+esc(topicName(ttTop)):"No topic time yet")+
       tile("#C0392B","calendar","Plan kept",plN?plK+"/"+plN:"—",plN?"planned days":planKept(T)===false?"Today’s plan in progress":"Nothing scheduled")+
       tile("#B8860B","bell","Reminders",calls,"answered in 2 min")+
@@ -36,12 +36,12 @@
     var daysL=[],dl=[];for(var k2=13;k2>=0;k2--){var d2=add(T,-k2);daysL.push(d2<START_KEY?0:focusOf(d2));dl.push(parse(d2).toLocaleDateString("en-CA",{weekday:"narrow"}))}
     h+=svgBars(daysL,dl,Math.max(60,...daysL),"#FFD23F",function(v){return v>=60?Math.round(v/60*10)/10+"h":v+"m"})+'</div>'+
       '<div class="trcard"><div class="sh2">When you focus, last 30 days</div>'+(hasH?svgBars(hv,hl,Math.max(30,...hv),"#7D86C9",function(){return ""})+'<p class="tnote">Most focus around '+((h0+peak)%24)+':00</p>':'<p class="help light">Time a few sessions to see your best hours.</p>')+'</div>'+
-      '<div class="trcard"><div class="sh2">Days cleared per week</div>'+svgBars(cleared,labs,7,"#7FE05A",function(v){return v})+'</div></div></div>';
+      '<div class="trcard"><div class="sh2">'+(off?'Days logged per week':'Days cleared per week')+'</div>'+svgBars(cleared,labs,7,"#7FE05A",function(v){return v})+'</div></div></div>';
     h+='<div class="tsec"><div class="tsec-h">Records</div><div class="tgrid five">'+
       tile("#C0392B","trophy","Best focus day",hm(bestDay),bestDayK?fmtD(bestDayK):"—")+
       tile("#16A085","clock","Longest session",longest?hm(longest):"—",longest>=90?"Deep work!":"")+
       tile("#D35400","sprout","Best week",hm(bestWeek),"last 8 weeks")+
-      tile("#C99A1E","star","Gold days",gold30,"last 30 days")+
+      (off?'':tile("#C99A1E","star","Gold days",gold30,"last 30 days"))+
       tile("#5D6D7E","target","Quests finished",done,"all time")+
       '</div></div>';
     el.innerHTML=h;

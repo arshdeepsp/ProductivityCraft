@@ -1,7 +1,7 @@
   /* ---- grove (progress forest) ---- */
   var groveEl=document.getElementById("grove"),gcv=document.getElementById("groveCanvas"),gctx=gcv.getContext("2d"),groveOpen=false,groveIdleMode=false,groveRAF=0,groveBase=null,groveGeo=null;
   function grng(seed){var h=2166136261;for(var i=0;i<seed.length;i++){h^=seed.charCodeAt(i);h=Math.imul(h,16777619)}return function(){h+=0x6D2B79F5;var t=h;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
-  function groveStats(){var st=window.__gT!=null?{total:window.__gT,streak:0}:(lastSt||compute());var g=window.__gG!=null?window.__gG:Object.keys(S.days).filter(function(k){return k>=START_KEY&&gold(S.days[k])}).length;return{total:st.total|0,gold:g|0}}
+  function groveStats(){var st=window.__gT!=null?{total:window.__gT,streak:0}:(lastSt||compute());var g=window.__gG!=null?window.__gG:Object.keys(S.days).filter(function(k){return k>=START_KEY&&!noStreakOn(k)&&gold(S.days[k])}).length;return{total:st.total|0,gold:g|0}}
   function stageOf(age,center){var th=center?[0,1,2,4,10,21,60]:[0,1,3,6,12,25,50],s=-1;for(var i=0;i<th.length;i++)if(age>=th[i])s=i;return s}
   var SPAWN0=10,SPAWNEVERY=4;
   function drawPlant(c,P,x,y,stage,rnd,hueShift){

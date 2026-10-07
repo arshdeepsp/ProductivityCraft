@@ -1,0 +1,3 @@
+/* Streaks paused (body.nostreak): tracking only, so the reward UI is hidden. */
+body.nostreak #rankIcon,body.nostreak #rankName,body.nostreak .hud .stats>span:first-child,body.nostreak #moreStats,body.nostreak #statsToggle,body.nostreak .hud .lvl,body.nostreak #sideAch,body.nostreak #carryNote,body.nostreak .mainnav [data-go="achievements"],body.nostreak .mainnav [data-go="grove"]{display:none!important}
+.strip i.pause{background:repeating-linear-gradient(135deg,#3A3F48 0 4px,#4E5560 4px 8px)}

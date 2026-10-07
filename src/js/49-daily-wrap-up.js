@@ -27,7 +27,7 @@
     if(best&&best.d){
       if(fr===0)fun="At this pace, "+best.n+" adds up to about "+Math.round(best.d*365/60)+" hours a year.";
       else if(fr===1)fun="Total focus today: "+hm(td)+". That's roughly "+Math.max(1,Math.round(td/25))+" Pomodoros.";
-      else if(fr===2&&st.streak)fun="Streak after today: "+st.streak+" day"+(st.streak===1?"":"s")+". Best so far: "+st.best+".";
+      else if(fr===2&&st.streak&&!noStreakOn(k))fun="Streak after today: "+st.streak+" day"+(st.streak===1?"":"s")+". Best so far: "+st.best+".";
       else fun="Biggest block: "+best.n+" at "+hm(best.d)+".";
     }
     return{rows:rows,tp:tp,td:td,pct:pct,cleared:cleared,lim:lim,head:head,body:body,fun:fun,icon:pick(r,Object.keys(D.icons))};
@@ -43,9 +43,9 @@
     txt("ProductivityCraft",90,130,"28px "+PX,"#FFFFFF");
     txt("Daily wrap-up",90,185,"22px "+PX,"#FFFF55");
     txt(parse(k).toLocaleDateString("en-CA",{weekday:"long",month:"long",day:"numeric",year:"numeric"}),90,235,"40px "+VT,"#C3CBD6");
-    var defs=defsOf(e),badge=n.cleared?(gold(e)?["GOLD DAY","#B8860B"]:["DAY CLEARED","#3C8527"]):(n.lim?["LIMIT BROKEN","#9E2A1F"]:["NOT CLEARED","#9E2A1F"]);
+    var np=noStreakOn(k),defs=defsOf(e),badge=np?["TRACKED","#4E5560"]:n.cleared?(gold(e)?["GOLD DAY","#B8860B"]:["DAY CLEARED","#3C8527"]):(n.lim?["LIMIT BROKEN","#9E2A1F"]:["NOT CLEARED","#9E2A1F"]);
     g.font="20px "+PX;var bw=g.measureText(badge[0]).width+48;g.fillStyle="#000";g.fillRect(W-90-bw-4,96,bw+8,70);g.fillStyle=badge[1];g.fillRect(W-90-bw,100,bw,62);txt(badge[0],W-90-bw/2,142,"20px "+PX,"#FFFFFF","center");
-    txt(bases(e)+"/"+reqOf(defs).length+" done  \u00b7  streak "+st.streak+"  \u00b7  +"+dayXP(e)+" XP",W-90,215,"36px "+VT,"#C3CBD6","right");
+    txt(bases(e)+"/"+reqOf(defs).length+" done  \u00b7  "+(np?"streaks paused":"streak "+st.streak+"  \u00b7  +"+dayXP(e)+" XP"),W-90,215,"36px "+VT,"#C3CBD6","right");
     var px=90,py=280,pw=W-180,ph=520;panel(px,py,pw,ph,"#C6C6C6");
     txt("Plan vs done",px+36,py+62,"20px "+PX,"#3F3F3F");
     var maxv=Math.max(60,...n.rows.map(function(r){return Math.max(r.p,r.d)})),bx=px+330,bwid=pw-330-290,ry=py+110,rs=Math.min(90,Math.floor((ph-170)/Math.max(1,n.rows.length)));if(!n.rows.length)txt("No time quests on this day.",px+36,py+140,"32px "+VT,"#5A5A5A");
@@ -110,13 +110,14 @@
     /* XP + progress */
     var by=ty+th+30,bh=240,bw=(pw-40)/2;panel(px,by,bw,bh);panel(px+bw+40,by,bw,bh);
     var mins_=0,pb=0;Q.forEach(function(q){var d=Math.min(240,e[q.id]|0);mins_+=d;if(d>0&&d>=pl(k,q))pb+=30});
-    var xT=0;Object.keys(S.days).forEach(function(d){if(d>=START_KEY&&d<=k)xT+=dayXP(S.days[d])});var lv=level(xT);
-    txt("XP earned",px+36,by+56,"16px "+PX,"#3F3F3F");
+    var lv=level(totalXP(k));
+    if(np){txt("Tracking only",px+36,by+56,"16px "+PX,"#3F3F3F");["Streaks were paused this day:","no XP, rank or badge progress.","Time still counts in Trends","and your totals."].forEach(function(t,i){txt(t,px+36,by+96+i*30,"30px "+VT,"#1E1E1E")})}
+    else{txt("XP earned",px+36,by+56,"16px "+PX,"#3F3F3F");
     [["Minutes",mins_],["Plan bonuses",pb],["Cleared",ok(e)?50:0],["Gold",gold(e)?100:0]].forEach(function(a,i){txt(a[0],px+36,by+96+i*30,"30px "+VT,"#1E1E1E");txt("+"+a[1],px+bw-36,by+96+i*30,"30px "+VT,"#1E1E1E","right")});
-    txt("Level "+lv.l+"  \u00b7  "+lv.cur+"/"+lv.need,px+36,by+bh-20,"30px "+VT,"#2E6B24");
+    txt("Level "+lv.l+"  \u00b7  "+lv.cur+"/"+lv.need,px+36,by+bh-20,"30px "+VT,"#2E6B24")}
     var qx=px+bw+40,nx=null;RANKS.forEach(function(x){if(!nx&&x[0]>st.streak)nx=x});var na=nextBadge(badgeStats(st));
-    txt("Progress",qx+36,by+56,"16px "+PX,"#3F3F3F");
-    var pr=["Streak: "+st.streak+" (best "+st.best+")",st.rebase?"Rank: Rebasing":"Rank: "+(RANKS.filter(function(x){return st.streak>=x[0]}).pop()||RANKS[0])[1],nx?"Next rank: "+nx[1]+" in "+(nx[0]-st.streak):"Top rank reached",na?"Next badge: "+na.a.title+" ("+na.p.txt+")":"All badges earned"];
+    txt(np?"Last 7 days":"Progress",qx+36,by+56,"16px "+PX,"#3F3F3F");
+    var pr=np?["Focus: "+hm(rows.reduce(function(a,x){return a+x.wd},0)),"Days logged: "+inW.filter(function(d){return hasEntry(S.days[d])}).length]:["Streak: "+st.streak+" (best "+st.best+")",st.rebase?"Rank: Rebasing":"Rank: "+(RANKS.filter(function(x){return st.streak>=x[0]}).pop()||RANKS[0])[1],nx?"Next rank: "+nx[1]+" in "+(nx[0]-st.streak):"Top rank reached",na?"Next badge: "+na.a.title+" ("+na.p.txt+")":"All badges earned"];
     pr.forEach(function(t,i){txt(t,qx+36,by+96+i*30,"30px "+VT,"#1E1E1E")});
     /* observations */
     var oy=by+bh+30,sh0=210,oh=H-80-sh0-30-oy;panel(px,oy,pw,oh,"#212121");txt("Observations",px+36,oy+58,"16px "+PX,"#FFFF55");
@@ -127,10 +128,10 @@
     if(wq){var wks=inW.filter(function(d){return d!==k&&(S.days[d]||{})[wq.id]}).map(function(d){return mins(S.days[d][wq.id])});
     if(e[wq.id]&&wks.length){var av=wks.reduce(function(a,b){return a+b},0)/wks.length,df=Math.round(mins(e[wq.id])-av);if(Math.abs(df)>=10)obs.push([2,"Up at "+e[wq.id]+", "+Math.abs(df)+" minutes "+(df<0?"earlier":"later")+" than your 7-day average."])}}
     var lb=inW.filter(function(d){return limBroken(S.days[d])}).length;if(defsOf(e).some(function(q){return q.type==="limit"}))obs.push([lb?2:1,lb?"Limits broken on "+lb+" day"+(lb===1?"":"s")+" this week.":"No limits broken this week."]);
-    var prevK=add(k,-1);if(prevK>=START_KEY&&!ok(S.days[prevK])&&ok(e))obs.push([5,"Bounce-back day: cleared right after a miss."]);
+    var prevK=add(k,-1);if(!np&&(st.marks[prevK]==="miss"||st.marks[prevK]==="grace")&&ok(e))obs.push([5,"Bounce-back day: cleared right after a miss."]);
     Q.forEach(function(q){var prevMax=0;Object.keys(S.days).forEach(function(d){if(d>=START_KEY&&d<k)prevMax=Math.max(prevMax,S.days[d][q.id]|0)});if(prevMax&&(e[q.id]|0)>prevMax)obs.push([6,"New personal record: "+q.label+" at "+hm(e[q.id])+"."])});
-    if(na&&na.need-st.streak<=3)obs.push([5,(na.need-st.streak)+" more clean day"+(na.need-st.streak===1?"":"s")+" to unlock "+na.title+"."]);
-    if(lv.need-lv.cur<=150)obs.push([3,lv.need-lv.cur+" XP to level "+(lv.l+1)+"."]);
+    if(!np&&na&&STREAKY[na.a.id]&&na.p.need-na.p.have<=3)obs.push([5,(na.p.need-na.p.have)+" more clean day"+(na.p.need-na.p.have===1?"":"s")+" to unlock "+na.a.title+"."]);
+    if(!np&&lv.need-lv.cur<=150)obs.push([3,lv.need-lv.cur+" XP to level "+(lv.l+1)+"."]);
     if(Q.every(function(q){return Math.abs((e[q.id]|0)-pl(k,q))<=10})&&tot)obs.push([4,"Within 10 minutes of plan on every quest. Accurate planning."]);
     var wd=parse(k).getDay();obs.push([1,pick(r,wd===1?["Monday set the tone for the week."]:wd===5||wd===6?["Weekend: keep the routine intact."]:wd===0?["Sunday: a good day to look at the week as a whole."]:["Midweek. Protect the routine."])]);
     if(e.brk)obs.push([5,e.brk+" commitment"+(e.brk===1?"":"s")+" broken today (early stop or broken block)."]);

@@ -22,7 +22,7 @@
         if(!/^\d{4}-\d{2}-\d{2}$/.test(k))return;
         var a=S.days[k]||{},b=Object.assign({},j.days[k]||{}),m=Object.assign({},a);
         if(!b.q&&Object.keys(b).some(function(f){return migIds.indexOf(f)>=0})){b.q=MIG;usedMig=true}
-        if(Object.keys(b).length&&(!earliest||k<earliest))earliest=k;
+        if(hasEntry(b)&&(!earliest||k<earliest))earliest=k;
         Object.keys(b).forEach(function(f){var v=b[f];if(Array.isArray(v)){if(!a[f])m[f]=v}else if(typeof v==="string"&&/^\d{2}:\d{2}$/.test(v)){if(!a[f])m[f]=v}else if(typeof v==="boolean")m[f]=!!(a[f]||v);else if(typeof v==="number"&&isFinite(v))m[f]=Math.max(a[f]|0,Math.max(0,Math.min(9999,Math.round(v))))});
         if(!hasEntry(a)){if(b.q)m.q=b.q;if(b.ck)m.ck=b.ck}
         if(JSON.stringify(m)!==JSON.stringify(a)){S.days[k]=m;dirty[k]=true;n++}
@@ -31,7 +31,7 @@
       var cu=false;if(j.cfg&&j.cfg.quests&&(!S.cfg||(j.cfg.updated||"")>(S.cfg.updated||""))){saveCfg(j.cfg);S.cfg.updated=j.cfg.updated||S.cfg.updated;if(j.cfg.start)setStart(j.cfg.start);elapsed();cu=true;qSig="";renderRules()}
       if(!cu&&usedMig&&!(cfg().quests||[]).length){var c4=clone(cfg());c4.quests=clone(MIG);saveCfg(c4);cu=true;qSig=""}
       if(earliest&&typeof setStart==="function"&&earliest<START_KEY){setStart(parse(earliest).toISOString());var c3=clone(cfg());c3.start=START_AT.toISOString();saveCfg(c3);elapsed()}
-      cache();render();flush();
+      lockReset();cache();render();flush();
       if(r&&db&&uid)reflDoc().set({map:S.refl}).catch(function(){});
       setSync("Imported "+n+" day"+(n===1?"":"s")+(r?" and "+r+" reflection"+(r===1?"":"s"):"")+(cu?" and your quests/rules":""));
     }).catch(function(x){if(x!==0)setSync("Import failed. Try exporting a fresh backup.")}).finally(function(){impFile.value=""});

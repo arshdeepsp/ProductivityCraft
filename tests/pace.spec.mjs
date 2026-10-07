@@ -46,11 +46,13 @@ test("after the halfway checkpoint the alert moves to the period's last day, eve
   expect(n.at).toContain("Sun Nov 08 2026 09:00");
 });
 
-test("no weekly alert once half the weekly target is done", async ({ page }) => {
+test("once half is done, the alert waits for the period's last day", async ({ page }) => {
   await page.addInitScript(mock);
   await openApp(page, { now: "2026-11-03T09:00:00-05:00", cfg: { quests: Q, nf: { on: true } }, days: { "2026-11-02": { fr: 120, q: Q } } });
   await page.clock.runFor(2000);
-  expect((await page.evaluate(() => window.__ln)).some((x) => x.id === 2600)).toBe(false);
+  const n = (await page.evaluate(() => window.__ln)).find((x) => x.id === 2600);
+  expect(n.title).toBe("Total due Sunday");
+  expect(n.at).toContain("Sun Nov 08 2026 09:00");
 });
 
 test("the midday alert follows Your day, not a clock-time quest", async ({ page }) => {

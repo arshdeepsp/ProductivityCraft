@@ -4,8 +4,8 @@
      FocusNotify.takeTap() when the app opens or comes back to the front. */
   var CALL_IDS=function(id){return (id>=2000&&id<2100)||id===2200||id===2300||id===2500||id===2600||(id>=3500&&id<4000)};
   function callLeft(){return S.call?S.call.until-Date.now():0}
-  function callBadge(){var ms=callLeft();if(ms<=0)return '';var s=Math.ceil(ms/1000);return '<p class="nfxp">\u26a1 Start within '+Math.floor(s/60)+':'+String(s%60).padStart(2,"0")+' to answer the call: +'+CALL_XP+' XP</p>'}
-  function callCheck(){var c=S.call;S.call=null;if(!c||Date.now()>c.until||locked())return;var T=todayKey(),e=Object.assign({},S.days[T]||{});if((e.calls|0)>=CALL_CAP)return;if(!e.q)e.q=activeDefs(T);e.calls=(e.calls|0)+1;S.days[T]=e;dirty[T]=true;cache();
+  function callBadge(){var ms=callLeft();if(ms<=0||rewardsOff())return '';var s=Math.ceil(ms/1000);return '<p class="nfxp">\u26a1 Start within '+Math.floor(s/60)+':'+String(s%60).padStart(2,"0")+' to answer the call: +'+CALL_XP+' XP</p>'}
+  function callCheck(){var c=S.call;S.call=null;if(!c||Date.now()>c.until||locked())return;var T=todayKey(),e=Object.assign({},S.days[T]||{});if((e.calls|0)>=CALL_CAP)return;if(!e.q)e.q=activeDefs(T);e.calls=(e.calls|0)+1;S.days[T]=e;dirty[T]=true;cache();if(rewardsOff()){setTimeout(render,50);return}
     setTimeout(function(){sfx("level");toast.innerHTML='<div class="ach px"><div class="slot">'+svg("flame")+'</div><div><div class="t1">Answered the call!</div><div class="t2">+'+CALL_XP+' XP</div><div class="t3">Started within '+CALL_MIN+' minutes of a reminder</div></div></div>';requestAnimationFrame(function(){toast.classList.add("show")});setTimeout(function(){toast.classList.remove("show")},4000);render()},50)}
   function nfCall(title,icon,head,body,btns){if(!gEl.hidden)closeG();sfx("chime");var starts=btns.some(function(x){return x[3]});
     openG(title,function(b){b.innerHTML='<div class="nfcall"><div class="slot">'+svg(icon)+'</div><div class="nfc-t"><p class="mhead">'+head+'</p>'+(starts?callBadge():'')+(body||'')+'</div></div><div class="edrow end">'+btns.map(function(x,i){return '<button type="button" class="stone'+(x[2]?' '+x[2]:'')+'" data-nb="'+i+'">'+x[0]+'</button>'}).join("")+'</div>';
@@ -31,14 +31,16 @@
     if(id===1001)return nfTimer("min");if(id===1002)return nfTimer("plan");if(id===1003)return nfTimer("five");
     if(id>=1101&&id<=1103)return nfSprint();
     if(id>=2000&&id<2100)return nfQuestsLeft("Evening check-in","note");
-    if(id===2200){var st=lastSt||compute();return nfQuestsLeft("Streak at risk","flame","Your "+st.streak+"-day streak is on the line.",'<p class="help">You missed yesterday. Clear today to keep it.</p>')}
+    if(id===2200&&rewardsOff()){nfGo();return}
+    if(id===2200){var st=lastSt||compute();return nfQuestsLeft("Streak at risk","flame","Your "+st.streak+"-day streak is on the line.",'<p class="help">Your last required day was missed. Clear today to keep it.</p>')}
     if(id===2300){var T=todayKey(),cov=emptyCover(T),rq=activeDefs(T).filter(function(q){return q.type==="time"&&q.roll&&!q.off})[0]||nfBehind();
       return nfCall("Weekly totals","metronome",cov===0?"An empty day today counts as a miss.":"You’re covered today, but not tomorrow.",'<p class="help">Log anything, even 5 minutes, and today counts normally.</p>',[rq?["Log 5 minutes",function(){start5(rq)},"save",1]:null,["How it works",openCarryInfo],["Later"]].filter(Boolean))}
     if(id===2400){go("today");return reviewTodos("notif")}
     if(id===2500){var T2=todayKey(),e2=S.days[T2]||{},D2=activeDefs(T2).filter(function(q){return q.type==="time"&&!q.roll&&!q.opt});
       return nfCall("Midday check","metronome","Halfway through the day.",D2.map(function(q){return nfBar(q.label,e2[q.id]|0,q.min)}).join(""),[nfJust5(nfBehind()),["Schedule",openSchedule],["Later"]].filter(Boolean))}
     if(id===2600){var T3=todayKey(),W3=periodList(T3);var b3=W3.filter(function(q){var x=dayDefMap(T3)[q.id];return x&&!x.off&&rollSum(q.id,T3,q)<rollNeed(q,T3)})[0];
-      return nfCall("Halfway checkpoint","dumbbell","Half of each total is due by its middle work day, all of it by the end of the period.",W3.map(function(q){var md=midDay(q,T3),pe=perEnd(q,T3),pre=md&&T3<=md&&md!==pe;return nfBar(q.label+(pre?" (half by ":" (by ")+DAYF[parse(pre?md:pe).getDay()].slice(0,3)+")",rollSum(q.id,T3,q),pre?midNeed(q,T3):weekTarget(q,T3))}).join(""),[nfJust5(b3),["Schedule today",openSchedule],["Later"]].filter(Boolean))}
+      var preOf=function(q){var md=midDay(q,T3);return md&&T3<=md&&md!==perEnd(q,T3)&&rollSum(q.id,T3,q)<midNeed(q,T3)?md:null},anyPre=W3.some(preOf);
+      return nfCall(anyPre?"Halfway checkpoint":"Total due","dumbbell","Half of each total is due by its middle work day, all of it by the end of the period.",W3.map(function(q){var pe=perEnd(q,T3),md=preOf(q),pre=!!md;return nfBar(q.label+(pre?" (half by ":" (by ")+DAYF[parse(pre?md:pe).getDay()].slice(0,3)+")",rollSum(q.id,T3,q),pre?midNeed(q,T3):weekTarget(q,T3))}).join(""),[nfJust5(b3),["Schedule today",openSchedule],["Later"]].filter(Boolean))}
     if(id>=3000&&id<3500){var d=(cfg().deadlines||[]).filter(function(z){return z.id===x.dl})[0];if(!d){nfGo();return}var dq=cfg().quests.filter(function(q){return q.dl&&q.dl.id===d.id})[0],body='';
       if(dq){var s=0;for(var k=dq.dl.from;k<=todayKey();k=add(k,1))s+=+((S.days[k]||{})[dq.id])||0;body='<p class="help">'+num(s)+' of '+num(dq.dl.total)+(dq.ul?' '+esc(dq.ul):'')+' done so far.</p>'}
       return nfCall("Deadline","note","Tomorrow: "+esc(d.title),body,[["Plan today",openSchedule,"save"],["Got it"]])}

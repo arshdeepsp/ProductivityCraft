@@ -122,3 +122,40 @@ test("changing a new quest's type keeps its topic links", async ({ page }) => {
   await page.click("#nqSave");
   expect((await store(page)).cfg.quests[0]).toMatchObject({ type: "check", topics: ["a"] });
 });
+
+test("placing a quest counts minutes already logged", async ({ page }) => {
+  const Q = [{ id: "cs", type: "time", label: "CS", min: 60 }];
+  await openApp(page, { cfg: { quests: Q }, days: { "2026-11-02": { q: Q, cs: 40 } } });
+  await page.click("#schBtn");
+  await page.locator("#schTl").click({ position: { x: 160, y: ((10 * 60 - 7 * 60) / 15) * 22 + 6 }, force: true });
+  await page.click("[data-pk='cs']");
+  const s = (await store(page)).days["2026-11-02"].sched;
+  expect(s.map((b) => [b.f, b.t])).toEqual([[600, 620]]);
+});
+
+test("editing a repeat's days keeps its end date and only its quest's days", async ({ page }) => {
+  const Q = [{ id: "fr", type: "time", label: "French", min: 30, days: [1, 2, 3, 4, 5] }];
+  const rep = [{ id: "r1", q: "fr", f: 600, t: 630, dows: [1], from: "2026-10-26", until: "2026-11-22" }];
+  await openApp(page, { cfg: { quests: Q, rep } });
+  await page.click("#schBtn");
+  await page.click(".sch-b.rep");
+  await page.click("#schRepB");
+  await page.click("[data-rd='3']");
+  await page.click("#schRepOk");
+  expect((await store(page)).cfg.rep[0]).toMatchObject({ dows: [1, 3], until: "2026-11-22" });
+});
+
+test("swapping a block for another quest at the same time updates its reminder", async ({ page }) => {
+  await page.addInitScript(`window.__all=[];window.Capacitor={isNativePlatform:()=>true,Plugins:{LocalNotifications:{requestPermissions:()=>Promise.resolve({display:'granted'}),createChannel:()=>Promise.resolve(),getPending:()=>Promise.resolve({notifications:[]}),cancel:()=>Promise.resolve(),schedule:(o)=>{o.notifications.forEach(n=>window.__all.push({id:n.id,title:n.title}));return Promise.resolve()},addListener:()=>Promise.resolve({})},App:{addListener:()=>Promise.resolve({})},KeepAwake:{keepAwake:()=>Promise.resolve(),allowSleep:()=>Promise.resolve()}}};`);
+  const Q = [{ id: "cs", type: "time", label: "CS", min: 60 }, { id: "fr", type: "time", label: "French", min: 60 }];
+  await openApp(page, { cfg: { quests: Q, nf: { on: true } }, days: { "2026-11-02": { q: Q, sched: [{ id: "a", q: "cs", f: 600, t: 660 }] } } });
+  await page.clock.runFor(2000);
+  await page.click("#schBtn");
+  await page.click(".sch-b");
+  await page.click("#schRm");
+  await page.locator("#schTl").click({ position: { x: 160, y: ((10 * 60 - 7 * 60) / 15) * 22 + 6 }, force: true });
+  await page.click("[data-pk='fr']");
+  await page.clock.runFor(2000);
+  const last = (await page.evaluate(() => window.__all)).filter((x) => x.id === 3500).pop();
+  expect(last.title).toBe("Time for French");
+});
