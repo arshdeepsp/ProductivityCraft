@@ -188,7 +188,7 @@
       f2='<p class="sch-ft-h"><b>'+esc(nameOf(sb))+'</b> '+hhmmOf(sb.f)+'–'+hhmmOf(sb.t)+'</p>'+(rp?'<p class="sch-rep">↻ '+esc(repText(rp))+'</p>':'')+(cz?'<p class="sch-clash">Overlaps '+esc(cz.lb)+'. It stays for today, but can’t be moved onto busy time.</p>':'')+
         '<p class="help sch-help">'+(det?'Changed for today only.':(sb.j5?'Its reminder starts a 5-minute timer. ':'Drag the corner tab to resize. ')+'Hold and drag to move, or tap a free time.')+'</p>'+
         (sb.q?'<div class="sch-row"><div class="sjpick" role="radiogroup" aria-label="How to start"><button type="button" class="stone mini'+(sb.j5?'':' on')+'" data-sm="range" role="radio" aria-checked="'+!sb.j5+'">Time range</button><button type="button" class="stone mini'+(sb.j5?' on':'')+'" data-sm="j5" role="radio" aria-checked="'+!!sb.j5+'">5-min start</button></div></div>':'')+
-        '<div class="sch-acts">'+(det?'<button type="button" class="stone save" id="schEvery">Every week</button>':'')+
+        '<div class="sch-acts">'+(det?'<button type="button" class="stone save" id="schEvery">Every week</button>':'')+(schLeftIn(T,sb)?'<button type="button" class="stone save" id="schRes">Resume \u00b7 '+hm(schLeftIn(T,sb))+' left</button>':'')+
         (rp?'<button type="button" class="stone" id="schRepB">Edit repeat</button><button type="button" class="stone" id="schRm">Skip today</button><button type="button" class="stone del" id="schStop">Stop</button>'
           :'<button type="button" class="stone" id="schRepB">Repeat</button>'+(sb.q&&!sb.j5?'<button type="button" class="stone" id="schSplit">Split</button>':'')+'<button type="button" class="stone del" id="schRm">Remove</button>')+
         '<button type="button" class="stone sch-x" id="schDesel" aria-label="Deselect">✕</button></div>'}
@@ -211,7 +211,7 @@
     on("schBzRm",function(){busyRemove(schSel);schDraw()});
     on("schRepNo",function(){schRep=null;schDraw()});on("schRepOk",function(){schRepSave(schRep.id,schRep.dows,schRep.weeks,schRep.weeks===schRep.w0);schDraw()});
     on("schRepB",function(){var b=L.filter(function(x){return x.id===schSel})[0],r=b&&(b.rep||b.src)?repById(b.rep||b.src):null;schRep={id:schSel,dows:r?r.dows.slice():[parse(T).getDay()].filter(function(d){return schRepDays(b).indexOf(d)>=0}),weeks:r?Math.max(1,Math.min(REP_MAX,Math.ceil((daysBetween(T,r.until)+1)/7))):4};schRep.w0=r?schRep.weeks:-1;schMsg="";schDraw()});
-    on("schEvery",function(){schRepEvery();schDraw()});on("schStop",function(){var b=L.filter(function(x){return x.id===schSel})[0];if(b&&b.rep)schRepStop(b.rep);schDraw()});
+    on("schEvery",function(){schRepEvery();schDraw()});on("schRes",function(){var b=L.filter(function(x){return x.id===schSel})[0],q=b&&schQuests(T).filter(function(z){return z.id===b.q})[0];if(!q)return;closeSchedule();go("today");toggleTimer(q)});on("schStop",function(){var b=L.filter(function(x){return x.id===schSel})[0];if(b&&b.rep)schRepStop(b.rep);schDraw()});
     on("schPkNo",function(){schPick=null;schMsg="";schDraw()});
     on("schBzB",function(){openBusy(parse(T).getDay(),schPick,true)});on("schBzOpen",function(){openBusy(parse(T).getDay(),null,true)});on("schBzEdit",function(){var b=L.filter(function(x){return x.id===schSel})[0];openBusy(parse(T).getDay(),null,true);if(b&&b.busy){schSel=b.busy;schDraw()}});
     on("schBzAdd",function(){busyAdd(ft.querySelector("#schBzIn").value,schPick);schDraw()});var bzi=ft.querySelector("#schBzIn");if(bzi)bzi.addEventListener("keydown",function(ev){if(ev.key==="Enter"){busyAdd(bzi.value,schPick);schDraw()}});
@@ -221,7 +221,18 @@
     var sc0=schPg.querySelector("#schScroll"),onB=tl.querySelector(".sch-b.on");if(onB&&schSel!==schShown&&!schDrag){var bb=onB.offsetTop+onB.offsetHeight,vb=sc0.scrollTop+sc0.clientHeight;if(bb>sc0.scrollTop+sc0.clientHeight*.6)sc0.scrollTop=Math.min(onB.offsetTop-8,bb-Math.round(sc0.clientHeight*.55));else if(onB.offsetTop<sc0.scrollTop)sc0.scrollTop=onB.offsetTop-8}schShown=schSel;
     if(first){var nw=tl.querySelector("#schNow"),sc=schPg.querySelector("#schScroll");sc.scrollTop=0;if(nw)sc.scrollTop=Math.max(0,nw.offsetTop-sc.clientHeight/3);else if(schPick!=null)sc.scrollTop=Math.max(0,px(schPick)-sc.clientHeight/3)}
   }
-  function schRows(defs,k){defs.forEach(function(q){var el=qEls[q.id];if(!el||q.type!=="time")return;var L=schOfQ(k,q.id);if(!L.length)return;var txt=L.map(schText).join(", "),rq=el.row.querySelector(".req");if(rq&&rq.textContent.indexOf(txt)<0)rq.textContent+=" · "+txt})}
+  /* Resume an interrupted block: a started block (some timed minutes inside it today) with time left and no timer on its
+     quest. The schedule footer and the quest row offer Resume, and a persistent notification (id 905, ongoing) stays
+     up until it's resumed, removed, or the day ends. */
+  function schDoneIn(T,b){var s0=atMin(T,b.f),s1=atMin(T,b.t),m=0;((S.days[T]||{}).sess||[]).forEach(function(z){if(z.id!==b.q)return;var a=Math.max(z.s,s0),c=Math.min(z.e,s1);if(c>a)m+=(c-a)/60000});return Math.round(m)}
+  function schLeftIn(T,b){if(!b||!b.q||b.lb||nowMinInDay()<b.f||(S.timer&&S.timer.id===b.q))return 0;if(!schQuests(T).some(function(q){return q.id===b.q}))return 0;var d=schDoneIn(T,b);if(d<1)return 0;var l=(b.t-b.f)-d;return l>=1?l:0}
+  function schResumable(T){var best=null;schAll(T).forEach(function(b){var l=schLeftIn(T,b);if(l&&(!best||b.f>best.b.f))best={b:b,left:l}});return best}
+  var resKey="";
+  function resumeSync(ln){var T=todayKey(),r=locked()?null:schResumable(T),k=r?T+r.b.id+"|"+r.left:"";if(k===resKey)return;var was=resKey;resKey=k;var p=Promise.resolve();
+    if(was)p=p.then(function(){return ln.cancel({notifications:[{id:905}]})}).then(function(){return ln.removeDeliveredNotifications?ln.removeDeliveredNotifications({notifications:[{id:905}]}):null});
+    if(r){var q=schQuests(T).filter(function(x){return x.id===r.b.q})[0];p=p.then(function(){return ensureChannels()}).then(function(){return ln.schedule({notifications:[{id:905,title:"Resume "+(q?q.label:"your block"),body:hm(r.left)+" left of your "+schText(r.b)+" block. Tap to pick it back up.",channelId:"pc_alerts2",ongoing:true,autoCancel:false,extra:{sched:r.b.q,resume:1},schedule:{at:new Date(Date.now()+1500),allowWhileIdle:true}}]})})}
+    p.catch(function(err){console.warn("resume notif",err)})}
+  function schRows(defs,k){defs.forEach(function(q){var el=qEls[q.id];if(!el||q.type!=="time")return;var L=schOfQ(k,q.id);if(!L.length)return;var txt=L.map(function(b){var l=k===todayKey()?schLeftIn(k,b):0;return schText(b)+(l?" ("+hm(l)+" left)":"")}).join(", "),rq=el.row.querySelector(".req");if(rq&&rq.textContent.indexOf(txt)<0)rq.textContent+=" · "+txt})}
   function schNotifs(T,e,push){var Q=schQuests(T);schAll(T).forEach(function(bl,i){var q=Q.filter(function(x){return x.id===bl.q})[0];if(!q||metQ(q,e)||(S.timer&&S.timer.id===q.id))return;
       push(3500+i,(bl.j5?"5 minutes on ":"Time for ")+q.label,bl.j5?"Tap to start a 5-minute timer. Planned until "+hhmmOf(bl.t)+".":hhmmOf(bl.f)+"–"+hhmmOf(bl.t)+". Tap to start the timer.",atMin(T,bl.f),{sched:q.id,j5:!!bl.j5})});
     /* Repeats on the next 6 days are scheduled too (3700 + day×20 + n), so they remind even if the app isn't opened that day. */

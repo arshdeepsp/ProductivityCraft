@@ -86,7 +86,7 @@
     if(n.review){var due=allTopics().filter(function(o){return topicStats(o.t).due}).length;if(due){var sun=add(weekStart(T),6);push(4001,"Topics due for review",due+" topic"+(due===1?"":"s")+" untouched for 2+ weeks. Pick for me can suggest one.",atTime(sun>=T?sun:add(sun,7),"10:00"))}}
     return out}
   var nfT=0,nfSig="";
-  function notifSync(){clearTimeout(nfT);nfT=setTimeout(function(){var ln=LN();if(!ln)return;var plan=nfPlan(),sig=JSON.stringify(plan.map(function(x){return [x.id,Math.round(x.schedule.at.getTime()/60000),x.title,x.body,JSON.stringify(x.extra||{})]}));if(sig===nfSig)return;nfSig=sig;
+  function notifSync(){clearTimeout(nfT);nfT=setTimeout(function(){var ln=LN();if(!ln)return;resumeSync(ln);var plan=nfPlan(),sig=JSON.stringify(plan.map(function(x){return [x.id,Math.round(x.schedule.at.getTime()/60000),x.title,x.body,JSON.stringify(x.extra||{})]}));if(sig===nfSig)return;nfSig=sig;
     Promise.resolve(ln.getPending?ln.getPending():{notifications:[]}).then(function(r){var ours=((r&&r.notifications)||[]).filter(function(x){return x.id>=1000&&x.id<5000}).map(function(x){return{id:x.id}});return ours.length?ln.cancel({notifications:ours}):null}).then(function(){return ensureChannels()}).then(function(){return plan.length?ln.schedule({notifications:plan}):null}).catch(function(err){console.warn("notif",err)})},800)}
   function notifEnable(on,cb){var ln=LN();if(!on||!ln){cb(on&&!ln?"app":null);return}Promise.resolve(ln.requestPermissions?ln.requestPermissions():{display:"granted"}).then(function(r){cb(r&&r.display==="granted"?null:"denied")}).catch(function(){cb("denied")})}
   var chReady=null;

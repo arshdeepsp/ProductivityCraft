@@ -506,3 +506,40 @@ test("schema 10: old busy blocks and busy repeats move into Busy times", async (
   expect(st.cfg.busy).toEqual([{ id: "zr1", lb: "Class", f: 600, t: 660, dows: [1, 3], from: "2026-11-02", until: "2026-11-29" }, { id: "zx", lb: "Lab", f: 480, t: 540, dows: [1], from: "2026-11-02", until: "2026-11-02" }]);
   expect(st.days["2026-11-02"].sched.map((b) => b.id)).toEqual(["y"]);
 });
+
+test.describe("resuming an interrupted block", () => {
+  const CS = { id: "cs", type: "time", label: "CS work", min: 60 };
+  const at = (h, m) => Date.parse(`2026-11-02T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00-05:00`);
+  const day = { q: [CS], cs: 30, sched: [{ id: "b1", q: "cs", f: 600, t: 720 }], sess: [{ id: "cs", s: at(10, 0), e: at(10, 30), m: 30 }] };
+  const nmock = `window.__ln=[];window.__rm=[];window.Capacitor={isNativePlatform:()=>true,Plugins:{LocalNotifications:{requestPermissions:()=>Promise.resolve({display:'granted'}),createChannel:()=>Promise.resolve(),getPending:()=>Promise.resolve({notifications:[]}),cancel:()=>Promise.resolve(),removeDeliveredNotifications:(o)=>{o.notifications.forEach(n=>window.__rm.push(n.id));return Promise.resolve()},schedule:(o)=>{o.notifications.forEach(n=>window.__ln.push({id:n.id,title:n.title,body:n.body,ongoing:n.ongoing,extra:n.extra}));return Promise.resolve()},addListener:()=>Promise.resolve({})},App:{addListener:()=>Promise.resolve({})},KeepAwake:{keepAwake:()=>Promise.resolve(),allowSleep:()=>Promise.resolve()}}};`;
+
+  test("a started block with time left offers Resume on the schedule and shows what's left on the row", async ({ page }) => {
+    await openApp(page, { now: "2026-11-02T10:40:00-05:00", cfg: { quests: [CS] }, days: { "2026-11-02": day } });
+    await expect(page.locator("#quests .q", { hasText: "CS work" }).locator(".req")).toContainText("10:00–12:00 (1h 30m left)");
+    await page.click("#schBtn");
+    await page.click(".sch-b");
+    await expect(page.locator("#schRes")).toHaveText("Resume · 1h 30m left");
+    await page.click("#schRes");
+    await expect(page.locator("#schPage")).toBeHidden();
+    await expect.poll(async () => ((await store(page)).timer || {}).id).toBe("cs");
+  });
+
+  test("an interrupted block keeps a persistent notification until it's resumed", async ({ page }) => {
+    await page.addInitScript(nmock);
+    await openApp(page, { now: "2026-11-02T10:40:00-05:00", cfg: { quests: [CS], nf: { on: true } }, days: { "2026-11-02": day } });
+    await page.clock.runFor(2000);
+    const n = (await page.evaluate(() => window.__ln)).filter((x) => x.id === 905).pop();
+    expect(n).toMatchObject({ title: "Resume CS work", ongoing: true, extra: { sched: "cs", resume: 1 } });
+    expect(n.body).toBe("1h 30m left of your 10:00–12:00 block. Tap to pick it back up.");
+    await page.click("#quests .q .tmr");
+    await page.clock.runFor(2000);
+    expect(await page.evaluate(() => window.__rm)).toContain(905);
+  });
+
+  test("a block not started yet, or finished, offers no Resume", async ({ page }) => {
+    await openApp(page, { now: "2026-11-02T10:40:00-05:00", cfg: { quests: [CS] }, days: { "2026-11-02": { q: [CS], sched: [{ id: "b1", q: "cs", f: 600, t: 630 }], cs: 30, sess: [{ id: "cs", s: at(10, 0), e: at(10, 30), m: 30 }] } } });
+    await page.click("#schBtn");
+    await page.click(".sch-b");
+    await expect(page.locator("#schRes")).toHaveCount(0);
+  });
+});

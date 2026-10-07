@@ -44,7 +44,7 @@
     if(id>=3000&&id<3500){var d=(cfg().deadlines||[]).filter(function(z){return z.id===x.dl})[0];if(!d){nfGo();return}var dq=cfg().quests.filter(function(q){return q.dl&&q.dl.id===d.id})[0],body='';
       if(dq){var s=0;for(var k=dq.dl.from;k<=todayKey();k=add(k,1))s+=+((S.days[k]||{})[dq.id])||0;body='<p class="help">'+num(s)+' of '+num(dq.dl.total)+(dq.ul?' '+esc(dq.ul):'')+' done so far.</p>'}
       return nfCall("Deadline","note","Tomorrow: "+esc(d.title),body,[["Plan today",openSchedule,"save"],["Got it"]])}
-    if(id>=3500&&id<4000){schTap(x);return}
+    if(id>=3500&&id<4000||id===905){schTap(x);return}
     if(id===4001){var due=allTopics().filter(function(o){return topicStats(o.t).due});if(!due.length){nfGo();return}
       return nfCall("Review time","note",due.length+" topic"+(due.length===1?"":"s")+" untouched for 2+ weeks.",'<ul class="ul">'+due.slice(0,6).map(function(o){return '<li>'+esc(o.sname)+' › '+esc(o.t.name)+'</li>'}).join("")+'</ul>',[["Pick one for me",openPick,"save"],["Subjects",function(){go("subjects")}],["Later"]])}
     nfGo()}
