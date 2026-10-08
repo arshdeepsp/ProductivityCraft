@@ -10,9 +10,9 @@
     confirmCommit("timer",{label:q.label},startNow);
   }
   function stopTimer(){
-    rollTimer();var t=S.timer;if(!t)return;S.timer=null;cache();notifSync();setTimeout(function(){focusSync(true)},0);if(t.autoFocus){focusView=false;try{localStorage.setItem("pc-focusview","0")}catch(x){}applyHide()}var m=Math.round((Date.now()-t.start)/60000),T=todayKey();if(!t.quick&&!t.noPenalty&&commitOn()&&m<COMMIT_MIN){setTimeout(function(){markBroken(T,"Early stop")},0)}
+    rollTimer();var t=S.timer;if(!t)return;S.timer=null;cache();notifSync();setTimeout(function(){focusSync(true)},0);if(t.autoFocus){focusView=false;try{localStorage.setItem("pc-focusview","0")}catch(x){}applyHide()}var m=Math.round((Date.now()-t.start)/60000),T0=todayKey(),T=t.day&&t.day<T0?t.day:T0;if(!t.quick&&!t.noPenalty&&commitOn()&&m<COMMIT_MIN){setTimeout(function(){markBroken(T,"Early stop")},0)}
     if(m<1){setSync("Timer stopped (under a minute).");timerTick();return}
-    if(logTimer(t,T,Date.now())){render(true);setSync("+"+hm(m)+" added to "+t.label);return}
+    if(logTimer(t,T,Date.now())){render(true);setSync("+"+hm(m)+" added to "+t.label+(T<T0?" (for "+fmtD(T)+")":""));return}
     setSync("Timer stopped: "+hm(m)+" could not be added (day locked or quest not active).");render();
   }
   /* Log a running timer's minutes from t.start to end onto day k: session, topic time and the quest's minutes. */
@@ -20,9 +20,12 @@
     addSession(k,t.id,t.start,end);var tsp=topicSplit(t,end);Object.keys(tsp).forEach(function(id){addTopicTime(k,id,tsp[id])});
     var e=Object.assign({},S.days[k]||{});if(k>=todayKey())e.q=activeDefs(k);
     e[t.id]=Math.min(MAXM,(e[t.id]|0)+m);S.days[k]=e;dirty[k]=true;cache();clearTimeout(timer);timer=setTimeout(flush,300);return true}
-  /* A timer still running when its day locks: the minutes up to the lock go to that day, the rest start fresh on today
-     (from today's start, so a timer forgotten for days doesn't pile the gap onto today). */
-  function rollTimer(){var t=S.timer,T=todayKey();if(!t||!t.day||t.day>=T)return;var cut=atMin(add(t.day,1),dayEnd()*60),now=Date.now();cut=Math.max(t.start,Math.min(cut,now));
+  /* A timer still running when its day locks keeps counting for the day it started for ROLL_GRACE minutes, so a session
+     that runs a little past midnight/bedtime is logged whole on that day. Past the grace it's treated as left running:
+     the minutes up to the lock go to that day and the rest start fresh on today (from today's start, so a timer forgotten
+     for days doesn't pile the gap onto today). */
+  var ROLL_GRACE=60;
+  function rollTimer(){var t=S.timer,T=todayKey();if(!t||!t.day||t.day>=T)return;var cut=atMin(add(t.day,1),dayEnd()*60),now=Date.now();if(t.day===add(T,-1)&&now<cut+ROLL_GRACE*60000)return;cut=Math.max(t.start,Math.min(cut,now));
     logTimer(t,t.day,cut);cut=Math.min(now,Math.max(cut,atMin(T,dayEnd()*60)));t.start=cut;t.day=T;t.tAt=cut;t.tacc={};t.noPenalty=true;var q=cfgQ(t.id),e0=S.days[T]||{};t.minHit=!!q&&(e0[t.id]|0)>=timerMin(q);t.planHit=!!q&&(e0[t.id]|0)>=planOf(q,e0);t.c5=true;cache();setTimeout(focusSync,0)}
   /* The first goal a running timer celebrates: a daily quest's minimum, or a period total's daily share (its own min field
      is only a leftover default and means nothing for totals). */

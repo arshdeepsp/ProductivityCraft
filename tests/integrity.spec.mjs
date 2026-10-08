@@ -67,17 +67,29 @@ test("a streak badge waits until the running period's totals are in", async ({ p
   await expect(page.locator('[data-bid="week"] .st')).toHaveText("Earned once this period's totals are in");
 });
 
-test("a timer running past the day's lock splits its minutes between the two days", async ({ page }) => {
+test("a timer still running an hour past the day's lock splits its minutes between the two days", async ({ page }) => {
   const CS = { id: "cs", type: "time", label: "Coursework", min: 60 };
   const state = { days: {}, cfg: { quests: [CS], rules: [], idleGrove: 0, start: "2026-10-01T04:00:00.000Z", updated: "2026-10-01T10:00:00Z" }, timer: { id: "cs", label: "Coursework", start: Date.parse("2026-11-02T23:30:00-05:00"), day: "2026-11-02" } };
   await page.addInitScript((s) => { if (!localStorage.getItem("pc-cache-v1")) localStorage.setItem("pc-cache-v1", s); }, JSON.stringify(state));
-  await openApp(page, { now: "2026-11-03T00:20:00-05:00", cfg: { quests: [CS] } });
+  await openApp(page, { now: "2026-11-03T01:20:00-05:00", cfg: { quests: [CS] } });
   expect((await store(page)).days["2026-11-02"].cs).toBe(30);
   await page.click("#quests .q.running .tmr");
   await page.waitForTimeout(300);
   const s = await store(page);
   expect(s.days["2026-11-02"].cs).toBe(30);
-  expect(s.days["2026-11-03"].cs).toBe(20);
+  expect(s.days["2026-11-03"].cs).toBe(80);
+});
+
+test("a session that runs a few minutes past the day's lock is logged whole on the day it started", async ({ page }) => {
+  const CS = { id: "cs", type: "time", label: "Coursework", min: 60 };
+  const state = { days: {}, cfg: { quests: [CS], rules: [], idleGrove: 0, start: "2026-10-01T04:00:00.000Z", updated: "2026-10-01T10:00:00Z" }, timer: { id: "cs", label: "Coursework", start: Date.parse("2026-11-02T23:30:00-05:00"), day: "2026-11-02" } };
+  await page.addInitScript((s) => { if (!localStorage.getItem("pc-cache-v1")) localStorage.setItem("pc-cache-v1", s); }, JSON.stringify(state));
+  await openApp(page, { now: "2026-11-03T00:03:00-05:00", cfg: { quests: [CS] } });
+  await page.click("#quests .q.running .tmr");
+  await page.waitForTimeout(300);
+  const s = await store(page);
+  expect(s.days["2026-11-02"].cs).toBe(33);
+  expect((s.days["2026-11-03"] || {}).cs).toBeUndefined();
 });
 
 test("a subject finish line still works after the quest's first subject is deleted", async ({ page }) => {
