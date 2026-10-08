@@ -543,3 +543,90 @@ test.describe("resuming an interrupted block", () => {
     await expect(page.locator("#schRes")).toHaveCount(0);
   });
 });
+
+test.describe("schedule flexibility", () => {
+  const CS = { id: "cs", type: "time", label: "CS work", min: 60 };
+  const at = (h, m) => Date.parse(`2026-11-02T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00-05:00`);
+  const nmock = `window.__ln=[];window.__rm=[];window.__tap=null;window.Capacitor={isNativePlatform:()=>true,Plugins:{LocalNotifications:{requestPermissions:()=>Promise.resolve({display:'granted'}),createChannel:()=>Promise.resolve(),getPending:()=>Promise.resolve({notifications:[]}),cancel:()=>Promise.resolve(),removeDeliveredNotifications:(o)=>{o.notifications.forEach(n=>window.__rm.push(n.id));return Promise.resolve()},schedule:(o)=>{o.notifications.forEach(n=>window.__ln.push({id:n.id,title:n.title}));return Promise.resolve()},addListener:(n,cb)=>{if(n==='localNotificationActionPerformed')window.__tap=cb;return Promise.resolve({})}},App:{addListener:()=>Promise.resolve({})},KeepAwake:{keepAwake:()=>Promise.resolve(),allowSleep:()=>Promise.resolve()}}};`;
+  const day = (t) => ({ q: [CS], cs: 20, sched: [{ id: "b1", q: "cs", f: 600, t }], sess: [{ id: "cs", s: at(10, 0), e: at(10, 20), m: 20 }] });
+
+  test("pulling a block's end in before now (finishing early) leaves nothing to resume or remind", async ({ page }) => {
+    await page.addInitScript(nmock);
+    await openApp(page, { now: "2026-11-02T10:40:00-05:00", cfg: { quests: [CS], nf: { on: true } }, days: { "2026-11-02": day(630) } });
+    await page.clock.runFor(2000);
+    expect((await page.evaluate(() => window.__ln)).some((x) => x.id === 905)).toBe(false);
+    await expect(page.locator("#quests .q .req")).not.toContainText("left)");
+  });
+
+  test("re-planning a block after stopping (shortening or delaying it) means no resume nag", async ({ page }) => {
+    await page.addInitScript(nmock);
+    const d = { ...day(690) };
+    d.sched = [{ id: "b1", q: "cs", f: 600, t: 690, ed: at(10, 35) }];
+    await openApp(page, { now: "2026-11-02T10:40:00-05:00", cfg: { quests: [CS], nf: { on: true } }, days: { "2026-11-02": d } });
+    await page.clock.runFor(2000);
+    expect((await page.evaluate(() => window.__ln)).some((x) => x.id === 905)).toBe(false);
+    await page.click("#schBtn");
+    await page.click(".sch-b");
+    await expect(page.locator("#schRes")).toHaveCount(0);
+  });
+
+  test("editing a block stamps it, so an interruption before the edit isn't resumed", async ({ page }) => {
+    await openApp(page, { now: "2026-11-02T10:40:00-05:00", cfg: { quests: [CS] }, days: { "2026-11-02": day(720) } });
+    await page.click("#schBtn");
+    await page.click(".sch-b");
+    await expect(page.locator("#schRes")).toHaveCount(1);
+    await page.click("[data-sm='j5']");
+    await page.click("[data-sm='range']");
+    const b = (await store(page)).days["2026-11-02"].sched[0];
+    expect(b.ed).toBeGreaterThan(at(10, 30));
+    await expect(page.locator("#schRes")).toHaveCount(0);
+  });
+
+  test("delaying a block moves its start reminder to the new time", async ({ page }) => {
+    await page.addInitScript(nmock.replace("window.__ln.push({id:n.id,title:n.title})", "window.__ln.push({id:n.id,title:n.title,at:String(n.schedule.at)})"));
+    await openApp(page, { now: "2026-11-02T10:40:00-05:00", cfg: { quests: [CS], nf: { on: true } }, days: { "2026-11-02": { q: [CS], sched: [{ id: "b1", q: "cs", f: 660, t: 720 }] } } });
+    await page.clock.runFor(2000);
+    await page.click("#schBtn");
+    await page.click(".sch-b");
+    await tapTime(page, "13:00");
+    await page.clock.runFor(2000);
+    const last = (await page.evaluate(() => window.__ln)).filter((x) => x.id >= 3500 && x.id < 3700).pop();
+    expect(last.at).toContain("13:00");
+  });
+
+  test("the resume notification clears by itself when the block ends", async ({ page }) => {
+    await page.addInitScript(nmock);
+    await openApp(page, { now: "2026-11-02T10:40:00-05:00", cfg: { quests: [CS], nf: { on: true } }, days: { "2026-11-02": day(660) } });
+    await page.clock.runFor(2000);
+    expect((await page.evaluate(() => window.__ln)).some((x) => x.id === 905)).toBe(true);
+    await page.clock.runFor(21 * 60000);
+    expect(await page.evaluate(() => window.__rm)).toContain(905);
+  });
+
+  test("no resume notification when schedule reminders are off, or the quest is already met", async ({ page }) => {
+    await page.addInitScript(nmock);
+    const met = { ...day(720), cs: 60, sess: [{ id: "cs", s: at(9, 0), e: at(9, 40), m: 40 }, { id: "cs", s: at(10, 0), e: at(10, 20), m: 20 }] };
+    await openApp(page, { now: "2026-11-02T10:40:00-05:00", cfg: { quests: [CS], nf: { on: true } }, days: { "2026-11-02": met } });
+    await page.clock.runFor(2000);
+    expect((await page.evaluate(() => window.__ln)).some((x) => x.id === 905)).toBe(false);
+  });
+
+  test("a stale resume tap starts nothing once the block is gone", async ({ page }) => {
+    await page.addInitScript(nmock);
+    await openApp(page, { now: "2026-11-02T10:40:00-05:00", cfg: { quests: [CS], nf: { on: true } }, days: { "2026-11-02": { ...day(660), sched: undefined } } });
+    await page.evaluate(() => window.__tap({ notification: { id: 905, extra: { sched: "cs", resume: 1 } } }));
+    await page.clock.runFor(800);
+    expect((await store(page)).timer).toBeFalsy();
+  });
+
+  test("Auto-plan counts a running timer and never starts a block in the past", async ({ page }) => {
+    const state = { days: { "2026-11-02": { q: [CS] } }, cfg: { quests: [CS], rules: [], idleGrove: 0, start: "2026-10-01T04:00:00.000Z", updated: "2026-10-01T10:00:00Z" }, timer: { id: "cs", label: "CS work", start: at(9, 0), day: "2026-11-02" } };
+    await page.addInitScript((s) => { if (!localStorage.getItem("pc-cache-v1")) localStorage.setItem("pc-cache-v1", s); }, JSON.stringify(state));
+    await openApp(page, { now: "2026-11-02T09:20:00-05:00", cfg: { quests: [CS] } });
+    await page.evaluate(() => { location.hash = "today"; });
+    await page.evaluate(() => document.getElementById("schBtn").click());
+    await page.evaluate(() => document.getElementById("schAuto") && document.getElementById("schAuto").click());
+    const s = ((await store(page)).days["2026-11-02"].sched || []).map((b) => [b.f, b.t]);
+    expect(s).toEqual([[570, 610]]);
+  });
+});

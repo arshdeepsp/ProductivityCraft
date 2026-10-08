@@ -57,7 +57,7 @@
   /* Change one block. A repeat occurrence is first detached into a one-off for today (schDet offers "Every week"). */
   function schEdit(id,fn,offer){if(schMd==="busy"){var cur=busyById(id);if(!cur)return id;var nx=clone(cur);fn(nx,[]);var bad=null;nx.dows.forEach(function(d){var c=schClash(busyForWd(d),id,nx.f,nx.t);if(c&&!bad)bad={c:c,d:d}});
       if(bad){schMsg="That clashes with "+bad.c.lb+" on "+WDN[bad.d]+".";return id}busySave(function(B){B.forEach(function(x){if(x.id===id)fn(x,B)})});return id}var b=schAll(todayKey()).filter(function(x){return x.id===id})[0],out=id;if(!b)return id;
-    schSave(function(L,e){var x=L.filter(function(z){return z.id===id})[0];if(!x&&b.rep){x={id:schNewId(),f:b.f,t:b.t,src:b.rep};if(b.q)x.q=b.q;if(b.lb)x.lb=b.lb;if(b.j5)x.j5=true;L.push(x);e.schSkip=(e.schSkip||[]).concat([b.rep]);out=x.id;schDet=offer?{rep:b.rep,id:x.id}:null}if(x)fn(x,L)});return out}
+    schSave(function(L,e){var x=L.filter(function(z){return z.id===id})[0];if(!x&&b.rep){x={id:schNewId(),f:b.f,t:b.t,src:b.rep};if(b.q)x.q=b.q;if(b.lb)x.lb=b.lb;if(b.j5)x.j5=true;L.push(x);e.schSkip=(e.schSkip||[]).concat([b.rep]);out=x.id;schDet=offer?{rep:b.rep,id:x.id}:null}if(x){fn(x,L);x.ed=Date.now()}});return out}
   function schRepDays(b){var q=b.q?schQuests(todayKey()).filter(function(x){return x.id===b.q})[0]:null;return q&&q.days&&q.days.length?q.days:[0,1,2,3,4,5,6]}
   function schRepCount(b,dows,weeks){var T=todayKey(),u=add(T,weeks*7-1),ok=schRepDays(b),n=0;for(var d=T;d<=u;d=add(d,1)){var w=parse(d).getDay();if(dows.indexOf(w)>=0&&ok.indexOf(w)>=0)n++}return n}
   /* First clash a repeat would hit on a day after today (other blocks, repeats or busy times), as {b, k}. */
@@ -110,9 +110,9 @@
   function schAt(clientY){var tl=schPg.querySelector("#schTl"),g=schGeo(),r=tl.getBoundingClientRect();return Math.min(g.e0-SCH_STEP,Math.max(g.s0,g.s0+Math.floor((clientY-r.top)/SCH_ROW)*SCH_STEP))}
   /* What's left to place for a quest today: its daily share minus minutes already logged and blocks still ahead. */
   function schAhead(L,qid,from){return L.filter(function(b){return b.q===qid&&b.t>from}).reduce(function(a,b){return a+b.t-Math.max(b.f,from)},0)}
-  function schLeft(T,q,L){var from=Math.floor(nowMinInDay()/SCH_STEP)*SCH_STEP;return schLen(q)-((S.days[T]||{})[q.id]|0)-schAhead(L||schAll(T),q.id,from)}
+  function schLeft(T,q,L){var from=Math.floor(nowMinInDay()/SCH_STEP)*SCH_STEP;var run=S.timer&&S.timer.id===q.id&&S.timer.day===T?Math.floor((Date.now()-S.timer.start)/60000):0;return schLen(q)-((S.days[T]||{})[q.id]|0)-run-schAhead(L||schAll(T),q.id,from)}
   function schFree(L,from,to,pad,minLen){var gaps=[],c=from;pad=pad||0;L.slice().sort(function(a,b){return a.f-b.f}).forEach(function(b){var bf=b.f-pad,bt=b.t+pad;if(bt<=c)return;if(bf>c)gaps.push([c,Math.min(bf,to)]);c=Math.max(c,bt)});if(c<to)gaps.push([c,to]);return gaps.filter(function(g){return g[1]-g[0]>=(minLen||SCH_STEP)})}
-  function schAuto(){var T=todayKey(),w=dayWin(T),Q=schQuests(T),e=S.days[T]||{},from=Math.max(schFloor(),Math.floor(w.s/SCH_STEP)*SCH_STEP),n=0;/* each new shot keeps a 15-minute break from its neighbours and is at least 30m (or whatever is left) */
+  function schAuto(){var T=todayKey(),w=dayWin(T),Q=schQuests(T),e=S.days[T]||{},from=Math.max(Math.ceil(nowMinInDay()/SCH_STEP)*SCH_STEP,Math.floor(w.s/SCH_STEP)*SCH_STEP),n=0;/* each new shot keeps a 15-minute break from its neighbours and is at least 30m (or whatever is left) */
     var RP=schAll(T).filter(function(b){return b.rep||b.busy}),vis=function(b){return !b.q||Q.some(function(q){return q.id===b.q})};
     schSave(function(L0){var L=L0.filter(vis),hid=L0.filter(function(b){return !vis(b)});Q.forEach(function(q){if(metQ(q,e))return;var left=schLeft(T,q,L.concat(RP));
       while(left>=SCH_STEP){var g=schFree(L.concat(RP),from,w.e,SCH_STEP,Math.min(left,SCH_STEP*2))[0];if(!g)break;var len=Math.min(left,g[1]-g[0]);len=Math.max(SCH_STEP,Math.floor(len/5)*5);L.push({id:schNewId(),q:q.id,f:g[0],t:g[0]+len});n++;left-=len}});return L.concat(hid)});
@@ -221,14 +221,17 @@
     var sc0=schPg.querySelector("#schScroll"),onB=tl.querySelector(".sch-b.on");if(onB&&schSel!==schShown&&!schDrag){var bb=onB.offsetTop+onB.offsetHeight,vb=sc0.scrollTop+sc0.clientHeight;if(bb>sc0.scrollTop+sc0.clientHeight*.6)sc0.scrollTop=Math.min(onB.offsetTop-8,bb-Math.round(sc0.clientHeight*.55));else if(onB.offsetTop<sc0.scrollTop)sc0.scrollTop=onB.offsetTop-8}schShown=schSel;
     if(first){var nw=tl.querySelector("#schNow"),sc=schPg.querySelector("#schScroll");sc.scrollTop=0;if(nw)sc.scrollTop=Math.max(0,nw.offsetTop-sc.clientHeight/3);else if(schPick!=null)sc.scrollTop=Math.max(0,px(schPick)-sc.clientHeight/3)}
   }
-  /* Resume an interrupted block: a started block (some timed minutes inside it today) with time left and no timer on its
-     quest. The schedule footer and the quest row offer Resume, and a persistent notification (id 905, ongoing) stays
+  /* Resume an interrupted block: a block still under way (now inside it), with some timed minutes inside it today, time
+     left and no timer on its quest. Once its end has passed (or you pull the end in to finish early) there's nothing to resume. The schedule footer and the quest row offer Resume, and a persistent notification (id 905, ongoing) stays
      up until it's resumed, removed, or the day ends. */
   function schDoneIn(T,b){var s0=atMin(T,b.f),s1=atMin(T,b.t),m=0;((S.days[T]||{}).sess||[]).forEach(function(z){if(z.id!==b.q)return;var a=Math.max(z.s,s0),c=Math.min(z.e,s1);if(c>a)m+=(c-a)/60000});return Math.round(m)}
-  function schLeftIn(T,b){if(!b||!b.q||b.lb||nowMinInDay()<b.f||(S.timer&&S.timer.id===b.q))return 0;if(!schQuests(T).some(function(q){return q.id===b.q}))return 0;var d=schDoneIn(T,b);if(d<1)return 0;var l=(b.t-b.f)-d;return l>=1?l:0}
+  function schLeftIn(T,b){var nw=nowMinInDay();if(!b||!b.q||b.lb||b.j5||nw<b.f||nw>=b.t||(S.timer&&S.timer.id===b.q))return 0;var q=schQuests(T).filter(function(x){return x.id===b.q})[0];if(!q||metQ(q,S.days[T]||{}))return 0;var d=schDoneIn(T,b);if(d<1||(b.ed&&schLastIn(T,b)<=b.ed))return 0;var l=(b.t-b.f)-d;return l>=1?l:0}
+  /* End of the latest timed stretch inside the block. A block edited after that (shortened, moved, delayed) means you've
+     re-planned it yourself, so there's nothing to resume until you work in it again. */
+  function schLastIn(T,b){var s0=atMin(T,b.f),s1=atMin(T,b.t),m=0;((S.days[T]||{}).sess||[]).forEach(function(z){if(z.id===b.q&&z.e>s0&&z.s<s1&&z.e>m)m=z.e});return m}
   function schResumable(T){var best=null;schAll(T).forEach(function(b){var l=schLeftIn(T,b);if(l&&(!best||b.f>best.b.f))best={b:b,left:l}});return best}
-  var resKey="";
-  function resumeSync(ln){var T=todayKey(),r=locked()?null:schResumable(T),k=r?T+r.b.id+"|"+r.left:"";if(k===resKey)return;var was=resKey;resKey=k;var p=Promise.resolve();
+  var resKey="?",resT=0;
+  function resumeSync(ln){var T=todayKey(),n0=nf(),r=locked()||!n0.on||!n0.sched?null:schResumable(T),k=r?T+r.b.id+"|"+r.left:"";clearTimeout(resT);if(r)resT=setTimeout(notifSync,Math.max(1000,atMin(T,r.b.t)-Date.now()+1000));if(k===resKey)return;var was=resKey;resKey=k;var p=Promise.resolve();
     if(was)p=p.then(function(){return ln.cancel({notifications:[{id:905}]})}).then(function(){return ln.removeDeliveredNotifications?ln.removeDeliveredNotifications({notifications:[{id:905}]}):null});
     if(r){var q=schQuests(T).filter(function(x){return x.id===r.b.q})[0];p=p.then(function(){return ensureChannels()}).then(function(){return ln.schedule({notifications:[{id:905,title:"Resume "+(q?q.label:"your block"),body:hm(r.left)+" left of your "+schText(r.b)+" block. Tap to pick it back up.",channelId:"pc_alerts2",ongoing:true,autoCancel:false,extra:{sched:r.b.q,resume:1},schedule:{at:new Date(Date.now()+1500),allowWhileIdle:true}}]})})}
     p.catch(function(err){console.warn("resume notif",err)})}
@@ -238,4 +241,6 @@
     /* Repeats on the next 6 days are scheduled too (3700 + day×20 + n), so they remind even if the app isn't opened that day. */
     for(var dd=1;dd<=6;dd++){var k=add(T,dd),Qk=schQuests(k),n=0;schAll(k).forEach(function(bl){if(!bl.rep||n>=20)return;var q=Qk.filter(function(x){return x.id===bl.q})[0];if(!q)return;
       push(3700+dd*20+n++,(bl.j5?"5 minutes on ":"Time for ")+q.label,bl.j5?"Tap to start a 5-minute timer. Planned until "+hhmmOf(bl.t)+".":hhmmOf(bl.f)+"–"+hhmmOf(bl.t)+". Tap to start the timer.",atMin(k,bl.f),{sched:q.id,j5:!!bl.j5})})}}
-  function schTap(x){var q=schQuests(todayKey()).filter(function(z){return z.id===x.sched})[0];if(!q||locked()||(S.timer&&S.timer.id===q.id))return;go("today");if(x.j5)start5(q);else toggleTimer(q)}
+  /* A reminder tap only starts a timer if that quest still has a block today (or, for 905, is still resumable). */
+  function schTap(x){var T=todayKey(),q=schQuests(T).filter(function(z){return z.id===x.sched})[0];if(!q||locked()||(S.timer&&S.timer.id===q.id))return;
+    var r=x.resume?schResumable(T):null;if(x.resume?!r||r.b.q!==q.id:!schOfQ(T,q.id).length){nfGo();setSync("That block has changed. Nothing to start.");return}go("today");if(x.j5)start5(q);else toggleTimer(q)}
