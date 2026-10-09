@@ -35,3 +35,9 @@
 .resetcard span{font:16px var(--vt);color:#3F3F3F}
 .resetcard textarea{font:18px var(--vt);background:#373737;color:#fff;border:3px solid;border-color:#1E1E1E #8B8B8B #8B8B8B #1E1E1E;padding:6px 8px;resize:vertical;min-height:44px}
 .resetcard[hidden]{display:none!important}
+/* Per-quest streak chip after the label */
+.qstk{display:inline-flex;align-items:center;gap:2px;font:14px var(--vt);color:#FFD23F;text-shadow:1px 1px 0 #3F3F3F;vertical-align:middle;margin-left:4px}
+.qstk svg{width:12px;height:12px;display:block}
+.qstk b{font-weight:400}
+.qstk[hidden]{display:none!important}
+.strip i.repaired{background:#9B7FD6}

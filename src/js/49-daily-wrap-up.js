@@ -110,7 +110,7 @@
     /* XP + progress */
     var by=ty+th+30,bh=240,bw=(pw-40)/2;panel(px,by,bw,bh);panel(px+bw+40,by,bw,bh);
     var mins_=0,pb=0;Q.forEach(function(q){var d=Math.min(240,e[q.id]|0);mins_+=d;if(d>0&&d>=pl(k,q))pb+=30});
-    var lv=level(totalXP(k));
+    var lv=level(xpNet(k));
     {txt("XP earned",px+36,by+56,"16px "+PX,"#3F3F3F");
     [["Minutes",mins_],["Plan bonuses",pb],["Cleared",ok(e)?50:0],["Gold",gold(e)?100:0]].forEach(function(a,i){txt(a[0],px+36,by+96+i*30,"30px "+VT,"#1E1E1E");txt("+"+a[1],px+bw-36,by+96+i*30,"30px "+VT,"#1E1E1E","right")});
     txt("Level "+lv.l+"  \u00b7  "+lv.cur+"/"+lv.need,px+36,by+bh-20,"30px "+VT,"#2E6B24")}

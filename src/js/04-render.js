@@ -18,7 +18,7 @@
   document.getElementById("strip").addEventListener("click",function(ev){
     var k=ev.target&&ev.target.getAttribute&&ev.target.getAttribute("data-k");if(!k)return;
     selDay=k;viewKey=null;if(k>=START_KEY&&k<todayKey())setTimeout(function(){openDayModal(k)},0);var info=document.getElementById("dayInfo"),m=k>todayKey()?"future":k<START_KEY?"pre":(lastSt.marks[k]||"pend"),e=S.days[k]||{};
-    var label={lost:"Lost: a weekly total was missed, so this period no longer counts",carried:"Carried: no work logged, but your weekly total covered it (streak held, no XP)",frozen:"Missed (saved by a streak freeze)",rest:isVac(k)?"Vacation day":"Rest day (nothing required)",ok:gold(e)?"Cleared (gold day)":"Cleared",miss:"Missed",grace:"Missed (grace day)",pend:k===todayKey()?"In progress":"Not started",pre:"No data",future:"Coming up"}[m];
+    var label={lost:"Lost: a weekly total was missed, so this period no longer counts",carried:"Carried: no work logged, but your weekly total covered it (streak held, no XP)",frozen:"Missed (saved by a streak freeze)",repaired:"Missed (repaired with XP)",rest:isVac(k)?"Vacation day":"Rest day (nothing required)",ok:gold(e)?"Cleared (gold day)":"Cleared",miss:"Missed",grace:"Missed (grace day)",pend:k===todayKey()?"In progress":"Not started",pre:"No data",future:"Coming up"}[m];
     var parts=m==="future"?[label,parse(k).toLocaleDateString("en-CA",{weekday:"short",month:"short",day:"numeric"})]:[parse(k).toLocaleDateString("en-CA",{weekday:"short",month:"short",day:"numeric"}),label];
     if(m!=="pre"&&m!=="future"&&(m!=="pend"||k===todayKey())){var dq=defsOf(e);parts.push(bases(e)+"/"+reqOf(dq).length+" done");
       var d=[];dq.forEach(function(q){var v=e[q.id];if(v==null||v===""||v===0||v===false)return;d.push(q.type==="wake"?q.label+" "+v:q.type==="time"?q.label+" "+hm(v):q.type==="check"?q.label:q.type==="scale"?q.label+" "+v+"/"+(q.scale||5):q.label+" "+(q.unit==="min"?hm(v):num(v)))});if(d.length)parts.push(d.join(", "))}
@@ -73,7 +73,7 @@
     var cf=cfg();document.getElementById("sparkBar").hidden=!cf.sparkTools||past;document.getElementById("shareBtn").hidden=!cf.addShare;document.getElementById("trendsBtn").hidden=!cf.addTrends;
     if(!past){checkFinish();maybeReviewTodos()}renderCarryNote();
     var cqm={};cfg().quests.forEach(function(q){cqm[q.id]=q});
-    defs.forEach(function(q){var el=qEls[q.id];if(!el)return;var ch=el.row.querySelector(".sjchip");if(ch){var sl=qSubjs(q),pool=qTopicPool(q);if(sl.length){var due=pool.some(function(id){return topicStats(topicById(id).t).due});ch.innerHTML='<span class="sjn">...</span>'+(due?'<i class="rdot"></i>':'');ch.setAttribute("aria-label","Feeds "+(pool.length?pool.map(topicName):sl.map(function(id){return subjById(id).name})).join(", "));ch.hidden=false}else ch.hidden=true}
+    defs.forEach(function(q){var el=qEls[q.id];if(!el)return;var sk=el.row.querySelector(".qstk");if(sk){var n=qStreak(q.id,k);sk.hidden=n<2;if(n>=2){sk.innerHTML=svg("flame")+'<b>'+n+'</b>';sk.setAttribute("aria-label",n+" days in a row")}}var ch=el.row.querySelector(".sjchip");if(ch){var sl=qSubjs(q),pool=qTopicPool(q);if(sl.length){var due=pool.some(function(id){return topicStats(topicById(id).t).due});ch.innerHTML='<span class="sjn">...</span>'+(due?'<i class="rdot"></i>':'');ch.setAttribute("aria-label","Feeds "+(pool.length?pool.map(topicName):sl.map(function(id){return subjById(id).name})).join(", "));ch.hidden=false}else ch.hidden=true}
       var cq=cqm[q.id];el.row.classList.toggle("doneq",!!(cq&&cq.completed));var pt=el.row.querySelector(".pendtag");if(pt)pt.remove()});
     timerTick();renderHudExtras(T);renderShelf();notifSync();applyHide();mobileList(defs,e,past);renderPark();renderHeat();
     defs.forEach(function(q){var el=qEls[q.id];if(!el||q.type!=="time")return;var rq=el.row.querySelector(".req"),base=reqText(q),xtra="";
@@ -98,7 +98,7 @@
     else if(isLim){cl.textContent="Limit broken: day failed";cl.className="failtxt"}
     else{cl.textContent="";cl.className=""}
     lastCleared=isOk;
-    var xp=totalXP(),lv=level(xp);
+    var xp=xpNet(),lv=level(xp);
     document.getElementById("lvlNum").textContent="Lv "+lv.l;document.getElementById("hudLine").innerHTML=off?'<span class="hl-r">'+esc(document.getElementById("rankName").textContent)+'</span><span>Casual</span><span>Lv <b>'+lv.l+'</b></span><i class="hl-c" aria-hidden="true"></i>':'<span class="hl-r">'+esc(document.getElementById("rankName").textContent)+'</span><span>Streak <b>'+st.streak+'</b></span><span>Lv <b>'+lv.l+'</b></span><i class="hl-c" aria-hidden="true"></i>';
     document.getElementById("lvlText").textContent=lv.cur+" / "+lv.need+" XP";
     document.getElementById("xpFill").style.width=Math.round(lv.cur/lv.need*100)+"%";

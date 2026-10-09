@@ -82,7 +82,7 @@
   function reqDefsFor(k){if(isVac(k))return [];var e=S.days[k];return reqOf((e&&e.q)?e.q:(hasEntry(e)?LEGACY:activeDefs(k)))}
   function num(v){return Math.round((+v||0)*100)/100}
   function projSum(id,upto){var t=0;Object.keys(S.days).forEach(function(k){if(!upto||k<=upto)t+=+((S.days[k]||{})[id])||0});return num(t)}
-  function hasEntry(e){return !!e&&Object.keys(e).some(function(f){if(f==="top")return (e.top||[]).some(function(x){return x&&x.t});return f!=="q"&&f!=="sched"&&f!=="schSkip"&&f!=="calls"&&f!=="ck"&&f.indexOf("plan_")!==0&&e[f]!==""&&e[f]!=null&&e[f]!==0&&e[f]!==false})}
+  function hasEntry(e){return !!e&&Object.keys(e).some(function(f){if(f==="top")return (e.top||[]).some(function(x){return x&&x.t});return f!=="q"&&f!=="sched"&&f!=="schSkip"&&f!=="calls"&&f!=="ck"&&f!=="rep"&&f.indexOf("plan_")!==0&&e[f]!==""&&e[f]!=null&&e[f]!==0&&e[f]!==false})}
   function defsOf(e){return (e&&e.q)||(hasEntry(e)?LEGACY:activeDefs(todayKey()))}
   function metQ(q,e){e=e||{};var v=e[q.id];if(q.type==="wake"){if(!v)return q.id==="wakeAt"&&e.wake===true;var m=mins(v);return m>=mins(q.from)&&m<=mins(q.to)}if(q.type==="time")return timeMet(q,e);if(q.type==="limit")return (v|0)<=q.max;if(q.type==="check"||q.type==="weekly"||q.type==="todo")return v===true;if(q.type==="target")return num(v)>=q.min;if(q.type==="scale")return (v|0)>=q.min;return false}
   /* Daily limit for a time quest (q.lim, minutes): past it the timer stops and logs, and nothing more is tracked that day. 0 = none. */
@@ -103,4 +103,15 @@
   function weekCount(id,k,upto){var s0=weekStart(k),n=0;for(var i=0;i<7;i++){var d=add(s0,i);if(upto&&d>k)break;if((S.days[d]||{})[id]===true)n++}return n}
   function totalXP(upto){var t=upto||todayKey(),x=completionXP(t);Object.keys(S.days).forEach(function(k){if(k>=START_KEY&&k<=t){var e=S.days[k];x+=dayXP(e);if(e)defsOf(e).forEach(function(q){if(q.type==="weekly"&&e[q.id]===true&&weekCountOn(q.id,k)===q.min)x+=100})}});return x}
   function weekCountOn(id,k){var n=0;for(var d=weekStart(k);d<=k;d=add(d,1))if((S.days[d]||{})[id]===true)n++;return n}
+  /* Per-quest streak and consistency (both modes; counters, not judgments). qStreak(id,k): consecutive scheduled days
+     up to k on which the quest was met (today counts once met; a day the quest wasn't on the list, was off, paused or
+     not scheduled is skipped, not broken). qConsist(id,k): met / scheduled over the last 30 days. Daily time, check,
+     target, scale and clock-time quests only (not totals, weekly counts, limits or to-dos). */
+  var STREAK_TYPES={time:1,check:1,target:1,scale:1,wake:1};
+  function qStreakable(q){return !!q&&STREAK_TYPES[q.type]&&!q.roll}
+  function qDayState(id,d){var cq=cfgQ(id),from=cq?(cq.addedOn||firstSeen(id)):null;if(from&&d<from)return null;var q=dayDefMap(d)[id];if(!q){if(!cq||!qStreakable(cq))return null;return !scheduled(cq,d)||isPaused(cq,d)||(cq.startOn&&d<cq.startOn)?"skip":null}if(!qStreakable(q))return null;if(q.off||q.ign||!scheduled(q,d))return "skip";return metQ(q,S.days[d]||{})?"met":"miss"}
+  function qStreak(id,k){var n=0,d=k,st=qDayState(id,k);if(st==="miss")d=add(k,-1);for(var i=0;i<400&&d>=START_KEY;i++,d=add(d,-1)){var x=qDayState(id,d);if(x===null)break;if(x==="skip")continue;if(x==="met")n++;else break}return n}
+  function qConsist(id,k){var met=0,sch=0;for(var i=0;i<30;i++){var d=add(k,-i);if(d<START_KEY)break;var x=qDayState(id,d);if(x==="met"){met++;sch++}else if(x==="miss")sch++}return{met:met,sch:sch}}
+  /* XP spent on streak repairs comes off the level, never off the day totals. */
+  function xpNet(upto){return Math.max(0,totalXP(upto)-((S.cfg&&S.cfg.xpSpent)|0))}
   function level(x){var l=1,need=300;while(x>=need){x-=need;l++;need=300*l}return{l:l,cur:x,need:need}}

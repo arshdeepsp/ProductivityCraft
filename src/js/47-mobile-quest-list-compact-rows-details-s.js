@@ -15,6 +15,7 @@
       if(q.total)r("Project total",(q.type==="time"?hm(projSum(q.id)):num(projSum(q.id)))+" of "+(q.type==="time"?hm(q.total):num(q.total)));
       if(q.note)r("Note",esc(q.note));
       r("Days",q.days&&q.days.length&&q.days.length<7?q.days.map(function(d){return DN[d]}).join(" "):"Every day");
+      if(qStreakable(q)){var qs=qStreak(q.id,T),qc=qConsist(q.id,T);r("In a row",qs+(qs===1?" day":" days"));if(qc.sch)r("Last 30 days",qc.met+" of "+qc.sch+" ("+Math.round(qc.met/qc.sch*100)+"%)")}
       if(lateStart(q,T))r("Counts from",q.type==="time"&&q.roll?"next week (added late in the week)":"tomorrow (added late in the day)");else if(q.opt)r("Optional","Yes");
       var SLd=qSubjs(q),TLd=qTopics(q);if(SLd.length)r(TLd.length?(TLd.length>1?"Topics":"Topic"):(SLd.length>1?"Subjects":"Subject"),SLd.map(function(id){var sj=subjById(id),tn=TLd.filter(function(t){return topicById(t).s.id===id}).map(function(t){return esc(topicName(t))});return esc(sj.name)+(tn.length?" \u203a "+tn.join(", "):"")}).join("; "));
       if(cq.fin)r("Done when",cq.fin.t==="total"?"Project total reached":(cq.fin.t==="topic"?"Topic reaches ":"Subject reaches ")+LV[cq.fin.lvl||4]);

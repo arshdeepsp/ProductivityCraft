@@ -29,6 +29,7 @@
       if(noStreakOn(k)){st.marks[k]="pause";return}
       if(!reqDefsFor(k).length){st.marks[k]="rest";return}
       if(ok(S.days[k])){success(k);return}
+      if((S.days[k]||{}).rep){success(k);st.marks[k]="repaired";return}
       st.miss++;
       if(st.miss>=2&&st.fz>0&&st.streak>0){st.fz--;st.miss=1;st.marks[k]="frozen";gk=k}
       else if(st.miss>=2){st.marks[k]="miss";if(gk&&(st.marks[gk]==="grace"||st.marks[gk]==="frozen"))st.marks[gk]="miss";if(st.streak>0)reset(k)}
