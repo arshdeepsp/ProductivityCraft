@@ -30,7 +30,7 @@
     el.addEventListener("touchmove",function(e){if(x0==null)return;var t=e.touches[0],ddx=t.clientX-x0,ddy=t.clientY-y0;if(!act){if(Math.abs(ddx)>14&&Math.abs(ddx)>Math.abs(ddy)*1.4)act=true;else if(Math.abs(ddy)>14){x0=null;return}else return}dx=Math.max(-110,Math.min(110,ddx));el.style.transform="translateX("+dx+"px)";el.classList.toggle("sw-r",dx>64);el.classList.toggle("sw-l",dx<-64)},{passive:true});
     function end(){if(x0==null&&!act)return;x0=null;el.style.transform="";var r=el.classList.contains("sw-r"),l=el.classList.contains("sw-l");el.classList.remove("sw-r","sw-l");if(!act)return;act=false;if(r){haptic("light");onRight()}else if(l){haptic("light");onLeft()}}
     el.addEventListener("touchend",end);el.addEventListener("touchcancel",function(){x0=null;act=false;el.style.transform="";el.classList.remove("sw-r","sw-l")})}
-  /* Ignore / add back (tracking-only mode only): swipe right on a row, or the row menu. */
+  /* Ignore / add back (Casual only): swipe right on a row, or the row menu. */
   function setIgnore(id,on){if(!rewardsOff())return;var c2=clone(cfg()),L=(c2.ignore||[]).filter(function(x){return x!==id});if(on)L.push(id);if(L.length)c2.ignore=L;else delete c2.ignore;saveCfg(c2);qSig="";nfSig="";render();var q=c2.quests.filter(function(x){return x.id===id})[0];setSync((q?q.label:"Quest")+(on?" ignored. Swipe right in Ignored to add it back.":" is back on your list."))}
   var lowBatt=false;
   function calmSync(){var c=cfg().calm||"auto",pr=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches,on=c==="on"||(c==="auto"&&(pr||lowBatt));document.body.classList.toggle("calm",!!on)}

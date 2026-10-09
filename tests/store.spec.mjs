@@ -6,7 +6,7 @@ const CS = { id: "cs", type: "time", label: "Coursework", min: 60 };
 const store = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("pc-cache-v1")));
 
 test("the store stamps each document it wrote: a day on an edit, cfg on a settings change, a deletion as a tombstone", async ({ page }) => {
-  await openApp(page, { now: "2026-11-02T09:00:00-05:00", cfg: { quests: [J, CS] } });
+  await openApp(page, { now: "2026-11-02T09:00:00-05:00", cfg: { quests: [J, CS], repFrozen: true } });
   const t0 = Date.parse("2026-11-02T09:00:00-05:00");
   let s = await store(page);
   expect(s.meta.u.cfg).toBeUndefined();
@@ -35,7 +35,7 @@ test("the store stamps each document it wrote: a day on an edit, cfg on a settin
 });
 
 test("older data loads; the passed days it snapshots on first open are stamped, untouched docs are not", async ({ page }) => {
-  await openApp(page, { cfg: { quests: [J] }, days: { "2026-11-01": { j: true, q: [J] } } });
+  await openApp(page, { cfg: { quests: [J], repFrozen: true }, days: { "2026-11-01": { j: true, q: [J] } } });
   let s = await store(page);
   expect(s.meta.u.cfg).toBeUndefined();
   expect(s.meta.u["days/2026-11-02"]).toBeUndefined();

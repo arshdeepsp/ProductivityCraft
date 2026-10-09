@@ -61,6 +61,8 @@
     if(changed){spSave();notifSync()}
     spRender();
   }
+  /* The panel is rebuilt every second (the countdown is in its markup), so the Stop button's "Confirm" arming lives outside the render: spArm = when it was armed, good for SP_ARM_MS. */
+  var spArm=0,SP_ARM_MS=4000;function spArmed(){return spArm&&Date.now()-spArm<SP_ARM_MS}
   function spRender(){
     var sp=S.sprint;if(!sp)return;var now=Date.now(),T=todayKey(),e=S.days[T]||{};
     var pillTxt=sp.phase==="focus"?(sp.paused?"Paused \u00b7 ":"\u25cf ")+spLabel(sp.cur)+" "+spFmt(sp.end-(sp.paused||now)):sp.phase==="break"?(sp.breakDone?"Break over \u00b7 start next":"Break "+spFmt(sp.bend-now)):"Sprint done";
@@ -70,12 +72,12 @@
     if(sp.phase==="focus"){
       var tot=sp.len*60000,left=sp.end-(sp.paused||now),pc=Math.max(0,Math.min(100,100-left/tot*100));
       h='<div class="sp-k">Focus \u00b7 block '+sp.block+(sp.rounds?' of '+sp.rounds:'')+'</div><div class="sp-q1">'+esc(spLabel(sp.cur))+(sp.topic?'<small class="sp-tp">'+esc(topicName(sp.topic))+'</small>':'')+(sp.firstStep&&sp.block===1&&!sp.extended?'<small class="sp-tp">First step: '+esc(sp.firstStep)+'</small>':'')+'</div><div class="sp-time">'+spFmt(left)+'</div><div class="sp-bar"><i style="width:'+pc.toFixed(1)+'%"></i></div>'+spParkHtml()+
-        '<div class="edrow end"><button type="button" class="stone" id="spMinB">Minimize</button><button type="button" class="stone" id="spPause">'+(sp.paused?"Resume":"Pause")+'</button><button type="button" class="stone del" id="spStop">Stop sprint</button></div>';
+        '<div class="edrow end"><button type="button" class="stone" id="spMinB">Minimize</button><button type="button" class="stone" id="spPause">'+(sp.paused?"Resume":"Pause")+'</button><button type="button" class="stone del" id="spStop">'+(spArmed()?"Confirm stop":"Stop sprint")+'</button></div>';
     }else if(sp.phase==="break"){
       var defs=spDefs().filter(function(q){return sp.ids.indexOf(q.id)>=0});
       var canExt=!sp.extended&&now<sp.bstart+5*60000;
       h='<div class="sp-k">'+(sp.long?"Long break":"Decision break")+' \u00b7 next: block '+(sp.block+1)+(sp.rounds?' of '+sp.rounds:'')+'</div><div class="sp-time'+(sp.breakDone?' ok':'')+'">'+(sp.breakDone?"Ready":spFmt(sp.bend-now))+'</div><p class="help">Stand up, stretch, decide what\u2019s next. Suggested: the quest furthest behind.</p>'+(canExt?'<div class="edrow"><button type="button" class="stone save" id="spFlow">In flow? +30 min on '+esc(spLabel(sp.prev))+'</button></div>':'')+spParkHtml()+'<div class="sp-list">'+defs.map(function(q){var d=e[q.id]|0,t=spTarget(q,e),pc=Math.min(100,Math.round(d/Math.max(1,t)*100)),on=sp.next===q.id;return '<button type="button" class="sp-opt'+(on?' on':'')+'" data-sn="'+q.id+'" role="radio" aria-checked="'+on+'"><span class="sp-n">'+esc(q.label)+(q.id===sp.prev?' <em>just did</em>':'')+'</span><span class="sp-v">'+hm(d)+' / '+hm(t)+'</span><span class="sp-pb"><i style="width:'+pc+'%"></i></span></button>'}).join("")+'</div>'+
-        topicSelect("spNextTopic",sp.nextTopic||"")+'<div class="edrow end"><button type="button" class="stone" id="spMinB">Minimize</button><button type="button" class="stone del" id="spStop">End sprint</button><button type="button" class="stone save" id="spNext"'+(sp.breakDone&&sp.next?'':' disabled')+'>'+(sp.breakDone?"Start block":"Start in "+spFmt(sp.bend-now))+'</button></div>';
+        topicSelect("spNextTopic",sp.nextTopic||"")+'<div class="edrow end"><button type="button" class="stone" id="spMinB">Minimize</button><button type="button" class="stone del" id="spStop">'+(spArmed()?"Confirm end":"End sprint")+'</button><button type="button" class="stone save" id="spNext"'+(sp.breakDone&&sp.next?'':' disabled')+'>'+(sp.breakDone?"Start block":"Start in "+spFmt(sp.bend-now))+'</button></div>';
     }else{
       var ids=Object.keys(sp.log),total=ids.reduce(function(a,k){return a+sp.log[k]},0);
       h='<div class="sp-k">Sprint complete</div><div class="sp-time ok">'+hm(total)+'</div><p class="help">Logged to today\u2019s quests:</p><div class="sp-list">'+(ids.length?ids.map(function(k){return '<div class="sp-opt"><span class="sp-n">'+esc(spLabel(k))+'</span><span class="sp-v">+'+hm(sp.log[k])+'</span></div>'}).join(""):'<p class="help">Nothing was logged.</p>')+'</div><div class="edrow end"><button type="button" class="stone save" id="spDone">Close</button></div>';
@@ -88,7 +90,7 @@
     var sp=S.sprint,g=function(id){return spBody.querySelector("#"+id)};
     if(g("spMinB"))g("spMinB").addEventListener("click",spHide);
     if(g("spPause"))g("spPause").addEventListener("click",function(){if(sp.paused){var d=Date.now()-sp.paused;sp.end+=d;sp.pausedTotal=(sp.pausedTotal||0)+d;sp.paused=null}else sp.paused=Date.now();spSave();spRender()});
-    if(g("spStop")){var arm=null,b=g("spStop");b.addEventListener("click",function(){if(!arm){b.textContent="Confirm";arm=setTimeout(function(){arm=null;spRender()},3000);return}clearTimeout(arm);spFinish(true)})}
+    if(g("spStop"))g("spStop").addEventListener("click",function(){if(!spArmed()){spArm=Date.now();spRender();return}spArm=0;spFinish(true)});
     spBody.querySelectorAll("[data-sn]").forEach(function(x){x.addEventListener("click",function(){sp.next=x.getAttribute("data-sn");spSave();spRender()})});
     if(g("spFlow"))g("spFlow").addEventListener("click",function(){var now=Date.now();sp.phase="focus";sp.cur=sp.prev;sp.start=now;sp.end=now+30*60000;sp.blen=30;sp.extended=true;sp.paused=null;sp.pausedTotal=0;sp.breakDone=false;spSave();sfx("base");spRender()});
     spWirePark();

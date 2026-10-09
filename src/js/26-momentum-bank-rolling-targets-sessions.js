@@ -9,11 +9,7 @@
       bankCov.set(e,cov)});
     bankNow=bal;
   }
-  function carriedOK(k){return false}
-  function carriedOKOld(k){var rq=reqDefsFor(k);if(!rq.length)return false;var anyRoll=false;for(var i=0;i<rq.length;i++){var q=rq[i];if(q.type==="limit")continue;if(q.type==="time"&&q.roll){anyRoll=true;if(rollSum(q.id,k,q)<rollNeed(q,k))return false;continue}return false}return anyRoll}
-  function rollOnlyDay(k){var rq=reqDefsFor(k).filter(function(q){return q.type!=="limit"});return rq.length&&rq.every(function(q){return q.type==="time"&&q.roll})?rq:null}
   function emptyCover(fromK){return null}
-  function emptyCoverOld(fromK){var rq=rollOnlyDay(fromK);if(!rq)return null;var best=99;rq.forEach(function(q){var n=0,ws=perStart(q,fromK),s=0;for(var dd=ws;dd<fromK;dd=add(dd,1))s+=(S.days[dd]||{})[q.id]|0;for(var d=0;d<31;d++){var k=add(fromK,d);if(perStart(q,k)!==ws)break;if(s>=rollNeed(q,k))n++;else break}best=Math.min(best,n)});return best}
   /* Time totals run over a period: the calendar week (default), two weeks (q.per "2w", counted from the week the
      quest started) or the calendar month (q.per "month"). Pace spreads the total across the period's work days. */
   var PER_NAME={"":"week","2w":"2 weeks",month:"month"};
@@ -40,7 +36,7 @@
   function lockReps(d,e){if(!(S.cfg.rep||[]).length)return;var R=schAll(d).filter(function(b){return b.rep});if(!R.length)return;
     e.sched=schNorm(e.sched).concat(R.map(function(b){var x={id:"x"+b.rep+d.replace(/-/g,""),f:b.f,t:b.t,src:b.rep};if(b.q)x.q=b.q;if(b.lb)x.lb=b.lb;if(b.j5)x.j5=true;return x}));e.schSkip=(e.schSkip||[]).concat(R.map(function(b){return b.rep}))}
   function lockPast(){if(!S.cfg||cacheBlock)return;if(lockDays!==S.days||lockStart!==START_KEY){lockDays=S.days;lockStart=START_KEY;lockedThru=null}var T=todayKey(),d=lockedThru?add(lockedThru,1):START_KEY,ch=false;
-    if(!S.cfg.repFrozen){for(var r0=START_KEY;r0<T;r0=add(r0,1)){var e0=S.days[r0];if(e0&&e0.ck&&!(e0.schSkip||[]).length){e0=S.days[r0]=Object.assign({},e0);lockReps(r0,e0)}}S.cfg.repFrozen=true;ch=true}
+    if(!S.cfg.repFrozen){for(var r0=START_KEY;r0<T;r0=add(r0,1)){var e0=S.days[r0];if(e0&&e0.ck&&!(e0.schSkip||[]).length){e0=S.days[r0]=Object.assign({},e0);lockReps(r0,e0)}}S.cfg=Object.assign({},S.cfg,{repFrozen:true});ch=true}
     for(;d<T;d=add(d,1)){var e=S.days[d];if(e&&e.ck)continue;if(!e||(!e.q&&!hasEntry(e))){e=S.days[d]=Object.assign({},e||{});e.q=lockDefs(d)}else e=S.days[d]=Object.assign({},e);ddm={};e.ck=[];lockReps(d,e);
       (e.q||[]).forEach(function(q){if(q.type==="time"&&q.roll&&midAt(q,d,d)===d)e.ck.push(q.id)});ch=true}
     if(d>=T)lockedThru=add(T,-1);if(ch){ddm={};cache()}}
@@ -61,7 +57,6 @@
   function periodList(k){var C={},T=todayKey();cfg().quests.forEach(function(q){if(q.type==="time"&&q.roll)C[q.id]=q});for(var d=add(k,-31);d<k;d=add(d,1)){var e=S.days[d];((e&&e.q)||[]).forEach(function(q){if(q.type==="time"&&q.roll&&!C[q.id])C[q.id]=q})}
     var out=[];Object.keys(C).forEach(function(id){var q0=C[id],last=null,uo=false;for(var d=perStart(q0,k),e=perEnd(q0,k);d<=e;d=add(d,1)){var x=dayDefMap(d)[id];if(!x)continue;last=x;if(x.uopt)uo=true;else if(!isVac(d)&&!x.off)uo=!!x.opt}
       var md0=midDay(q0,k),upto=md0&&md0>=k?md0:perEnd(q0,k);if(last&&!uo&&!noStreakIn(weekFrom(q0,k),upto))out.push(slim(cfgQ(id)||last))});return out}
-  function weekWorkDays(q){return q.days&&q.days.length?q.days.length:7}
   function weekTarget(q,k){var f=weekFrom(q,k);return Math.round(q.roll*workDaysIn(q,f,perEnd(q,k))/perWorkDays(q,k))}
   var firstSeenCache={},firstSeenSig="";
   function firstSeen(id){var sig=Object.keys(S.days).length+"";if(sig!==firstSeenSig){firstSeenCache={};firstSeenSig=sig}if(id in firstSeenCache)return firstSeenCache[id];var best=null;Object.keys(S.days).forEach(function(d){if(best&&d>=best)return;var e=S.days[d];if(e&&(hasEntry(e)||!e.ck)&&defsOf(e).some(function(q){return q.id===id}))best=d});return (firstSeenCache[id]=best)}

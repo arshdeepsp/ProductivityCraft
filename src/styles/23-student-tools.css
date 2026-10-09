@@ -1,14 +1,4 @@
 /* ===== student tools ===== */
-.top3{background:#B5B5B5;border:3px solid;border-color:#fff #555 #555 #fff;padding:10px 12px;margin-bottom:10px;display:grid;gap:6px}
-.t3h{font-family:"Press Start 2P",monospace;font-size:9px;color:#3F3F3F}
-.t3r{display:grid;grid-template-columns:26px 1fr;gap:8px;align-items:center}
-.t3c{width:26px;height:26px;padding:0;background:#373737;border:3px solid;border-color:#1E1E1E #8B8B8B #8B8B8B #1E1E1E;cursor:pointer;position:relative}
-.t3c[aria-pressed="true"]{background:#3C8527}
-.t3c[aria-pressed="true"]::after{content:"";position:absolute;left:6px;top:2px;width:6px;height:11px;border:solid #fff;border-width:0 3px 3px 0;transform:rotate(45deg)}
-.t3c:disabled{cursor:default;opacity:.7}
-.t3i{font:20px/1.2 var(--vt);background:#8B8B8B;color:#fff;border:3px solid;border-color:#373737 #fff #fff #373737;padding:4px 8px;min-width:0;width:100%;box-sizing:border-box;text-shadow:1px 1px 0 #3F3F3F}
-.t3i::placeholder{color:#D9D9D9}
-.t3r.done .t3i{text-decoration:line-through;color:#E6E6E6}
 .stone.tmr{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 9px;font-size:9px;margin-right:4px}
 .stone.tmr .ic{display:block;width:0;height:0;border-left:9px solid #fff;border-top:6px solid transparent;border-bottom:6px solid transparent}
 .stone.tmr.on{background:#B3261E}

@@ -74,12 +74,12 @@
     if(!past){checkFinish();maybeReviewTodos()}renderCarryNote();
     var cqm={};cfg().quests.forEach(function(q){cqm[q.id]=q});
     defs.forEach(function(q){var el=qEls[q.id];if(!el)return;var sk=el.row.querySelector(".qstk");if(sk){var n=qStreak(q.id,k);sk.hidden=n<2;if(n>=2){sk.innerHTML=svg("flame")+'<b>'+n+'</b>';sk.setAttribute("aria-label",n+" days in a row")}}var ch=el.row.querySelector(".sjchip");if(ch){var sl=qSubjs(q),pool=qTopicPool(q);if(sl.length){var due=pool.some(function(id){return topicStats(topicById(id).t).due});ch.innerHTML='<span class="sjn">...</span>'+(due?'<i class="rdot"></i>':'');ch.setAttribute("aria-label","Feeds "+(pool.length?pool.map(topicName):sl.map(function(id){return subjById(id).name})).join(", "));ch.hidden=false}else ch.hidden=true}
-      var cq=cqm[q.id];el.row.classList.toggle("doneq",!!(cq&&cq.completed));var pt=el.row.querySelector(".pendtag");if(pt)pt.remove()});
+      var cq=cqm[q.id];el.row.classList.toggle("doneq",!!(cq&&cq.completed))});
     timerTick();renderHudExtras(T);renderShelf();notifSync();applyHide();mobileList(defs,e,past);renderPark();renderHeat();
     defs.forEach(function(q){var el=qEls[q.id];if(!el||q.type!=="time")return;var rq=el.row.querySelector(".req"),base=reqText(q),xtra="";
       if(q.roll){var rk=k,rs=rollSum(q.id,rk),rn=rollNeed(q,rk),df=rs-rn;xtra=" \u00b7 7-day: "+hm(rs)+" / "+hm(rn)+(df>=0?(df===0?" \u00b7 on pace":" \u00b7 ahead "+hm(df)):" \u00b7 "+hm(-df)+" more today keeps you on pace")}else if(cfg().bank){var cv=(bankCov.get(e)||{})[q.id]||0,bk=bankNow[q.id]||0;if(cv)xtra=" \u00b7 +"+hm(cv)+" from bank";else if(bk)xtra=" \u00b7 bank "+hm(bk)}
       rq.textContent=base});
-    /* Tracking-only mode: totals just say how much of this period's target is done (no pace or "need" figures). */
+    /* Casual: totals just say how much of this period's target is done (no pace or "need" figures). */
     if(off&&k===T)defs.forEach(function(q){var el=qEls[q.id];if(!el||q.type!=="time"||!q.roll)return;var rq=el.row.querySelector(".req");if(rq)rq.textContent+=" \u00b7 "+hm(rollSum(q.id,k,q))+" of "+hm(weekTarget(q,k))+" done this "+perWord(q)});
     defs.forEach(function(q){var el=qEls[q.id];if(!el||q.type!=="time"||!q.roll)return;var wt=weekTarget(q,k);if(wt<q.roll){var rq=el.row.querySelector(".req");if(rq&&rq.textContent.indexOf("this "+perWord(q))<0)rq.textContent+=" \u00b7 "+hm(wt)+" this "+perWord(q)+" (started "+fmtD(weekFrom(q,k))+")"}});
     defs.forEach(function(q){var el=qEls[q.id];if(!el||q.type!=="time"||!q.roll||scheduled(q,k))return;var rq=el.row.querySelector(".req");if(rq&&rq.textContent.indexOf("off day")<0)rq.textContent+=" \u00b7 off day, extra time still counts"});

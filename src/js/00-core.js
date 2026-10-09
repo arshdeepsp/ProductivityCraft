@@ -72,14 +72,11 @@
   function mins(t){var p=String(t).split(":");return (+p[0])*60+(+p[1])}
   function clone(x){return JSON.parse(JSON.stringify(x))}
   function cfg(){if(!S.cfg){S.cfg={quests:[],rules:null,start:START_AT.toISOString(),updated:""};cache()}if(!S.cfg.start)S.cfg.start=START_AT.toISOString();return S.cfg}
-  /* Streaks paused (cfg.noStreak = [{from, to?}], to exclusive): tracking only. A paused day is neutral for the streak
-     (like a rest day, so it picks up where it was), earns no XP or badge progress, and no period total is judged in a
-     period that touches one. The reward UI is hidden while today is paused (body.nostreak). SCHEMA 13 marks this. */
   /* Modes. Challenge (default): streak with grace and freezes, period-total checkpoints, badges, grove, easing changes from tomorrow. Casual (a cfg.noStreak range, so history keeps each day's mode): XP, levels and rank still earned and shown; the streak holds (days are neutral), nothing is judged, badges and grove are hidden, and changes apply at once. modeOn(k) names a day's mode; rewardsOff() = today is Casual (kept as the gate name everywhere). Settings are never cleared on a switch — only their application is gated. */
   function noStreakOn(k){return ((S.cfg&&S.cfg.noStreak)||[]).some(function(r){return k>=r.from&&(!r.to||k<r.to)})}
   function modeOn(k){return noStreakOn(k)?"casual":"challenge"}
   function rewardsOff(){return noStreakOn(todayKey())}
-  /* Ignore list (cfg.ignore = quest ids), tracking-only mode: on a paused day an ignored quest is optional (o.ign) and kept
+  /* Ignore list (cfg.ignore = quest ids), Casual only: on a Casual day an ignored quest is optional (o.ign) and kept
      out of the main list, the schedule, Just 5, Pick and reminders. Cleared when streaks come back on. */
   function ignoredOn(id,k){return noStreakOn(k)&&((S.cfg&&S.cfg.ignore)||[]).indexOf(id)>=0}
   function noStreakIn(a,b){return ((S.cfg&&S.cfg.noStreak)||[]).some(function(r){return r.from<=b&&(!r.to||r.to>a)})}
@@ -119,7 +116,7 @@
   function ok(e){if(!hasEntry(e))return false;var dq=reqOf(defsOf(e));return dq.length>0&&dq.every(function(q){return metQ(q,e)})}
   function limBroken(e){return !!e&&reqOf(defsOf(e)).some(function(q){return overQ(q,e)})}
   function gold(e){return ok(e)&&reqOf(defsOf(e)).every(function(q){return q.type!=="time"||q.roll||(e[q.id]|0)>=planOf(q,e)})}
-  function dayXP(e){if(!e)return 0;var x=0;defsOf(e).forEach(function(q){if(q.type!=="time"){if(metQ(q,e)&&q.type!=="limit"&&q.type!=="wake"&&hasEntry(e))x+=q.opt?10:20;return}var d=Math.min(240,e[q.id]|0);x+=d;if(d>0&&d>=planOf(q,e))x+=30});x+=(e.sess||[]).filter(function(z){return z.m>=90}).length*25;x+=Math.min(CALL_CAP,e.calls|0)*CALL_XP;x+=(e.top||[]).filter(function(t){return t&&t.t&&t.d}).length*5;if(ok(e))x+=50;if(gold(e))x+=100;return Math.max(0,x)}
+  function dayXP(e){if(!e)return 0;var x=0;defsOf(e).forEach(function(q){if(q.type!=="time"){if(metQ(q,e)&&q.type!=="limit"&&q.type!=="wake"&&hasEntry(e))x+=q.opt?10:20;return}var d=Math.min(240,e[q.id]|0);x+=d;if(d>0&&d>=planOf(q,e))x+=30});x+=(e.sess||[]).filter(function(z){return z.m>=90}).length*25;x+=Math.min(CALL_CAP,e.calls|0)*CALL_XP;if(ok(e))x+=50;if(gold(e))x+=100;return Math.max(0,x)}
   /* The week starts on Monday (cfg.weekStart 1, default) or Sunday (0). Every weekly rule goes through weekStart. */
   function wkS(){var c=S.cfg;return c&&c.weekStart===0?0:1}
   function weekStart(k){return add(k,-((parse(k).getDay()-wkS()+7)%7))}

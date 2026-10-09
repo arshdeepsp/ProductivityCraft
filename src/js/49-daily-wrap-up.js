@@ -134,7 +134,6 @@
     if(Q.every(function(q){return Math.abs((e[q.id]|0)-pl(k,q))<=10})&&tot)obs.push([4,"Within 10 minutes of plan on every quest. Accurate planning."]);
     var wd=parse(k).getDay();obs.push([1,pick(r,wd===1?["Monday set the tone for the week."]:wd===5||wd===6?["Weekend: keep the routine intact."]:wd===0?["Sunday: a good day to look at the week as a whole."]:["Midweek. Protect the routine."])]);
     var tds=defsOf(e).filter(function(q){return q.type==="todo"&&e[q.id]===true}).length;if(tds)obs.push([4,tds+" to-do"+(tds===1?"":"s")+" checked off."]);
-    var t3=[];if(t3.length)obs.push([4,"Top 3: "+t3.filter(function(x){return x.d}).length+" of "+t3.length+" done."]);
     var nd=(cfg().deadlines||[]).filter(function(d){return d.date>k}).sort(function(a,b){return a.date<b.date?-1:1})[0];if(nd){var ndn=daysBetween(k,nd.date);obs.push([ndn<=7?5:2,"Next deadline: "+nd.title+" in "+ndn+" day"+(ndn===1?"":"s")+"."])}
     defsOf(e).forEach(function(q){if(q.total&&(q.type==="time"||q.type==="target")){var ps=projSum(q.id,k);obs.push([3,q.label+" project: "+Math.min(100,Math.round(ps/q.total*100))+"% of the total."])}});
     var tmc=cfg().term;if(tmc&&tmc.start&&tmc.end&&k>=tmc.start&&k<=tmc.end)obs.push([1,(tmc.name?tmc.name+", w":"W")+"eek "+(Math.floor(daysBetween(tmc.start,k)/7)+1)+" of "+Math.ceil((daysBetween(tmc.start,tmc.end)+1)/7)+"."]);

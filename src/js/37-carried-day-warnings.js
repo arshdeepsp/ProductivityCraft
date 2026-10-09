@@ -1,5 +1,4 @@
   /* ---- period totals: what this week (or 2 weeks / month) still needs ---- */
-  function carriedRun(k){return 0}
   /* Before the halfway checkpoint the goal shown is a third of the target by that day; after it, the full target by period end. */
   function periodStatus(T){return periodList(T).map(function(q){var s=rollSum(q.id,T,q),full=weekTarget(q,T),md=midDay(q,T),pre=md&&T<=md&&md!==perEnd(q,T)&&s<midNeed(q,T),tg=pre?midNeed(q,T):full;return {q:q,s:s,tg:tg,full:full,mid:!!pre,end:pre?md:perEnd(q,T),behind:s<rollNeed(q,T)}}).filter(function(x){return x.full>0})}
   function openCarryInfo(){openG("Weekly totals",function(b){var P=periodStatus(todayKey());

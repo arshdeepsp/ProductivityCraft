@@ -18,8 +18,6 @@
   function jumpSubj(id){go("subjects");setTimeout(function(){var c=document.querySelector('.sjsec[data-sid="'+id+'"]');if(c&&c.classList.contains("fold"))sjFold(id);if(c){c.scrollIntoView({block:"center"});c.classList.add("flash");setTimeout(function(){c.classList.remove("flash")},1500)}},50)}
   function subjMinutes(sid){var t=0;Object.keys(S.days).forEach(function(d){var e=S.days[d];if(!e)return;defsOf(e).forEach(function(q){if(q.type==="time"&&qSubjs(q).indexOf(sid)>=0)t+=e[q.id]|0})});return t}
   function capOf(){return cfg().cap||10}
-  function activeCount(L){return (L||cfg().quests).filter(function(q){return q.type!=="todo"&&!q.completed}).length}
-  function capLockedUntil(){return null}
   var WDN=["Sundays","Mondays","Tuesdays","Wednesdays","Thursdays","Fridays","Saturdays"],WDS=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
   function countsOnDay(q){return q&&q.type!=="todo"&&q.type!=="weekly"&&!q.completed&&!q.opt}
   function dayLoad(L){var c=[0,0,0,0,0,0,0];(L||cfg().quests).forEach(function(q){if(!countsOnDay(q))return;var d=q.days&&q.days.length?q.days:[0,1,2,3,4,5,6];d.forEach(function(w){c[w]++})});return c}
@@ -27,8 +25,6 @@
   function busiest(L){var c=dayLoad(L),m=0,w=1;c.forEach(function(n,i){if(n>m){m=n;w=i}});return{w:w,n:m}}
   function overMsg(ov,cap){return ov.map(function(o){return WDN[o.w]+" would have "+o.n}).join(", ")+" quests (limit "+(cap||capOf())+" per day). Untick some days, make one optional, or complete one first."}
   function wouldExceed(newQ){var L=cfg().quests.concat([newQ]);return overDays(L)}
-  function atCap(extra){return false}
-  function capMsgOld(){return "You\u2019re at your limit of "+capOf()+" active quests. Complete or archive one first (Badges \u203a Completed), or raise the limit in Settings."}
   function finishMet(q){var f=q.fin;if(q.dl){var s=0,T=todayKey();for(var d=q.dl.from;d<=T;d=add(d,1))s+=+((S.days[d]||{})[q.id])||0;if(s>=q.dl.total)return "target met";if(T>q.dl.due)return "deadline passed";return null}
     if(!f)return null;
     if(f.t==="total"&&q.total&&projSum(q.id)>=q.total)return "project total reached";
@@ -46,14 +42,6 @@
       b.innerHTML='<p class="mhead">Finish \u201c'+esc(q.label)+'\u201d?</p><p class="help">It stays on today\u2019s list, then moves to Badges \u203a Completed from tomorrow. Its history is kept.</p>'+'<div class="edrow end"><button type="button" class="stone" id="mcNo">Cancel</button><button type="button" class="stone save" id="mcGo">Mark complete</button></div>';
       b.querySelector("#mcNo").addEventListener("click",closeG);
       b.querySelector("#mcGo").addEventListener("click",function(){var c=clone(cfg()),old=clone(c.quests),g=guardEasing(c,old,inf.setup?[]:[q.id]);if(!g.ok){b.querySelector(".help").textContent=g.msg;return}var t=c.quests.filter(function(x){return x.id===q.id})[0];t.completed={on:todayKey(),how:"manual"};saveCfg(c);qSig="";closeG();sfx("level");showToast({icon:"trophy",kicker:"Quest complete!",title:q.label,desc:""});render()})})}
-  function openCapPicker(newCap,done){
-    var L=cfg().quests.filter(function(q){return q.type!=="todo"&&!q.completed}),keep=L.slice(0,newCap).map(function(q){return q.id});
-    openG("Choose your "+newCap+" active quests",function(b){
-      function draw(){b.innerHTML='<p class="help">You have '+L.length+' active quests but chose a limit of '+newCap+'. Pick the ones to keep. The rest are archived to Badges \u203a Completed (history kept) and can be restored later when there\u2019s room.</p><div class="mlist">'+L.map(function(q){var on=keep.indexOf(q.id)>=0;return '<label class="mrow pickrow'+(on?' ok':'')+'"><input type="checkbox" data-kq="'+q.id+'"'+(on?' checked':'')+'><span class="ml">'+esc(q.label)+'</span><span class="mv">'+(on?'Keep':'Archive')+'</span></label>'}).join("")+'</div><p class="cmsg2">'+(keep.length===newCap?'':'Selected '+keep.length+' of '+newCap+'.')+'</p><div class="edrow end"><button type="button" class="stone" id="cpNo">Cancel</button><button type="button" class="stone save" id="cpGo"'+(keep.length===newCap?'':' disabled')+'>Keep these '+newCap+'</button></div>';
-        b.querySelectorAll("[data-kq]").forEach(function(x){x.addEventListener("change",function(){var id=x.getAttribute("data-kq"),i=keep.indexOf(id);if(x.checked&&i<0){if(keep.length>=newCap){x.checked=false;return}keep.push(id)}else if(!x.checked&&i>=0)keep.splice(i,1);draw()})});
-        b.querySelector("#cpNo").addEventListener("click",closeG);
-        b.querySelector("#cpGo").addEventListener("click",function(){var c=clone(cfg()),T=todayKey();c.quests.forEach(function(q){if(q.type!=="todo"&&!q.completed&&keep.indexOf(q.id)<0)q.completed={on:T,how:"archived"}});saveCfg(c);qSig="";closeG();done()})}
-      draw()})}
   function renderShelf(){var el=document.getElementById("shelf");if(!el)return;var L=cfg().quests.filter(function(q){return q.completed});el.hidden=!L.length;if(!L.length){el.innerHTML="";return}
     el.innerHTML='<h3 class="ach-sub">Completed quests</h3><div class="shelf">'+L.slice().sort(function(a,b){return a.completed.on<b.completed.on?1:-1}).map(function(q){var ar=q.completed.how==="archived";return '<div class="shelf-r'+(ar?' ar':'')+'"><span class="ml">'+(ar?'':'\u2713 ')+esc(q.label)+'</span><span class="mv">'+(ar?'Archived':'Done')+' '+fmtD(q.completed.on)+(ar||q.completed.how==="manual"?'':' \u00b7 '+esc(q.completed.how))+'</span>'+(ar?'<button type="button" class="stone mini" data-restore="'+q.id+'">Restore</button>':'')+'</div>'}).join("")+'</div>';
     el.querySelectorAll("[data-restore]").forEach(function(x){x.addEventListener("click",function(){var c=clone(cfg()),q=c.quests.filter(function(z){return z.id===x.getAttribute("data-restore")})[0];if(!q)return;var tq=clone(q);delete tq.completed;var ov0=overDays(c.quests.filter(function(z){return z!==q}).concat([tq]));if(ov0.length){setSync(overMsg(ov0));return}delete q.completed;saveCfg(c);qSig="";render();renderShelf();setSync(q.label+" restored")})})}

@@ -42,9 +42,9 @@ details.rules>summary h2{flex:1}
 .bknudge{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;margin-top:12px;padding:10px 12px;background:#FFF3C4;border:3px solid #B8860B;color:#3F3F3F;font-size:18px}
 .bknudge .bkb{display:flex;gap:6px}.bknudge .stone{font-size:8px;padding:8px 10px}
 /* readable small text */
-.q .req,.sync,.paused,.lock,.wk,.proj span,.dlc,.hud .note,.dayinfo,.ach .t3,.ach .st,.t3h,.ctr .tag,.xpl,.mgr .ty,.mgr .pz,.ed label,.stripnav,.cleared,.failtxt{font-family:var(--vt)!important;letter-spacing:.02em}
+.q .req,.sync,.paused,.lock,.wk,.proj span,.dlc,.hud .note,.dayinfo,.ach .t3,.ach .st,.ctr .tag,.xpl,.mgr .ty,.mgr .pz,.ed label,.stripnav,.cleared,.failtxt{font-family:var(--vt)!important;letter-spacing:.02em}
 .q .req{font-size:17px!important;line-height:1.1!important;margin-top:2px!important}
-.sync,.paused,.lock,.dayinfo,.hud .note,.t3h,.ctr .tag,.ed label,.mgr .ty,.mgr .pz{font-size:17px!important;line-height:1.2!important}
+.sync,.paused,.lock,.dayinfo,.hud .note,.ctr .tag,.ed label,.mgr .ty,.mgr .pz{font-size:17px!important;line-height:1.2!important}
 .wk,.proj span,.dlc,.stripnav{font-size:16px!important;line-height:1.2!important}
 .ach .t3,.ach .st{font-size:16px!important;line-height:1.25!important}
 .xpl{font-size:18px!important}.cleared,.failtxt{font-size:19px!important}

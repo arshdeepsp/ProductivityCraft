@@ -18,4 +18,3 @@ body[data-cur="achievements"] .ach-sec{padding-top:10px}
   body{padding-bottom:calc(74px + var(--sab))!important}
   .sp-pill{bottom:calc(82px + var(--sab))}
 }
-.t3h{display:block;width:100%;text-align:left;background:none;border:0;padding:0;font:17px var(--vt);color:#3F3F3F;cursor:default}
