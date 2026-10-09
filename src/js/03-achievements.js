@@ -40,7 +40,9 @@
       sa.innerHTML='<div class="slot">'+svg(a.icon)+'</div><div><div class="k">'+(nb?"Next badge":"All badges earned")+'</div><div class="n"></div><div class="p">'+(nb?esc(nb.p.txt):n+" of "+D.ach.length)+'</div><div class="bar"><i style="width:'+(nb?nb.p.pc:100)+'%"></i></div></div><button type="button" class="lnk">See all badges</button>';
       sa.querySelector(".n").textContent=nb?a.title:"Every badge";sa.querySelector(".lnk").addEventListener("click",function(){go("achievements")})}
     return o}
-  function showToast(a){
+  /* A toast raised in the first TOAST_HOLD ms after launch, before the person has touched anything (badges earned retroactively on open, say), waits for the first tap or key, so it never covers the header on launch. */
+  var TOAST_HOLD=3000,bootAt=Date.now(),toastQ=null,userActed=false;["pointerdown","keydown"].forEach(function(ev){document.addEventListener(ev,function(){userActed=true;if(toastQ){var a=toastQ;toastQ=null;showToast(a)}},{capture:true,passive:true})});
+  function showToast(a){if(!userActed&&Date.now()-bootAt<TOAST_HOLD){toastQ=a;return}
     toast.innerHTML='<div class="ach px"><div class="slot">'+svg(a.icon)+'</div><div><div class="t1">'+esc(a.kicker||"Badge earned!")+'</div><div class="t2"></div><div class="t3"></div></div></div>';
     toast.querySelector(".t2").textContent=a.title;toast.querySelector(".t3").textContent=a.desc||"";
     requestAnimationFrame(function(){toast.classList.add("show")});setTimeout(function(){toast.classList.remove("show")},5000);

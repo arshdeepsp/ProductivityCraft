@@ -23,7 +23,7 @@ test("the quest editor picks topics grouped by subject, and the subjects follow"
   expect(q.topics).toEqual(["t1", "t2", "t3"]);
   expect(q.subjs).toEqual(["s1", "s2", "s3"]);
   expect(q.subj).toBe("s1");
-  await expect(page.locator("#quests .sjchip")).toHaveText("\u2026");
+  await expect(page.locator("#quests .sjchip")).toHaveText("...");
   await expect(page.locator("#quests .sjchip")).toHaveAttribute("aria-label", "Feeds Consensus, Probability, Linear algebra");
 });
 
@@ -55,7 +55,7 @@ test("the today row shows a \u2026 box; tapping it lists each topic with its lev
   const S2 = [SUBJ[0], { ...SUBJ[1], topics: [SUBJ[1].topics[0], { ...SUBJ[1].topics[1], target: 4 }] }, SUBJ[2]];
   await openApp(page, { cfg: { quests: Q, subjects: S2 } });
   const chip = page.locator("#quests .sjchip");
-  await expect(chip).toHaveText("\u2026");
+  await expect(chip).toHaveText("...");
   await expect(chip).not.toContainText("Linear");
   await chip.click();
   const items = page.locator(".qmenu button");

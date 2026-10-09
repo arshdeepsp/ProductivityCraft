@@ -42,6 +42,8 @@ test("topic badges: level up, on target, expert, and several at once share one t
   const SJ = [{ id: "s1", name: "Maths", topics: [{ id: "a", name: "Algebra", p: 5, target: 4, hist: [{ d: "2026-10-01", p: 2 }, { d: "2026-10-20", p: 5 }] }] }];
   await openApp(page, { cfg: { quests: Q, subjects: SJ }, extra: { "pc-rerate": "2026-11-02" } });
   await expect.poll(async () => Object.keys((await store(page)).cfg.badges || {}).sort()).toEqual(["expert", "goal", "levelup"]);
+  await expect(page.locator("#toast")).not.toHaveClass(/show/);
+  await page.mouse.click(5, 5);
   await expect(page.locator("#toast .t1")).toHaveText("Badge earned!");
   await expect(page.locator("#toast .t2")).toHaveText("3 badges");
 });
