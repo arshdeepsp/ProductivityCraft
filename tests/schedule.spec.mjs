@@ -515,10 +515,10 @@ test.describe("resuming an interrupted block", () => {
 
   test("a started block with time left offers Resume on the schedule and shows what's left on the row", async ({ page }) => {
     await openApp(page, { now: "2026-11-02T10:40:00-05:00", cfg: { quests: [CS] }, days: { "2026-11-02": day } });
-    await expect(page.locator("#quests .q", { hasText: "CS work" }).locator(".req")).toContainText("10:00–12:00 (1h 30m left)");
+    await expect(page.locator("#quests .q", { hasText: "CS work" }).locator(".req")).toContainText("10:00–12:00 (1h 20m left)");
     await page.click("#schBtn");
     await page.click(".sch-b");
-    await expect(page.locator("#schRes")).toHaveText("Resume · 1h 30m left");
+    await expect(page.locator("#schRes")).toHaveText("Resume · 1h 20m left");
     await page.click("#schRes");
     await expect(page.locator("#schPage")).toBeHidden();
     await expect.poll(async () => ((await store(page)).timer || {}).id).toBe("cs");
@@ -530,13 +530,26 @@ test.describe("resuming an interrupted block", () => {
     await page.clock.runFor(2000);
     const n = (await page.evaluate(() => window.__ln)).filter((x) => x.id === 905).pop();
     expect(n).toMatchObject({ title: "Resume CS work", ongoing: true, extra: { sched: "cs", resume: 1 } });
-    expect(n.body).toBe("1h 30m left of your 10:00–12:00 block. Tap to pick it back up.");
+    expect(n.body).toBe("1h 20m left of your 10:00–12:00 block. Tap to pick it back up.");
     await page.click("#quests .q .tmr");
     await page.clock.runFor(2000);
     expect(await page.evaluate(() => window.__rm)).toContain(905);
   });
 
-  test("a block not started yet, or finished, offers no Resume", async ({ page }) => {
+  test("a block under way that you never started offers Start for what's left of it, with no persistent notification", async ({ page }) => {
+    await page.addInitScript(nmock);
+    await openApp(page, { now: "2026-11-02T10:40:00-05:00", cfg: { quests: [CS], nf: { on: true } }, days: { "2026-11-02": { q: [CS], sched: [{ id: "b1", q: "cs", f: 600, t: 720 }] } } });
+    await page.clock.runFor(2000);
+    expect((await page.evaluate(() => window.__ln)).some((x) => x.id === 905)).toBe(false);
+    await page.click("#schBtn");
+    await expect(page.locator("#schResA")).toHaveText("Start CS work · 1h 20m left");
+    await page.click(".sch-b");
+    await expect(page.locator("#schRes")).toHaveText("Start · 1h 20m left");
+    await page.click("#schRes");
+    await expect.poll(async () => ((await store(page)).timer || {}).id).toBe("cs");
+  });
+
+  test("a finished block offers no Resume", async ({ page }) => {
     await openApp(page, { now: "2026-11-02T10:40:00-05:00", cfg: { quests: [CS] }, days: { "2026-11-02": { q: [CS], sched: [{ id: "b1", q: "cs", f: 600, t: 630 }], cs: 30, sess: [{ id: "cs", s: at(10, 0), e: at(10, 30), m: 30 }] } } });
     await page.click("#schBtn");
     await page.click(".sch-b");
@@ -558,7 +571,7 @@ test.describe("schedule flexibility", () => {
     await expect(page.locator("#quests .q .req")).not.toContainText("left)");
   });
 
-  test("re-planning a block after stopping (shortening or delaying it) means no resume nag", async ({ page }) => {
+  test("re-planning a block after stopping (shortening or delaying it) means no resume nag, but Resume stays on the block", async ({ page }) => {
     await page.addInitScript(nmock);
     const d = { ...day(690) };
     d.sched = [{ id: "b1", q: "cs", f: 600, t: 690, ed: at(10, 35) }];
@@ -567,10 +580,10 @@ test.describe("schedule flexibility", () => {
     expect((await page.evaluate(() => window.__ln)).some((x) => x.id === 905)).toBe(false);
     await page.click("#schBtn");
     await page.click(".sch-b");
-    await expect(page.locator("#schRes")).toHaveCount(0);
+    await expect(page.locator("#schRes")).toHaveText("Resume · 50m left");
   });
 
-  test("editing a block stamps it, so an interruption before the edit isn't resumed", async ({ page }) => {
+  test("editing a block stamps it, and Resume is still offered after an edit", async ({ page }) => {
     await openApp(page, { now: "2026-11-02T10:40:00-05:00", cfg: { quests: [CS] }, days: { "2026-11-02": day(720) } });
     await page.click("#schBtn");
     await page.click(".sch-b");
@@ -579,7 +592,7 @@ test.describe("schedule flexibility", () => {
     await page.click("[data-sm='range']");
     const b = (await store(page)).days["2026-11-02"].sched[0];
     expect(b.ed).toBeGreaterThan(at(10, 30));
-    await expect(page.locator("#schRes")).toHaveCount(0);
+    await expect(page.locator("#schRes")).toHaveCount(1);
   });
 
   test("delaying a block moves its start reminder to the new time", async ({ page }) => {
@@ -609,6 +622,25 @@ test.describe("schedule flexibility", () => {
     await openApp(page, { now: "2026-11-02T10:40:00-05:00", cfg: { quests: [CS], nf: { on: true } }, days: { "2026-11-02": met } });
     await page.clock.runFor(2000);
     expect((await page.evaluate(() => window.__ln)).some((x) => x.id === 905)).toBe(false);
+    await page.click("#schBtn");
+    await expect(page.locator("#schResA")).toHaveText("Resume CS work · 1h 20m left");
+  });
+
+  test("Resume shows on the schedule without picking the block", async ({ page }) => {
+    await openApp(page, { now: "2026-11-02T10:40:00-05:00", cfg: { quests: [CS] }, days: { "2026-11-02": day(720) } });
+    await page.click("#schBtn");
+    await page.click("#schResA");
+    await expect(page.locator("#schPage")).toBeHidden();
+    await expect.poll(async () => ((await store(page)).timer || {}).id).toBe("cs");
+  });
+
+  test("a weekly total ahead of pace still gets the resume notification until today's share is done", async ({ page }) => {
+    await page.addInitScript(nmock);
+    const W = { id: "w", type: "time", label: "Thesis", min: 30, roll: 600, days: [1, 2, 3, 4, 5] };
+    const d = { q: [W], w: 60, sched: [{ id: "b1", q: "w", f: 600, t: 720 }], sess: [{ id: "w", s: at(10, 0), e: at(10, 20), m: 20 }] };
+    await openApp(page, { now: "2026-11-02T10:40:00-05:00", cfg: { quests: [W], nf: { on: true } }, days: { "2026-11-02": d, "2026-11-01": { w: 300 } } });
+    await page.clock.runFor(2000);
+    expect((await page.evaluate(() => window.__ln)).some((x) => x.id === 905)).toBe(true);
   });
 
   test("a stale resume tap starts nothing once the block is gone", async ({ page }) => {
