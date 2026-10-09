@@ -16,5 +16,5 @@
     if(!openTodos().some(function(q){return (q.addedOn||"")<T}))return false;
     return document.getElementById("gModal").hidden&&document.getElementById("nqModal").hidden}
   function maybeReviewTodos(){if(reviewDue())setTimeout(function(){if(reviewDue())reviewTodos("open")},600)}
-  document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"){maybeReviewTodos();maybeRerate()}});
+  document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"){maybeReviewTodos()}});
   (function(){var ln=LN();if(!ln||!ln.addListener)return;try{ln.addListener("localNotificationActionPerformed",function(ev){var n=ev&&ev.notification;if(n)setTimeout(function(){notifAction(n.id,n.extra||{})},500)})}catch(x){}})();

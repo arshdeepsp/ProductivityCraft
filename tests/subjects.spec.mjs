@@ -124,26 +124,43 @@ test("switching topic mid-session splits the time between them", async ({ page }
 const WK = { "2026-10-27": { tt: { a: 70, b: 30 } }, "2026-10-29": { tt: { b: 50, c: 200, d: 90 } }, "2026-11-01": { tt: { e: 59 } } };
 const WS = [{ id: "s1", name: "Maths", topics: ["a", "b", "c", "d", "e"].map((id) => ({ id, name: "Topic " + id, p: 2, hist: [] })) }];
 
-test("once a week, the top 3 topics by time (an hour or more) get a rerate check-in", async ({ page }) => {
-  await openApp(page, { cfg: { quests: [], subjects: WS }, days: WK });
-  await expect(page.locator("#gTitle")).toHaveText("Weekly check-in");
-  await expect(page.locator("#gBody .rr-n b")).toHaveText(["Topic c", "Topic d", "Topic b"]);
-  await page.click("#gBody [data-rr='c'][data-pv='4']");
-  await page.click("#rrSave");
+test("once a week, the top 3 topics by time (an hour or more) get a check-in card at the top of Subjects", async ({ page }) => {
+  await openApp(page, { cfg: { quests: [], subjects: WS, addTrends: true }, days: WK });
+  await page.waitForTimeout(1200);
   await expect(page.locator("#gModal")).toBeHidden();
+  await page.goto("http://127.0.0.1:4173/index.html#trends");
+  await page.waitForTimeout(1200);
+  await expect(page.locator("#gModal")).toBeHidden();
+  await page.goto("http://127.0.0.1:4173/index.html#subjects");
+  const card = page.locator("#rrCard");
+  await expect(card).toBeVisible();
+  expect(await page.evaluate(() => document.querySelector("#rrCard").getBoundingClientRect().top < document.querySelector(".sjsec").getBoundingClientRect().top)).toBe(true);
+  await expect(card.locator(".rr-n b")).toHaveText(["Topic c", "Topic d", "Topic b"]);
+  await page.click("#rrCard [data-rr='c'][data-pv='4']");
+  await expect(page.locator("#rrCard .rr-r", { hasText: "Topic c" }).locator(".rr-l")).toHaveText("Advanced");
+  await page.click("#rrSave");
+  await expect(card).toHaveCount(0);
   const t = (await store(page)).cfg.subjects[0].topics;
   expect(t.find((x) => x.id === "c")).toMatchObject({ p: 4, hist: [{ d: "2026-11-02", p: 4 }] });
   expect(t.find((x) => x.id === "d").hist).toEqual([]);
   expect(t.find((x) => x.id === "a").hist).toEqual([]);
   await page.reload();
-  await page.waitForTimeout(1500);
-  await expect(page.locator("#gModal")).toBeHidden();
+  await expect(page.locator(".sjsec")).toHaveCount(1);
+  await expect(page.locator("#rrCard")).toHaveCount(0);
+});
+
+test("Skip this week dismisses the card until next week", async ({ page }) => {
+  await openApp(page, { cfg: { quests: [], subjects: WS }, days: WK, hash: "#subjects" });
+  await page.click("#rrSkip");
+  await expect(page.locator("#rrCard")).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem("pc-rerate"))).toBe("2026-11-02");
+  expect((await store(page)).cfg.subjects[0].topics.every((t) => t.p === 2)).toBe(true);
 });
 
 test("no check-in when no topic got an hour last week", async ({ page }) => {
-  await openApp(page, { cfg: { quests: [], subjects: WS }, days: { "2026-10-29": { tt: { a: 59 } }, "2026-11-02": { tt: { b: 300 } } } });
-  await page.waitForTimeout(1500);
-  await expect(page.locator("#gModal")).toBeHidden();
+  await openApp(page, { cfg: { quests: [], subjects: WS }, days: { "2026-10-29": { tt: { a: 59 } }, "2026-11-02": { tt: { b: 300 } } }, hash: "#subjects" });
+  await expect(page.locator(".sjsec")).toHaveCount(1);
+  await expect(page.locator("#rrCard")).toHaveCount(0);
 });
 
 test("the Subjects page lists topics under subject headers with level, goal, month time and review", async ({ page }) => {
@@ -235,10 +252,10 @@ test("a topic with 5h+ in 4 weeks and a flat level is flagged on Subjects and Tr
 });
 
 test("the weekly check-in rates what you can do and points out flat topics", async ({ page }) => {
-  await openApp(page, { cfg: { quests: [], subjects: FS }, days: FD });
-  await expect(page.locator("#gTitle")).toHaveText("Weekly check-in");
-  await expect(page.locator("#gBody .help").first()).toContainText("not how much time you put in");
-  const f = page.locator("#gBody .rr-r", { hasText: "Flat one" });
+  await openApp(page, { cfg: { quests: [], subjects: FS }, days: FD, hash: "#subjects" });
+  await expect(page.locator("#rrCard .rrcard-h b")).toHaveText("Weekly check-in");
+  await expect(page.locator("#rrCard .rrcard-h small")).toContainText("not how much time you put in");
+  const f = page.locator("#rrCard .rr-r", { hasText: "Flat one" });
   await expect(f.locator(".rr-do")).toHaveText("I can follow a worked example");
   await expect(f.locator(".rr-flat")).toHaveText("Lots of time lately, level unchanged.");
   await f.locator("[data-pv='4']").click();

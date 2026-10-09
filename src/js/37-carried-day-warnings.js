@@ -8,5 +8,5 @@
     b.querySelector("#ciOk").addEventListener("click",closeG)})}
   function renderCarryNote(){var el=document.getElementById("carryNote");if(!el)return;var T=todayKey(),P=rewardsOff()?[]:periodStatus(T).filter(function(x){return x.s<x.tg});if(!P.length){el.hidden=true;return}el.hidden=false;
     var hot=P.some(function(x){return x.behind}),last=P.some(function(x){return x.end===T});
-    el.textContent=(last?"Checkpoint today: ":"Keep this "+(P.every(function(x){return !perOf(x.q)})?"week":"period")+": ")+P.map(function(x){return x.q.label+" "+hm(x.s)+"/"+hm(x.tg)+(x.end===T?"":" by "+DAYF[parse(x.end).getDay()].slice(0,3))}).join(", ")+(last?", or the days so far are lost.":".")+" How does this work?";
-    el.className="carrynote"+(hot||last?" hot":"");if(!el.dataset.w){el.dataset.w=1;el.setAttribute("role","button");el.tabIndex=0;el.addEventListener("click",openCarryInfo)}}
+    el.innerHTML='<span>'+esc((last?"Checkpoint today: ":"Keep this "+(P.every(function(x){return !perOf(x.q)})?"week":"period")+": ")+P.map(function(x){return x.q.label+" "+hm(x.s)+"/"+hm(x.tg)+(x.end===T?"":" by "+DAYF[parse(x.end).getDay()].slice(0,3))}).join(" \u00b7 ")+(last?" \u2014 or the days so far are lost.":""))+'</span><i class="sq" aria-hidden="true">?</i>';
+    el.className="carrynote"+(last&&hot?" hot":hot?" warm":"");el.setAttribute("aria-label","How period totals work");if(!el.dataset.w){el.dataset.w=1;el.setAttribute("role","button");el.tabIndex=0;el.addEventListener("click",openCarryInfo)}}

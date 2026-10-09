@@ -7,9 +7,9 @@ const WS = [{ id: "s1", name: "Maths", topics: ["a", "b", "c", "d"].map((id) => 
 const mock = `window.__ln=[];window.Capacitor={isNativePlatform:()=>true,Plugins:{LocalNotifications:{requestPermissions:()=>Promise.resolve({display:'granted'}),createChannel:()=>Promise.resolve(),getPending:()=>Promise.resolve({notifications:[]}),cancel:()=>Promise.resolve(),schedule:(o)=>{o.notifications.forEach(n=>window.__ln.push({id:n.id,title:n.title,at:String(n.schedule.at)}));return Promise.resolve()},addListener:()=>Promise.resolve({})},App:{addListener:()=>Promise.resolve({})},KeepAwake:{keepAwake:()=>Promise.resolve(),allowSleep:()=>Promise.resolve()}}};`;
 
 test("weekly check-in only saves the ratings you changed", async ({ page }) => {
-  await openApp(page, { cfg: { quests: [], subjects: WS }, days: WK });
-  await expect(page.locator("#gTitle")).toHaveText("Weekly check-in");
-  await page.click("#gBody [data-rr='c'][data-pv='3']");
+  await openApp(page, { cfg: { quests: [], subjects: WS }, days: WK, hash: "#subjects" });
+  await expect(page.locator("#rrCard .rrcard-h b")).toHaveText("Weekly check-in");
+  await page.click("#rrCard [data-rr='c'][data-pv='3']");
   await page.click("#rrSave");
   const t = (await store(page)).cfg.subjects[0].topics;
   expect(t.find((x) => x.id === "c").hist).toEqual([{ d: "2026-11-02", p: 3 }]);
@@ -17,18 +17,18 @@ test("weekly check-in only saves the ratings you changed", async ({ page }) => {
   expect(t.find((x) => x.id === "a").p).toBe(0);
 });
 
-test("weekly check-in waits while the schedule is open", async ({ page }) => {
+test("the weekly check-in never opens a modal on Today, even on return to the app", async ({ page }) => {
   await openApp(page, { cfg: { quests: [{ id: "cs", type: "time", label: "CS", min: 30 }], subjects: WS }, days: WK, extra: { "pc-rerate": "" } });
-  await page.evaluate(() => document.body.classList.add("sch-open"));
   await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
   await page.waitForTimeout(1200);
   await expect(page.locator("#gModal")).toBeHidden();
+  await expect(page.locator("#rrCard")).toHaveCount(0);
 });
 
 test("moving the week start doesn't ask for the weekly check-in twice", async ({ page }) => {
-  await openApp(page, { now: "2026-11-02T09:00:00-05:00", cfg: { quests: [], subjects: WS }, days: WK, extra: { "pc-rerate": "2026-11-01" } });
-  await page.waitForTimeout(1500);
-  await expect(page.locator("#gModal")).toBeHidden();
+  await openApp(page, { now: "2026-11-02T09:00:00-05:00", cfg: { quests: [], subjects: WS }, days: WK, extra: { "pc-rerate": "2026-11-01" }, hash: "#subjects" });
+  await expect(page.locator(".sjsec")).toHaveCount(1);
+  await expect(page.locator("#rrCard")).toHaveCount(0);
 });
 
 test("Pick's topic review uses a quest linked to the topic's subject before an unrelated one", async ({ page }) => {

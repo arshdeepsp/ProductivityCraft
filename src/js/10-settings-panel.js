@@ -59,7 +59,7 @@
     else if(setTab==="extras"){
       h+=sgroup("Add-ons",srow("Quick-start tools","Pick for me and Batch to-dos in the ⋮ menu",swc("setSpark",c.sparkTools,"Quick-start tools"))+srow("Share week","A summary card to send",swc("setShare",c.addShare,"Share week"))+srow("Trends page","Weekly charts in the nav",swc("setTrends",c.addTrends,"Trends page")));}
     else if(setTab==="data"){
-      h+=sgroup("Backup",srow("Export backup",esc(setSummary("data")),'<button type="button" class="stone mini save" id="setExp">Export</button>')+srow("Import backup","Merges with what’s here",'<button type="button" class="stone mini" id="setImp">Import</button>'),"data");
+      h+=sgroup("Backup",srow("Export backup",esc(setSummary("data")),'<button type="button" class="stone mini save" id="setExp">Export</button>')+srow("Import backup","Merges with what’s here",'<button type="button" class="stone mini" id="setImp">Import</button>')+srow("Your data","Stays on this device. Nothing is sent anywhere; a backup is how it moves."),"data");
       h+='<p class="help sfoot">Everything stays on this device; nothing is sent anywhere.</p>'}
     el.innerHTML=h;
     bind("setBack","click",function(){setTab=null;renderSettings();window.scrollTo(0,0)});

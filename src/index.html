@@ -75,9 +75,9 @@
     <div id="questsWrap">
       <div class="top3" id="top3"></div>
       <div class="sparkbar" id="sparkBar" hidden><button type="button" class="stone save" id="sp5Btn">&#9654; Just 5<span class="m-hide"> minutes</span></button><button type="button" class="stone" id="schBtn">&#9719; Schedule</button><button type="button" class="stone kebab" id="toolsBtn" aria-haspopup="menu" aria-label="More tools: sprint, pick for me, batch to-dos">&#8942;</button></div>
+      <div class="carrynote" id="carryNote" hidden></div>
       <div class="quests" id="quests"></div>
       <div class="qtools"><button type="button" class="stone save" id="nqBtn">+ <span class="lg">New </span><span class="sm">Quest</span><span class="lg">quest</span></button><button type="button" class="stone" id="spBtn">Sprint</button><button type="button" class="stone tdtg" id="tdToggle">+ To-do</button><button type="button" class="stone" id="shareBtn" hidden>Share week</button><button type="button" class="stone" id="qEditBtn">Edit<span class="lg"> quests</span></button></div>
-      <div class="carrynote" id="carryNote" hidden></div>
       <div class="parkbox" id="parkBox" hidden></div>
       <div class="tdrow" id="tdRow"><input id="tdNew" maxlength="60" placeholder="Add a to-do" aria-label="New to-do"><button type="button" class="stone" id="tdAdd">Add</button></div>
       <p class="paused" id="pausedNote" hidden></p>
@@ -120,7 +120,7 @@
 <section class="view" data-view="settings" hidden><h2 class="viewh">Settings</h2><div class="setpage gui" id="setPage"></div></section>
 
 <nav class="mbar" aria-label="Quick actions"><button type="button" class="stone save" id="mbNew"><b>+</b><span>Quest</span></button><button type="button" class="stone" id="mbSprint"><b>&#9654;</b><span>Sprint</span></button><button type="button" class="stone" id="mbGrove"><svg viewBox="0 0 16 16" aria-hidden="true" shape-rendering="crispEdges"><rect x="5" y="2" width="6" height="2" fill="#7CC24E"/><rect x="3" y="4" width="10" height="5" fill="#56A63A"/><rect x="4" y="9" width="8" height="2" fill="#3E8A2C"/><rect x="5" y="4" width="3" height="2" fill="#A6DB72"/><rect x="7" y="11" width="2" height="4" fill="#7A4A24"/></svg><span>Grove</span></button></nav>
-<footer><p class="privacy">Your data stays on this device. Nothing is sent anywhere. Use Export backup to move it to another device.</p></footer>
+<footer></footer>
 </div>
 <div class="toast" id="toast" aria-live="polite"></div>
 <script type="application/json" id="achData">/*@inject:ach*/</script>

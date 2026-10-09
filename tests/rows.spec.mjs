@@ -62,3 +62,73 @@ test("a badge toast raised on launch waits for the first tap", async ({ page }) 
   await expect(page.locator("#toast")).toHaveClass(/show/);
   await expect(page.locator("#toast .t1")).toHaveText("Badge earned!");
 });
+
+test.describe("today trims (phone)", () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const CS = { id: "cs", type: "time", label: "Coursework", min: 30, roll: 900, days: [1, 2, 3, 4, 5], addedOn: "2026-10-01" };
+  const J = { id: "j", type: "check", label: "Journal" };
+
+  test("a total's row says what to do today, or that you're on pace or ahead", async ({ page }) => {
+    await openApp(page, { now: "2026-11-04T09:00:00-05:00", cfg: { quests: [CS, J] }, days: { "2026-11-02": { cs: 60, q: [CS, J] } } });
+    const sum = page.locator("#quests .q", { hasText: "Coursework" }).locator(".qsum");
+    await expect(sum).toHaveText("4h 40m to go today");
+    await page.click("#quests .q:has-text('Coursework') .qsum");
+    for (let i = 0; i < 10; i++) await page.click("#quests .q:has-text('Coursework') .act button[aria-label^='More']");
+    await expect(sum).toHaveText("3h to go today");
+    await page.locator("#quests .q", { hasText: "Coursework" }).locator(".pzb").click();
+    await page.click(".qmenu button:has-text('View details')");
+    await expect(page.locator("#gBody")).toContainText("2h 40m of 15h");
+  });
+
+  test("ahead of pace, and on an off day, the row shows the period figure", async ({ page }) => {
+    await openApp(page, { now: "2026-11-04T09:00:00-05:00", cfg: { quests: [CS, J] }, days: { "2026-11-02": { cs: 300, q: [CS, J] }, "2026-11-03": { cs: 300, q: [CS, J] } } });
+    await expect(page.locator("#quests .q", { hasText: "Coursework" }).locator(".qsum")).toHaveText("+1h ahead of pace");
+    await page.clock.setFixedTime(new Date("2026-11-07T09:00:00-05:00"));
+    await page.reload();
+    await page.click("#offSep");
+    await expect(page.locator("#quests .q", { hasText: "Coursework" }).locator(".qsum")).toHaveText("10h of 15h this week");
+  });
+
+  test("the period note sits above the list and is quiet while on pace", async ({ page }) => {
+    await openApp(page, { now: "2026-11-04T09:00:00-05:00", cfg: { quests: [CS, J] }, days: { "2026-11-02": { cs: 300, q: [CS, J] }, "2026-11-03": { cs: 300, q: [CS, J] } } });
+    const note = page.locator("#carryNote");
+    await expect(note).toContainText("Keep this week: Coursework 10h/15h by Sun");
+    await expect(note).not.toContainText("How does this work");
+    await expect(note).toHaveClass(/^carrynote$/);
+    expect(await page.evaluate(() => document.querySelector("#carryNote").getBoundingClientRect().bottom <= document.querySelector("#quests .q").getBoundingClientRect().top)).toBe(true);
+    await note.click();
+    await expect(page.locator("#gTitle")).toHaveText("Weekly totals");
+  });
+
+  test("the period note is warm when behind pace, and red only on a checkpoint day that's behind", async ({ page }) => {
+    await openApp(page, { now: "2026-11-03T09:00:00-05:00", cfg: { quests: [CS, J] }, days: { "2026-11-02": { cs: 60, q: [CS, J] } } });
+    await expect(page.locator("#carryNote")).toContainText("by Wed");
+    await expect(page.locator("#carryNote")).toHaveClass(/warm/);
+    await page.clock.setFixedTime(new Date("2026-11-04T09:00:00-05:00"));
+    await page.reload();
+    await expect(page.locator("#carryNote")).toContainText("Checkpoint today");
+    await expect(page.locator("#carryNote")).toHaveClass(/hot/);
+  });
+
+  test("the quick to-do box is the first thing in the list and adds a to-do", async ({ page }) => {
+    await openApp(page, { cfg: { quests: [CS, J] } });
+    const gh = page.locator("#tdGhost");
+    await expect(gh).toBeVisible();
+    expect(await page.evaluate(() => document.querySelector("#tdGhost").getBoundingClientRect().bottom <= document.querySelector("#quests .q").getBoundingClientRect().top)).toBe(true);
+    await gh.locator("input").fill("Email supervisor");
+    await gh.locator("input").press("Enter");
+    await expect(page.locator("#quests .q.t-todo .lbl")).toHaveText(["Email supervisor"]);
+    expect((await store(page)).cfg.quests.filter((q) => q.type === "todo").map((q) => q.label)).toEqual(["Email supervisor"]);
+  });
+
+  test("saving is silent; the privacy line lives in Settings › Backup", async ({ page }) => {
+    await openApp(page, { cfg: { quests: [J] } });
+    await page.click("#quests .q:has-text('Journal') .sw");
+    await page.waitForTimeout(1200);
+    await expect(page.locator("#sync")).not.toContainText("Saved");
+    await expect(page.locator("footer .privacy")).toHaveCount(0);
+    await page.goto("http://127.0.0.1:4173/index.html#settings");
+    await page.click("[data-st='data']");
+    await expect(page.locator(".srow", { hasText: "Your data" })).toContainText("Stays on this device");
+  });
+});

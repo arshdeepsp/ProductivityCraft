@@ -1,0 +1,19 @@
+/* ===== Today trims (usability pass 2) ===== */
+/* Period note: one quiet line above the list; warm when behind pace, red only on a checkpoint day that's behind. */
+.carrynote{display:flex;align-items:center;gap:8px;cursor:pointer;margin:0 0 8px;padding:6px 10px;background:#B5B5B5;border:3px solid;border-color:#555 #fff #fff #555;color:#1E1E1E;font:17px/1.25 var(--vt);text-shadow:none}
+.carrynote span{flex:1;min-width:0}
+.carrynote .sq{flex:none;font:8px var(--px);font-style:normal;width:20px;height:20px;display:grid;place-items:center;background:#373737;color:#FFFF55;border:2px solid #1E1E1E}
+.carrynote.warm{background:#F3E2B8;border-color:#8A6A1E #FFF3D6 #FFF3D6 #8A6A1E;color:#4A3A0E}
+.carrynote.hot{background:#FFE3DD;border-color:#B3261E #FFD0C8 #FFD0C8 #B3261E;color:#7A1A12}
+.carrynote[hidden]{display:none!important}
+/* Weekly check-in card at the top of Subjects */
+.rrcard{background:#C6C6C6;border:3px solid;border-color:#fff #555 #555 #fff;box-shadow:0 0 0 3px #000;padding:10px 12px;margin:0 0 14px;color:#1E1E1E;text-shadow:none}
+.rrcard-h{display:grid;gap:4px;margin-bottom:6px}
+.rrcard-h b{font:10px var(--px);color:#1E1E1E}
+.rrcard-h small{font:16px var(--vt);color:#3F3F3F}
+.rrcard .edrow.end{margin-top:8px}
+/* Quick to-do add: first thing in the phone list */
+@media (max-width:720px){
+  html body .tdghost{display:flex!important;order:-1;margin-bottom:2px;padding:4px 8px}
+  html body.hide-todo .tdghost,html body.past-view .tdghost,html body #quests.timing .tdghost{display:none!important}
+}
