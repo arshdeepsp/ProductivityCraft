@@ -16,14 +16,14 @@ test("a monthly total runs over the calendar month and paces across its work day
   await openApp(page, { cfg: { quests: M }, days: { "2026-11-01": { m: 40, q: M }, "2026-11-02": { m: 40, q: M } } });
   await expect(page.locator("#quests .q", { hasText: "Side project" }).locator(".req")).toContainText("20 hours per month");
   const r = await details(page, "Side project");
-  expect(r["This period (Nov 1–Nov 30)"]).toBe("1h 20m of 20h · need 1h 20m by today · on pace");
+  expect(r["This period (Nov 1–Nov 30)"]).toBe("1h 20m of 20h · on pace");
 });
 
 test("a 2-week total counts from the week the quest started", async ({ page }) => {
   const F = [{ id: "f", type: "time", label: "Sprint work", min: 30, roll: 840, per: "2w", addedOn: "2026-10-26" }];
   await openApp(page, { cfg: { quests: F, start: "2026-10-26T04:00:00.000Z" }, days: { "2026-10-27": { f: 420, q: F }, "2026-11-02": { f: 60, q: F } } });
   const r = await details(page, "Sprint work");
-  expect(r["This period (Oct 26–Nov 8)"]).toBe("8h of 14h · need 8h by today · on pace");
+  expect(r["This period (Oct 26–Nov 8)"]).toBe("8h of 14h · on pace");
 });
 
 test("weeks can start on Sunday: totals, pauses and day order follow", async ({ page }) => {
@@ -76,17 +76,17 @@ const S2 = "2026-11-02T05:00:00.000Z";
 test("a shortfall is spread over the rest of the week, not dumped on the next day", async ({ page }) => {
   await openApp(page, { now: "2026-11-04T09:00:00-05:00", cfg: { quests: W7, start: S2 }, days: { "2026-11-02": { w: 60, q: W7 } } });
   const r = await details(page, "Reading");
-  expect(r["This week"]).toBe("1h of 7h · need 2h 12m by today · 1h 12m more today keeps you on pace");
+  expect(r["This week"]).toBe("1h of 7h · 1h 12m more today keeps you on pace");
 });
 
 test("doing today's spread share puts you back on pace", async ({ page }) => {
   await openApp(page, { now: "2026-11-04T20:00:00-05:00", cfg: { quests: W7, start: S2 }, days: { "2026-11-02": { w: 60, q: W7 }, "2026-11-04": { w: 72, q: W7 } } });
   const r = await details(page, "Reading");
-  expect(r["This week"]).toBe("2h 12m of 7h · need 2h 12m by today · on pace");
+  expect(r["This week"]).toBe("2h 12m of 7h · on pace");
 });
 
 test("time banked earlier in the week still covers an empty day", async ({ page }) => {
   await openApp(page, { now: "2026-11-04T09:00:00-05:00", cfg: { quests: W7, start: S2 }, days: { "2026-11-02": { w: 180, q: W7 } } });
   const r = await details(page, "Reading");
-  expect(r["This week"]).toBe("3h of 7h · need 3h by today · on pace");
+  expect(r["This week"]).toBe("3h of 7h · on pace");
 });

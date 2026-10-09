@@ -31,7 +31,10 @@ test("a bedtime after midnight moves the day's lock to that hour", async ({ page
   await page.fill("#setBed", "01:30");
   await expect.poll(async () => (await day(page)).day).toEqual({ wake: "07:00", bed: "01:30" });
   await page.click("[data-go='today']");
-  await expect(page.locator("#lockIn")).toHaveText(/Locks in (16h 59m|17h 0m)/);
+  await expect(page.locator("#lockIn")).toHaveText("");
+  await page.clock.setFixedTime(new Date("2026-11-03T00:15:00-05:00"));
+  await page.clock.runFor(16000);
+  await expect(page.locator("#lockIn")).toHaveText(/Locks in 1h (44|45)m/);
 });
 
 test("late at night, work still counts for the day before until bedtime", async ({ page }) => {

@@ -48,6 +48,7 @@ test("the limit is set in Edit quests and in the new-quest form, and can't be be
   await openApp(page, { cfg: { quests: [{ id: "rd", type: "time", label: "Reading", min: 30 }] } });
   await page.click("#hdrEdit");
   await page.click("#qmgr [data-tog='rd']");
+  await page.click("#qmgr [data-more='rd']");
   await page.fill("#qmgr input[data-p=lim][data-i='0']", "20");
   await page.click("#mgrSaveTop");
   await expect(page.locator("#qmgr")).toBeVisible();
@@ -59,6 +60,7 @@ test("the limit is set in Edit quests and in the new-quest form, and can't be be
   await page.click("#aoQuest");
   await page.click("#nqBody .tcard[data-t='time']");
   await page.fill("#nqName", "Piano");
+  await page.click("#nqMoreOpt");
   await page.fill("#nqBody input[data-n='lim']", "45");
   await page.click("#nqSave");
   await expect.poll(async () => (await store(page)).cfg.quests.map((q) => [q.label, q.lim])).toEqual([["Reading", 120], ["Piano", 45]]);

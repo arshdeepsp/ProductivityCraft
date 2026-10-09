@@ -60,7 +60,7 @@ test("weekly totals reset on Monday and need a share of the week so far", async 
   await page.click(".qmenu button:has-text('View details')");
   const row = await page.locator("#gBody .dt-r").filter({ has: page.locator("span", { hasText: /^This week$/ }) }).textContent();
   expect(row).toContain("1h of 7h");
-  expect(row).toContain("need 2h by today");
+  expect(row).toContain("1h more today keeps you on pace");
 });
 
 test("switching a daily quest to a weekly total starts tomorrow", async ({ page }) => {
@@ -92,7 +92,7 @@ test("weekly totals pace by work days only", async ({ page }) => {
   await page.click(".qmenu button:has-text('View details')");
   const row = await page.locator("#gBody .dt-r").filter({ has: page.locator("span", { hasText: /^This week$/ }) }).textContent();
   expect(row).toContain("2h of 6h");
-  expect(row).toContain("need 2h by today");
+  expect(row).toContain("on pace");
 });
 
 test("on an off day the weekly quest is visible but optional", async ({ page }) => {

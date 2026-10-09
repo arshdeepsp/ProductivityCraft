@@ -12,8 +12,20 @@
 .rrcard-h b{font:10px var(--px);color:#1E1E1E}
 .rrcard-h small{font:16px var(--vt);color:#3F3F3F}
 .rrcard .edrow.end{margin-top:8px}
+/* Phone header: the pencil and Minimal live in the ⋮ menu; the Minimal button only shows while Minimal view is on, as the way out. */
+@media (max-width:720px){
+  html body #hdrEdit{display:none!important}
+  html body:not(.focusview) #focusBtn{display:none!important}
+  .gui-r{grid-template-columns:minmax(0,1fr) auto!important}
+  .gui-r .lock:empty{display:none}
+}
 /* Quick to-do add: first thing in the phone list */
 @media (max-width:720px){
   html body .tdghost{display:flex!important;order:-1;margin-bottom:2px;padding:4px 8px}
   html body.hide-todo .tdghost,html body.past-view .tdghost,html body #quests.timing .tdghost{display:none!important}
 }
+/* Quest forms: secondary fields fold under "More options"; the button carries a one-line summary of what's set. */
+.more-tog{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;width:100%;text-align:left;margin:6px 0 2px}
+.more-tog small{font:15px var(--vt);color:#3F3F3F;text-transform:none;letter-spacing:0;font-weight:400;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.moreb{display:grid;gap:8px;padding:8px;margin:4px 0 6px;border:3px dashed #8B8B8B;background:rgba(0,0,0,.05)}
+.moreb .sjfield{margin:0}

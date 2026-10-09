@@ -13,6 +13,7 @@ test("the quest editor picks topics grouped by subject, and the subjects follow"
   await openApp(page, { cfg: { quests: Q, subjects: SUBJ } });
   await page.click("#hdrEdit");
   await page.click("#qmgr [data-tog='cs']");
+  await page.click("#qmgr [data-more='cs']");
   await expect(page.locator("#qmgr .tpg")).toHaveCount(3);
   await page.click("#qmgr [data-ltp='t1']");
   await page.click("#qmgr [data-lsj='s2']");
@@ -32,6 +33,7 @@ test("unticking a subject's last topic unlinks the subject", async ({ page }) =>
   await openApp(page, { cfg: { quests: Q, subjects: SUBJ } });
   await page.click("#hdrEdit");
   await page.click("#qmgr [data-tog='cs']");
+  await page.click("#qmgr [data-more='cs']");
   await page.click("#qmgr [data-ltp='t2']");
   await page.click("#mgrSaveTop");
   const q = (await store(page)).cfg.quests[0];
@@ -44,6 +46,7 @@ test("a new quest can feed a topic", async ({ page }) => {
   await page.click("#hdrAdd");
   await page.click("#aoQuest");
   await page.fill("#nqName", "Proofs");
+  await page.click("#nqMoreOpt");
   await page.click("#nqBody [data-ltp='t3']");
   await expect(page.locator("#nqBody [data-ltp='t3']")).toHaveAttribute("aria-pressed", "true");
   await page.click("#nqSave");

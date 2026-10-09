@@ -47,6 +47,7 @@ test("an existing quest can be moved to start next week from Edit quests", async
   await openApp(page, { now: "2026-11-08T05:00:00-05:00", cfg: { quests: W } });
   await page.click("#hdrEdit");
   await page.click("#qmgr [data-tog='w']");
+  await page.click("#qmgr [data-more='w']");
   await page.fill("#qmgr input[data-p=startOn]", "2026-11-09");
   await page.dispatchEvent("#qmgr input[data-p=startOn]", "change");
   await page.click("#mgrSaveTop");
@@ -79,6 +80,7 @@ test("pushing an existing quest's start date can't remove it from today", async 
   await openApp(page, { now: "2026-11-04T09:00:00-05:00", cfg: { quests: W } });
   await page.click("#hdrEdit");
   await page.click("#qmgr [data-tog='w']");
+  await page.click("#qmgr [data-more='w']");
   await page.fill("#qmgr input[data-p=startOn]", "2026-11-09");
   await page.dispatchEvent("#qmgr input[data-p=startOn]", "change");
   await page.click("#mgrSaveTop");

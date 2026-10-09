@@ -11,4 +11,5 @@
   document.getElementById("fabAdd").addEventListener("click",openAddSheet);
   document.getElementById("hdrAdd").addEventListener("click",openAddSheet);
   document.getElementById("tdToggle").addEventListener("click",function(){var on=!document.body.classList.contains("tdopen");document.body.classList.toggle("tdopen",on);if(on)setTimeout(function(){var i=document.getElementById("tdNew");if(i)i.focus()},50)});
-  document.getElementById("focusBtn").addEventListener("click",function(){if(S.timer&&focusView){setSync("Stop the timer to leave Minimal view.");return}focusView=!focusView;try{localStorage.setItem("pc-focusview",focusView?"1":"0")}catch(x){}applyHide();haptic("light")});
+  function toggleFocusView(){if(S.timer&&focusView){setSync("Stop the timer to leave Minimal view.");return}focusView=!focusView;try{localStorage.setItem("pc-focusview",focusView?"1":"0")}catch(x){}applyHide();haptic("light")}
+  document.getElementById("focusBtn").addEventListener("click",toggleFocusView);

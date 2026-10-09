@@ -118,6 +118,7 @@ test("changing a new quest's type keeps its topic links", async ({ page }) => {
   await page.click("#aoQuest");
   await page.click("#nqBody .tcard[data-t='time']");
   await page.fill("#nqName", "Problem sets");
+  await page.click("#nqMoreOpt");
   await page.click("#nqBody [data-ltp='a']");
   await page.click("#nqBody .tcard[data-t='check']");
   await page.click("#nqSave");
