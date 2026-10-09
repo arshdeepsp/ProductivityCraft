@@ -28,7 +28,7 @@
     nfCall(title,icon,head||(L.length+" quest"+(L.length===1?"":"s")+" left. Still time."),(extra||'')+qList(e,L),[nfJust5(q),["Schedule",openSchedule],["Later"]].filter(Boolean))}
   function notifAction(id,x){x=x||{};var now=Date.now();S.call=CALL_IDS(id)&&x.at&&now>=x.at-60000&&now<=x.at+CALL_MIN*60000?{id:id,until:x.at+CALL_MIN*60000}:null;if(locked()&&id!==2400){nfGo();return}
     if(id===901)return S.sprint&&S.sprint.phase!=="done"?nfSprint():nfTimer("live");
-    if(id===1001)return nfTimer("min");if(id===1002)return nfTimer("plan");if(id===1003)return nfTimer("five");
+    if(id===1004){timerCap();go("today");var cq=cfgQ(extra&&extra.q);setSync("Daily limit reached"+(cq?" for "+cq.label:"")+". Timer stopped and logged.");return}if(id===1001)return nfTimer("min");if(id===1002)return nfTimer("plan");if(id===1003)return nfTimer("five");
     if(id>=1101&&id<=1103)return nfSprint();
     if(id>=2000&&id<2100)return nfQuestsLeft("Evening check-in","note");
     if(id===2200&&rewardsOff()){nfGo();return}

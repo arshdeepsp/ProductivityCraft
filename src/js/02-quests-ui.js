@@ -6,7 +6,7 @@
     var t;
     if(q.type==="todo"){t="to-do";if(q.due){var dd=daysBetween(todayKey(),q.due);t+=" \u00b7 "+(dd<0?"overdue "+(-dd)+"d":dd===0?"due today":dd===1?"due tomorrow":"due in "+dd+"d")}if(q.note)t+=", "+q.note;return t}
     if(q.type==="weekly")t=q.min+"x per week, any days";
-    else if(q.type==="time")t=q.roll?hmL(q.roll)+" per "+perWord(q):"min "+hmL(q.min);
+    else if(q.type==="time")t=(q.roll?hmL(q.roll)+" per "+perWord(q):"min "+hmL(q.min))+(limOf(q)?" \u00b7 up to "+hmL(q.lim)+"/day":"");
     else if(q.type==="limit")t="max "+(q.unit==="min"?hmL(q.max):q.max+(q.ul?" "+q.ul:""));
     else if(q.type==="wake")t="between "+q.from+"-"+q.to;
     else if(q.type==="target")t="goal "+num(q.min)+(q.ul?" "+q.ul:"")+(q.dl?" today \u00b7 "+num(q.dl.total)+" total by "+fmtD(q.dl.due):"");
@@ -63,7 +63,7 @@
           pb[0].addEventListener("click",function(){var e=entry();e[pk]=Math.max(q.min,(e[pk]||q.min)-STEP);commit()});
           pb[1].addEventListener("click",function(){var e=entry();e[pk]=Math.min(MAXM,(e[pk]||q.min)+STEP);commit()});
         }
-        var bs=ctl.querySelectorAll(".act button"),step=tq?STEP:(q.unit==="min"?5:1),mx=tq||q.unit==="min"?MAXM:999;
+        var bs=ctl.querySelectorAll(".act button"),step=tq?STEP:(q.unit==="min"?5:1),mx=tq?(limOf(q)?Math.min(MAXM,q.lim):MAXM):q.unit==="min"?MAXM:999;
         bs[0].addEventListener("click",function(){var e=entry();e[q.id]=Math.max(0,(e[q.id]|0)-step);commit()});
         bs[1].addEventListener("click",function(){var e=entry();e[q.id]=Math.min(mx,(e[q.id]|0)+step);commit()});
         if(tq){var tm=document.createElement("button");tm.type="button";tm.className="stone tmr";tm.setAttribute("aria-label","Start focus timer for "+lab);tm.innerHTML='<i class="ic"></i><span></span>';ctl.insertBefore(tm,ctl.firstChild);tm.addEventListener("click",function(){toggleTimer(q)})}

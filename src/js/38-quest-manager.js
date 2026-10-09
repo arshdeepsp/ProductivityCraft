@@ -23,7 +23,7 @@
       var p=isPaused(q,T),par="";
       if(q.type==="todo")par='<label>Due (optional)<input type="date" data-p="due" data-i="'+i+'" value="'+esc(q.due||"")+'"></label>'+(q.doneOn?'<span class="pz ok">Done '+fmtD(q.doneOn)+'</span>':"");
       else if(q.type==="weekly")par=numIn("Times per week","min",i,q.min,1,1,7);
-      else if(q.type==="time")par='<label>Goal type<select data-p="rollmode" data-i="'+i+'"><option value=""'+(q.roll?"":" selected")+'>Daily minimum</option><option value="roll"'+(q.roll&&!perOf(q)?" selected":"")+'>Weekly total ('+wkSpan()+')</option><option value="roll2w"'+(q.roll&&perOf(q)==="2w"?" selected":"")+'>Total every 2 weeks</option><option value="rollm"'+(q.roll&&perOf(q)==="month"?" selected":"")+'>Monthly total</option></select></label>'+(q.roll?numIn("Total per "+perWord(q)+" (hours)","rollh",i,num(q.roll/60),"any",0.5):numIn("Min (minutes)","min",i,q.min,10,10,960))+numIn("Project total, hours (optional)","totalh",i,q.total?num(q.total/60):"","any",0);
+      else if(q.type==="time")par='<label>Goal type<select data-p="rollmode" data-i="'+i+'"><option value=""'+(q.roll?"":" selected")+'>Daily minimum</option><option value="roll"'+(q.roll&&!perOf(q)?" selected":"")+'>Weekly total ('+wkSpan()+')</option><option value="roll2w"'+(q.roll&&perOf(q)==="2w"?" selected":"")+'>Total every 2 weeks</option><option value="rollm"'+(q.roll&&perOf(q)==="month"?" selected":"")+'>Monthly total</option></select></label>'+(q.roll?numIn("Total per "+perWord(q)+" (hours)","rollh",i,num(q.roll/60),"any",0.5):numIn("Min (minutes)","min",i,q.min,10,10,960))+numIn("Project total, hours (optional)","totalh",i,q.total?num(q.total/60):"","any",0)+numIn("Daily limit, minutes (optional)","lim",i,q.lim||"",5,0,MAXM)+(q.lim?'<p class="help">The timer stops and logs at '+hmL(q.lim)+'; nothing more is tracked that day.</p>':"");
       else if(q.type==="target")par=numIn("Goal","min",i,q.min,"any",0)+txtIn("Unit","ul",i,q.ul,"glasses")+numIn("Step","step",i,q.step||1,"any",0)+numIn("Project total (optional)","total",i,q.total||"","any",0);
       else if(q.type==="limit")par=numIn("Max","max",i,q.max,1,0,999)+'<label>Counts<select data-p="unit" data-i="'+i+'"><option value=""'+(q.unit==="min"?"":" selected")+'>number</option><option value="min"'+(q.unit==="min"?" selected":"")+'>minutes</option></select></label>'+(q.unit==="min"?"":txtIn("Unit","ul",i,q.ul,"cups"));
       else if(q.type==="wake")par='<label>From<input type="time" data-p="from" data-i="'+i+'" value="'+q.from+'"></label><label>To<input type="time" data-p="to" data-i="'+i+'" value="'+q.to+'"></label>';
@@ -50,6 +50,7 @@
       if(f==="finlvl"){if(q.fin)q.fin.lvl=+v;return}
       if(f==="rollmode"){var was=perOf(q);if(v){var per=v==="roll2w"?"2w":v==="rollm"?"month":"",k0={"":1,"2w":2,month:4.3};q.roll=q.roll?Math.round(q.roll/k0[was]*k0[per]/30)*30||q.roll:Math.max(60,(q.min||30)*7*k0[per]);if(per)q.per=per;else delete q.per}else{delete q.roll;delete q.per}drawMgr();return}
       if(f==="rollh"){var rh=num(v);if(rh>0)q.roll=Math.round(rh*60);return}
+      if(f==="lim"){var lv=Math.round(num(v));if(lv>0)q.lim=lv;else delete q.lim;return}
       if(f==="total"||f==="totalh"){var tv=num(v);if(tv>0)q.total=f==="totalh"?Math.round(tv*60):tv;else delete q.total;return}
       if(f==="min"||f==="max"||f==="step"){v=(q.type==="target"||f==="step")?num(v):Math.max(0,Math.round(+v||0))}
       q[f]=v})});
@@ -77,7 +78,7 @@
     qmgr.querySelectorAll("[data-msave]").forEach(function(x){x.addEventListener("click",saveMgr)});
   }
   function saveMgr(){var T=todayKey();var ovm=overDays(qDraft);if(ovm.length){drawMgr(ovm.map(function(o){return WDN[o.w]+": "+o.n}).join(", ")+" quests. That\u2019s over your daily limit of "+capOf()+". Untick some days, make one optional, or pause or complete one.");return}{
-      var bad=qDraft.filter(function(q){return !(q.label||"").trim()||((q.type==="time"||q.type==="weekly")&&!(q.min>0))||(q.type==="target"&&!(q.min>0&&(+q.step||1)>0))||(q.type==="limit"&&!(q.max>=0))||(q.type==="scale"&&!(q.min>=1&&q.min<=(q.scale||5)))||(q.type==="wake"&&!(q.from&&q.to&&q.from<q.to))||(q.days&&!q.days.length)})[0];
+      var bad=qDraft.filter(function(q){return !(q.label||"").trim()||((q.type==="time"||q.type==="weekly")&&!(q.min>0))||(q.type==="target"&&!(q.min>0&&(+q.step||1)>0))||(q.type==="limit"&&!(q.max>=0))||(q.type==="time"&&q.lim&&q.lim<(q.roll?5:q.min))||(q.type==="scale"&&!(q.min>=1&&q.min<=(q.scale||5)))||(q.type==="wake"&&!(q.from&&q.to&&q.from<q.to))||(q.days&&!q.days.length)})[0];
       if(bad){drawMgr("Check "+(bad.label||"a quest")+": it needs a name and valid values.");return}
       qDraft.forEach(function(q){if(q.type==="weekly"||q.type==="todo"){delete q.days;delete q.opt}if(q.type==="todo"&&!q.due)delete q.due;q.label=q.label.trim();if(q.note!=null&&!String(q.note).trim())delete q.note});
       var c5=clone(cfg()),oldQ=clone(c5.quests),ids=easedIds(oldQ,qDraft,T),om={};oldQ.forEach(function(q){om[q.id]=q});

@@ -8,7 +8,7 @@
       b.innerHTML='<p class="help">'+(tq?'Type minutes, or hours like 1h30 or 1:30.':'Type the amount'+(q.ul?' ('+esc(q.ul)+')':'')+'.')+'</p><div class="edrow"><input id="numIn" '+(tq?'inputmode="text" placeholder="e.g. 45 or 1h30"':'type="number" inputmode="decimal" step="any" min="0"')+' value="'+(tq?(cur?hm(cur).replace(/\s/g,""):""):(cur||""))+'"><button type="button" class="stone save" id="numGo">Set</button></div><p class="cmsg2" id="numMsg"></p>';
       var inp=b.querySelector("#numIn");setTimeout(function(){inp.focus();inp.select()},50);
       function go_(){var v=tq?parseMins(inp.value):num(inp.value);if(v==null||isNaN(v)||v<0){b.querySelector("#numMsg").textContent=tq?"Try 45, 90, 1h30 or 1:30.":"Enter a number.";return}
-        var e=entry();if(isPlan)v=Math.max(q.min,Math.min(MAXM,v));else v=Math.min(tq?MAXM:1e6,v);e[key]=v;closeG();commit();haptic("medium")}
+        var e=entry();if(isPlan)v=Math.max(q.min,Math.min(MAXM,v));else{v=Math.min(tq?MAXM:1e6,v);if(tq&&limOf(q))v=Math.min(v,q.lim)}e[key]=v;closeG();commit();haptic("medium")}
       b.querySelector("#numGo").addEventListener("click",go_);inp.addEventListener("keydown",function(ev){if(ev.key==="Enter")go_()})})}
   function swipeRow(row,q){var x0=null,y0=0,dx=0,act=false;
     row.addEventListener("touchstart",function(e){if(e.target.closest(".ctl button,.ctl input,.ctl output,.qgrip,.pzb,.sjchip")){x0=null;return}var t=e.touches[0];x0=t.clientX;y0=t.clientY;dx=0;act=false},{passive:true});

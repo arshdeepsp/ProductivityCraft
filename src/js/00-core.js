@@ -53,7 +53,7 @@
   function ignoredOn(id,k){return noStreakOn(k)&&((S.cfg&&S.cfg.ignore)||[]).indexOf(id)>=0}
   function noStreakIn(a,b){return ((S.cfg&&S.cfg.noStreak)||[]).some(function(r){return r.from<=b&&(!r.to||r.to>a)})}
   function isPaused(q,k){return !!q.pausedUntil&&k<q.pausedUntil&&(!q.pausedFrom||k>=q.pausedFrom)}
-  function slim(q){var o={id:q.id,type:q.type,label:q.label};["min","max","from","to","unit","note","days","opt","ul","step","scale","total","due","roll","per","dl","subj","subjs","topics","fin","lock","pending","addedOn","addedMin","startOn"].forEach(function(f){if(q[f]!=null&&q[f]!=="")o[f]=q[f]});return o}
+  function slim(q){var o={id:q.id,type:q.type,label:q.label};["min","max","from","to","unit","note","days","opt","ul","step","scale","total","due","roll","per","lim","dl","subj","subjs","topics","fin","lock","pending","addedOn","addedMin","startOn"].forEach(function(f){if(q[f]!=null&&q[f]!=="")o[f]=q[f]});return o}
   function scheduled(q,k){return !q.days||!q.days.length||q.days.indexOf(parse(k).getDay())>=0}
   function activeDefs(k){var vc=isVac(k),c0=cfg(),LD=(c0.lockDay&&c0.lockDay.date===k)?c0.lockDay.defs:null,src=c0.quests.map(function(q){return LD&&LD[q.id]?LD[q.id]:q});if(LD)Object.keys(LD).forEach(function(id){if(!c0.quests.some(function(q){return q.id===id}))src.push(LD[id])});return src.filter(function(q){if(q.completed&&q.completed.on<k)return false;if(q.startOn&&k<q.startOn&&q.type!=="todo")return false;if(q.type==="todo")return !q.doneOn||q.doneOn===k;if(q.dl&&(k>q.dl.due||k<q.dl.from))return false;return !isPaused(q,k)&&(scheduled(q,k)||(q.type==="time"&&q.roll))}).map(function(q){var o=slim(q);if(q.type==="time"&&q.roll&&q.opt)o.uopt=true;if(q.type==="time"&&q.roll&&!scheduled(q,k)){o.opt=true;o.off=true}if(q.dl){o.min=dlMin(q,k);if(!o.min)o.opt=true}if(vc)o.opt=true;if(lateStart(q,k))o.opt=true;if(ignoredOn(q.id,k)){o.opt=true;o.ign=true}return o})}
   function localKey(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
@@ -81,6 +81,8 @@
   function hasEntry(e){return !!e&&Object.keys(e).some(function(f){if(f==="top")return (e.top||[]).some(function(x){return x&&x.t});return f!=="q"&&f!=="sched"&&f!=="schSkip"&&f!=="calls"&&f!=="ck"&&f.indexOf("plan_")!==0&&e[f]!==""&&e[f]!=null&&e[f]!==0&&e[f]!==false})}
   function defsOf(e){return (e&&e.q)||(hasEntry(e)?LEGACY:activeDefs(todayKey()))}
   function metQ(q,e){e=e||{};var v=e[q.id];if(q.type==="wake"){if(!v)return q.id==="wakeAt"&&e.wake===true;var m=mins(v);return m>=mins(q.from)&&m<=mins(q.to)}if(q.type==="time")return timeMet(q,e);if(q.type==="limit")return (v|0)<=q.max;if(q.type==="check"||q.type==="weekly"||q.type==="todo")return v===true;if(q.type==="target")return num(v)>=q.min;if(q.type==="scale")return (v|0)>=q.min;return false}
+  /* Daily limit for a time quest (q.lim, minutes): past it the timer stops and logs, and nothing more is tracked that day. 0 = none. */
+  function limOf(q){return q&&q.type==="time"&&q.lim>0?q.lim:0}
   function overQ(q,e){return q.type==="limit"&&((e||{})[q.id]|0)>q.max}
   function planOf(q,e){return Math.max(q.min,(e||{})["plan_"+q.id]||q.min)}
   function ok(e){if(!hasEntry(e))return false;var dq=reqOf(defsOf(e));return dq.length>0&&dq.every(function(q){return metQ(q,e)})}

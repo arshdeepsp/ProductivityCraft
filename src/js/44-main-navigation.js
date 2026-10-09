@@ -60,7 +60,9 @@
     if(n.on&&n.timer){
       if(S.timer){var c5=S.timer.commit&&!S.timer.c5;t=(c5?"Just 5 minutes: ":"Focusing: ")+S.timer.label;b=S.timer.first?"First: "+S.timer.first:S.timer.topic&&topicName(S.timer.topic)?"Topic: "+topicName(S.timer.topic):"Tap to return";chrono=true;down=!!c5;when=c5?S.timer.start+S.timer.commit*60000:S.timer.start;
         var gq=activeDefs(todayKey()).filter(function(x){return x.id===S.timer.id})[0],full=gq&&gq.type==="time"?growFor(S.timer.start-((S.days[todayKey()]||{})[gq.id]|0)*60000,timerGoal(gq)):null;grow=c5?growFor(S.timer.start,S.timer.commit):full;
-        if(c5)next={title:"Focusing: "+S.timer.label,body:"5 minutes done. Keep going or stop to log it.",when:Math.round(S.timer.start),countdown:false,chrono:true,grow:full}}
+        var lm=limOf(gq),capAt=lm?S.timer.start+Math.max(0,lm-((S.days[todayKey()]||{})[gq.id]|0))*60000:0,capN=lm?{title:"Time\u2019s up: "+S.timer.label,body:"Daily limit of "+hmL(lm)+" reached. Stopped and logged.",chrono:false}:null;
+        if(c5)next=lm?{title:"Focusing: "+S.timer.label,body:"Stops at the daily limit",when:Math.round(capAt),countdown:true,chrono:true,grow:full,next:capN}:{title:"Focusing: "+S.timer.label,body:"5 minutes done. Keep going or stop to log it.",when:Math.round(S.timer.start),countdown:false,chrono:true,grow:full};
+        else if(lm){down=true;when=capAt;b=(b==="Tap to return"?"":b+" \u00b7 ")+"Stops at the daily limit";next=capN}}
       else if(S.sprint&&S.sprint.phase==="focus"){var sp=S.sprint;t="Sprint: "+spLabel(sp.cur);if(sp.paused)b="Paused";else{b="Block "+sp.block+(sp.rounds?" of "+sp.rounds:"");chrono=true;down=true;when=sp.end;grow=growFor(sp.end-(sp.blen||sp.len)*60000,sp.blen||sp.len);
           var last=sp.rounds&&sp.block>=sp.rounds,lb=sp.longEvery&&sp.block%sp.longEvery===0,bend=sp.end+(lb?30:15)*60000;
           next=last?{title:"Sprint complete",body:"Open the app to see your summary.",chrono:false}:{title:lb?"Long break":"Decision break",body:"Next block when this reaches zero",when:Math.round(bend),countdown:true,chrono:true,next:{title:"Break over",body:"Start your next block",chrono:false}}}}

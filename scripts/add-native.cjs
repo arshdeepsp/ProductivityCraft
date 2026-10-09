@@ -23,6 +23,7 @@ fs.copyFileSync(path.join("native", "android", "notif_focus_small.xml"), path.jo
 const rawDir = path.join("android", "app", "src", "main", "res", "raw");
 fs.mkdirSync(rawDir, { recursive: true });
 fs.copyFileSync(path.join("native", "android", "pc_chime.wav"), path.join(rawDir, "pc_chime.wav"));
+fs.copyFileSync(path.join("native", "android", "pc_stop.wav"), path.join(rawDir, "pc_stop.wav"));
 
 fs.writeFileSync(path.join(javaDir, "MainActivity.java"), `package ${pkg};
 
