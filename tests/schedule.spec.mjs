@@ -588,9 +588,13 @@ test.describe("schedule flexibility", () => {
     await page.click("#schBtn");
     await page.click(".sch-b");
     await expect(page.locator("#schRes")).toHaveCount(1);
-    await page.click("[data-sm='j5']");
-    await page.click("[data-sm='range']");
+    const bb = await page.locator(".sch-b .sch-h").boundingBox();
+    await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2 + 22, { steps: 4 });
+    await page.mouse.up();
     const b = (await store(page)).days["2026-11-02"].sched[0];
+    expect(b.t).toBe(735);
     expect(b.ed).toBeGreaterThan(at(10, 30));
     await expect(page.locator("#schRes")).toHaveCount(1);
   });
@@ -726,5 +730,170 @@ test.describe("scheduling ahead", () => {
     await open(page, { now: "2026-11-03T09:00:00-05:00", days: { "2026-11-03": { sched: [{ id: "a", q: "cs", f: 600, t: 660 }] } } });
     await expect(page.locator("#schTitle")).toHaveText("Today");
     await expect(page.locator(".sch-b")).toHaveCount(1);
+  });
+});
+
+test.describe("block progress and re-planning", () => {
+  const CS = { id: "cs", type: "time", label: "CS work", min: 60 };
+  const FR = { id: "fr", type: "time", label: "French", min: 30, roll: 600, days: [1, 2, 3, 4, 5] };
+  const at = (h, m, d = "02") => Date.parse(`2026-11-${d}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00-05:00`);
+  const blk = (page, id) => page.locator(`.sch-b[data-sb='${id}']`);
+  const base = { q: [CS, FR], cs: 40, fr: 30, sched: [{ id: "a", q: "cs", f: 600, t: 660 }, { id: "b", q: "fr", f: 660, t: 705 }], sess: [{ id: "cs", s: at(10, 10), e: at(10, 50), m: 40 }, { id: "fr", s: at(11, 0), e: at(11, 30), m: 30 }] };
+
+  test("each block shows the minutes timed in it, and ticks only when its own time is done", async ({ page }) => {
+    const d = { ...base, cs: 60, sess: [{ id: "cs", s: at(10, 15), e: at(11, 15), m: 60 }, { id: "fr", s: at(11, 0), e: at(11, 30), m: 30 }] };
+    await openApp(page, { now: "2026-11-02T12:10:00-05:00", cfg: { quests: [CS, FR] }, days: { "2026-11-02": d } });
+    await page.click("#schBtn");
+    await expect(blk(page, "a")).toHaveClass(/done/);
+    await expect(blk(page, "a").locator("span")).toHaveText("10:00–11:00 ✔");
+    await expect(blk(page, "b")).not.toHaveClass(/done/);
+    await expect(blk(page, "b").locator("span")).toContainText("30m of 45m");
+    await expect(blk(page, "b").locator(".sch-pg")).toHaveCount(1);
+    await expect(page.locator(".sch-q[data-sq='cs']")).toHaveClass(/done/);
+    await expect(page.locator(".sch-q[data-sq='fr']")).not.toHaveClass(/done/);
+  });
+
+  test("a met quest doesn't tick a block nothing was done in", async ({ page }) => {
+    await openApp(page, { now: "2026-11-02T09:00:00-05:00", cfg: { quests: [CS] }, days: { "2026-11-02": { q: [CS], cs: 60, sched: [{ id: "a", q: "cs", f: 600, t: 660 }] } } });
+    await page.click("#schBtn");
+    await expect(blk(page, "a")).not.toHaveClass(/done/);
+    await expect(page.locator(".sch-q[data-sq='cs']")).toContainText("✔");
+  });
+
+  test("a block that ended short offers Re-plan, which places the missing minutes next and clears the shortfall", async ({ page }) => {
+    await openApp(page, { now: "2026-11-02T12:10:00-05:00", cfg: { quests: [CS, FR] }, days: { "2026-11-02": base } });
+    await page.click("#schBtn");
+    await expect(blk(page, "b").locator("span")).toContainText("15m short");
+    await expect(page.locator("#schRplA")).toHaveText("Re-plan CS work · 20m");
+    await blk(page, "b").click();
+    await page.click("#schRpl");
+    const s = (await store(page)).days["2026-11-02"].sched;
+    expect(s.filter((x) => x.rf).map((x) => [x.q, x.f, x.t, x.rf])).toEqual([["fr", 735, 750, "b"]]);
+    await expect(blk(page, "b").locator("span")).not.toContainText("short");
+    await page.locator(".sch-b", { hasText: "12:15–12:30" }).click();
+    await page.click("#schRm");
+    await expect(blk(page, "b").locator("span")).toContainText("15m short");
+    await page.click("#schRplA");
+    await expect(blk(page, "a").locator("span")).not.toContainText("short");
+  });
+
+  test("no shortfall when the rest of the day's plan already covers what the quest needs", async ({ page }) => {
+    const rep = [{ id: "r1", q: "cs", f: 780, t: 840, dows: [1], from: "2026-11-02", until: "2026-11-29" }];
+    await openApp(page, { now: "2026-11-02T12:10:00-05:00", cfg: { quests: [CS, FR], rep }, days: { "2026-11-02": base } });
+    await page.click("#schBtn");
+    await expect(blk(page, "a").locator("span")).toHaveText("10:00–11:00 · 40m of 1h");
+    await expect(blk(page, "a")).not.toHaveClass(/short/);
+  });
+
+  test("a weekly total ahead of pace still gets its block reminder until today's share is done", async ({ page }) => {
+    await page.addInitScript(`window.__ln=[];window.Capacitor={isNativePlatform:()=>true,Plugins:{LocalNotifications:{requestPermissions:()=>Promise.resolve({display:'granted'}),createChannel:()=>Promise.resolve(),getPending:()=>Promise.resolve({notifications:[]}),cancel:()=>Promise.resolve(),schedule:(o)=>{o.notifications.forEach(n=>window.__ln.push({id:n.id,title:n.title}));return Promise.resolve()},addListener:()=>Promise.resolve({})},App:{addListener:()=>Promise.resolve({})},KeepAwake:{keepAwake:()=>Promise.resolve(),allowSleep:()=>Promise.resolve()}}};`);
+    await openApp(page, { now: "2026-11-04T09:00:00-05:00", cfg: { quests: [FR], nf: { on: true } }, days: { "2026-11-02": { q: [FR], fr: 400 }, "2026-11-04": { q: [FR], sched: [{ id: "a", q: "fr", f: 840, t: 900 }] } } });
+    await page.clock.runFor(2000);
+    expect((await page.evaluate(() => window.__ln)).filter((x) => x.id === 3500).map((x) => x.title)).toEqual(["Time for French"]);
+  });
+});
+
+test.describe("ended blocks stay as planned", () => {
+  const CS = { id: "cs", type: "time", label: "CS work", min: 60 };
+  const FR = { id: "fr", type: "time", label: "French", min: 30, roll: 600, days: [1, 2, 3, 4, 5] };
+  const S0 = [{ id: "a", q: "cs", f: 600, t: 660 }, { id: "u", q: "fr", f: 720, t: 780 }, { id: "n", q: "cs", f: 900, t: 960 }];
+  const go = (page, sched, cfg = {}) => openApp(page, { now: "2026-11-02T12:10:00-05:00", cfg: { quests: [CS, FR], ...cfg }, days: { "2026-11-02": { q: [CS, FR], sched } } });
+  const ids = async (page) => ((await store(page)).days["2026-11-02"].sched || []).map((b) => [b.id, b.f, b.t]);
+
+  test("an ended block can't be moved, resized, split or removed", async ({ page }) => {
+    await go(page, S0);
+    await page.click("#schBtn");
+    await page.click(".sch-b[data-sb='a']");
+    await expect(page.locator("#schFt")).toContainText("Ended");
+    await expect(page.locator("#schFt")).toContainText("Nothing timed in it.");
+    await expect(page.locator(".sch-b[data-sb='a'] .sch-h")).toHaveCount(0);
+    await expect(page.locator("#schRm, #schSplit, [data-sm]")).toHaveCount(0);
+    await tapTime(page, "16:30");
+    expect(await ids(page)).toEqual([["a", 600, 660], ["u", 720, 780], ["n", 900, 960]]);
+    await expect(page.locator(".sch-b[data-sb='a']")).toHaveAttribute("data-ro", "");
+  });
+
+  test("a block under way can still be ended early or pushed back", async ({ page }) => {
+    await go(page, S0);
+    await page.click("#schBtn");
+    await page.click(".sch-b[data-sb='u']");
+    await expect(page.locator(".sch-b[data-sb='u'] .sch-h")).toHaveCount(1);
+    await tapTime(page, "13:30");
+    expect((await ids(page)).find((b) => b[0] === "u")).toEqual(["u", 810, 870]);
+  });
+
+  test("Clear rest keeps blocks that have started", async ({ page }) => {
+    await go(page, S0);
+    await page.click("#schBtn");
+    await page.click("#schClr");
+    await page.click("#schClr");
+    expect(await ids(page)).toEqual([["a", 600, 660], ["u", 720, 780]]);
+  });
+
+  test("stopping a repeat keeps today's occurrence once it has started", async ({ page }) => {
+    const rep = [{ id: "r1", q: "cs", f: 600, t: 660, dows: [1, 3], from: "2026-11-02", until: "2026-11-29" }];
+    await go(page, [], { rep });
+    await page.click("#schBtn");
+    await page.click(".sch-b.rep");
+    await page.click("#schStop");
+    const s = await store(page);
+    expect(s.cfg.rep).toBeUndefined();
+    expect(s.days["2026-11-02"].sched.map((b) => [b.id, b.q, b.f, b.t, b.src])).toEqual([["r-r1", "cs", 600, 660, "r1"]]);
+  });
+});
+
+test.describe("the passed part of a block under way", () => {
+  const CS = { id: "cs", type: "time", label: "CS work", min: 60 };
+  const FR = { id: "fr", type: "time", label: "French", min: 30, roll: 600, days: [1, 2, 3, 4, 5] };
+  const S0 = [{ id: "u", q: "fr", f: 720, t: 780 }];
+  const go = (page, now, sched = S0) => openApp(page, { now: `2026-11-02T${now}:00-05:00`, cfg: { quests: [CS, FR] }, days: { "2026-11-02": { q: [CS, FR], sched } } });
+  const ids = async (page) => ((await store(page)).days["2026-11-02"].sched || []).map((b) => [b.id === "u" ? "u" : "new", b.f, b.t]);
+
+  test("pushing it back leaves the passed part behind as an ended block", async ({ page }) => {
+    await go(page, "12:40");
+    await page.click("#schBtn");
+    await page.click(".sch-b[data-sb='u']");
+    await tapTime(page, "13:30");
+    expect(await ids(page)).toEqual([["u", 720, 750], ["new", 810, 870]]);
+    await expect(page.locator(".sch-b[data-sb='u']")).toHaveClass(/past/);
+  });
+
+  test("removing it keeps the passed part", async ({ page }) => {
+    await go(page, "12:40");
+    await page.click("#schBtn");
+    await page.click(".sch-b[data-sb='u']");
+    await page.click("#schRm");
+    expect(await ids(page)).toEqual([["u", 720, 750]]);
+    await expect(page.locator("#schMsg")).toHaveText("Removed the rest. The part that has passed stays.");
+  });
+
+  test("less than a step in, removing it removes it", async ({ page }) => {
+    await go(page, "12:10");
+    await page.click("#schBtn");
+    await page.click(".sch-b[data-sb='u']");
+    await page.click("#schRm");
+    expect(await ids(page)).toEqual([]);
+  });
+
+  test("Split never splits inside the passed part, and the start type can't be switched once started", async ({ page }) => {
+    await go(page, "12:50");
+    await page.click("#schBtn");
+    await page.click(".sch-b[data-sb='u']");
+    await expect(page.locator("[data-sm]")).toHaveCount(0);
+    await page.click("#schSplit");
+    expect(await ids(page)).toEqual([["u", 720, 765], ["new", 765, 780]]);
+  });
+
+  test("resizing can't cut into the passed part", async ({ page }) => {
+    await go(page, "12:40", [{ id: "u", q: "fr", f: 660, t: 780 }]);
+    await page.click("#schBtn");
+    await page.click(".sch-b[data-sb='u']");
+    const h = page.locator(".sch-b[data-sb='u'] .sch-h");
+    const bb = await h.boundingBox();
+    await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(bb.x + bb.width / 2, bb.y - 22 * 6, { steps: 8 });
+    await page.mouse.up();
+    expect(await ids(page)).toEqual([["u", 660, 750]]);
   });
 });

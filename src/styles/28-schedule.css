@@ -15,7 +15,11 @@
 .sch-b b{font:16px/1.1 var(--vt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sch-b span{font:14px/1.1 var(--vt);opacity:.9}
 .sch-b.j5{background:#B8860B;border-color:#E0B23A #6E5007 #6E5007 #E0B23A}
-.sch-b.met{filter:saturate(.45) brightness(1.1)}
+.sch-b.past{cursor:default}
+.sch-b.done{filter:saturate(.45) brightness(1.1)}
+.sch-b .sch-pg{position:absolute;left:0;bottom:0;height:4px;background:#FFFF55;pointer-events:none}
+.sch-b.short span{color:#FFE08A}
+.sch-q.done{opacity:.75}
 .sch-b.on{outline:3px solid #FFFF55;outline-offset:0}
 .sch-h{position:absolute;right:0;bottom:0;width:44px;height:min(30px,100%);cursor:ns-resize;touch-action:none;z-index:3;background:#FFFF55;border-left:3px solid #000;border-top:3px solid #000;box-sizing:border-box}
 .sch-h::before{content:"";position:absolute;left:50%;top:50%;width:18px;height:9px;transform:translate(-50%,-50%);background:linear-gradient(#000 0 2px,transparent 2px 3.5px,#000 3.5px 5.5px,transparent 5.5px 7px,#000 7px 9px)}
@@ -45,7 +49,7 @@ body.sch-open{overflow:hidden}
 .sch-q.placed{background:#9DBB7E;border-color:#4F7A32}
 .sch-q.part{background:#D8C27A;border-color:#8A6A00}
 .sch-scroll{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
-.sch-ft{padding:8px 12px calc(10px + var(--sab));background:#B5B5B5;border-top:4px solid #555}
+.sch-ft{padding:10px 12px calc(12px + var(--sab));background:#B5B5B5;border-top:4px solid #555}
 .sch-ft .help,.sch-ft .cmsg2{margin:2px 0 6px}
 .sch-ft-h{margin:0 0 4px;font:18px/1.2 var(--vt)}
 .sch-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between}
@@ -70,7 +74,9 @@ body.sch-open{overflow:hidden}
 .sch-tag{font:7px var(--px);background:#4E4E4E;color:#fff;padding:3px 5px;vertical-align:middle}
 .sch-rep{margin:0 0 4px;font:16px/1.2 var(--vt);color:#2F5A22}
 .sch-acts{display:flex;gap:6px;margin-top:8px}
-.sch-acts .stone{flex:1 1 0;min-width:0;min-height:44px;padding:6px 8px;font-size:8px;line-height:1.4}
+.sch-acts+.sch-acts{margin-top:6px}
+.sch-acts .stone{flex:1 1 0;min-width:0;min-height:48px;padding:6px 8px;font-size:8px;line-height:1.5}
+.sch-pri .stone{min-height:46px}
 .sch-acts .stone.sch-x{flex:0 0 44px;padding:0;font:22px var(--vt)}
 .sch-acts .stone.save{flex-grow:1.4}
 .sch-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;margin:6px 0}
