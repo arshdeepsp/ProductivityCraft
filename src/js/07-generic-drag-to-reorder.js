@@ -77,7 +77,7 @@
     if(!R.length)h+='<p class="rules-empty">No rules yet. Add a section to write your own.</p>';
     h+='<div class="rules-tools"><button type="button" class="stone" id="addSec">+ Add section</button>'+(R.length?'<button type="button" class="stone" id="resetRules">Clear all rules</button>':'')+'</div>';
     rulesEl.innerHTML=h;
-    if(R.length>1)sortable(rulesEl,"details.rules",".sdrag",function(order,fi){var R2=reorder(rulesData(),order),os={};order.forEach(function(k,ni){if(openSec[k])os[ni]=true});openSec=os;saveCfg(Object.assign(clone(cfg()),{rules:R2}));renderRules();var g=rulesEl.querySelectorAll(".sdrag")[fi];if(g)g.focus();setSync("Sections reordered")});else{var sg=rulesEl.querySelector(".sdrag");if(sg)sg.hidden=true}
+    if(R.length>1)sortable(rulesEl,"details.rules",".sdrag",function(order,fi){var R2=reorder(rulesData(),order),os={};order.forEach(function(k,ni){if(openSec[k])os[ni]=true});openSec=os;saveCfg(Object.assign(clone(cfg()),{rules:R2}));renderRules();var g=rulesEl.querySelectorAll(".sdrag")[fi];if(g)g.focus();setSync("Sections reordered")},".rules-body,button,input,textarea,select,a");else{var sg=rulesEl.querySelector(".sdrag");if(sg)sg.hidden=true}
     rulesEl.querySelectorAll("details").forEach(function(d){d.addEventListener("toggle",function(){openSec[d.getAttribute("data-i")]=d.open})});
     rulesEl.querySelectorAll("[data-edit]").forEach(function(b){b.addEventListener("click",function(){editSection(+b.getAttribute("data-edit"))})});
     rulesEl.querySelectorAll("details.rules > summary").forEach(function(sm){var i=+sm.parentNode.getAttribute("data-i");swipeMenu(sm,function(){return [["Edit section",function(){editSection(i)}],["Delete section",function(){deleteSection(i)},{arm:"Delete section?"}]]})});

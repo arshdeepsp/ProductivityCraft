@@ -103,3 +103,8 @@ body.sch-open{overflow:hidden}
 .sch-bzn span{font:18px var(--vt);white-space:nowrap}
 .sch-wk #schBzAlways{width:auto;padding:0 10px;font-size:8px}
 .sch-b.clash{left:42%;z-index:3}
+
+/* Now button (sticky at the scroller's bottom, only while the now line is off screen) and the dense hour scale */
+.sch-nowb{position:sticky;bottom:10px;display:block;margin:-40px 12px 10px auto;width:max-content;z-index:5;background:#C0392B;color:#fff;border-color:#E07060 #6E1A10 #6E1A10 #E07060;font-size:8px;padding:9px 12px}
+.sch-nowb[hidden]{display:none}
+.sch-tl.dense .sch-hr{font-size:14px}

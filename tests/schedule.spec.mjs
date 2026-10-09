@@ -8,9 +8,11 @@ const Q = [
 ];
 const sched = (page) => page.evaluate(() => { const s = (JSON.parse(localStorage.getItem("pc-cache-v1")).days["2026-11-02"] || {}).sched; return s ? s.map((b) => [b.q, b.f, b.t].concat(b.j5 ? ["j5"] : [])) : null; });
 
+/* The timeline's pixels per 15-minute step (22 normally, 16 on a mostly free day) is exposed on #schTl as --row. */
+const rowPx = (page) => page.evaluate(() => parseFloat(getComputedStyle(document.getElementById("schTl")).getPropertyValue("--row")) || 22);
 async function tapTime(page, hhmm) {
   const [h, m] = hhmm.split(":").map(Number);
-  await page.locator("#schTl").click({ position: { x: 160, y: ((h * 60 + m - 7 * 60) / 15) * 22 + 6 }, force: true });
+  await page.locator("#schTl").click({ position: { x: 160, y: ((h * 60 + m - 7 * 60) / 15) * (await rowPx(page)) + 6 }, force: true });
 }
 async function place(page, qid, hhmm) {
   await tapTime(page, hhmm);
@@ -74,7 +76,7 @@ test("the corner tab of a selected block changes its length in 15-minute steps",
   const h = await page.locator(".sch-b .sch-h").boundingBox();
   await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2);
   await page.mouse.down();
-  await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2 + 22 * 2, { steps: 4 });
+  await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2 + (await rowPx(page)) * 2, { steps: 4 });
   await page.mouse.up();
   await expect.poll(() => sched(page)).toEqual([["cs", 600, 690]]);
 });
@@ -85,7 +87,7 @@ test("dragging a block moves it", async ({ page }) => {
   const b = await page.locator(".sch-b").boundingBox();
   await page.mouse.move(b.x + 40, b.y + 10);
   await page.mouse.down();
-  await page.mouse.move(b.x + 40, b.y + 10 + 22 * 4, { steps: 6 });
+  await page.mouse.move(b.x + 40, b.y + 10 + (await rowPx(page)) * 4, { steps: 6 });
   await page.mouse.up();
   await expect.poll(() => sched(page)).toEqual([["cs", 660, 720]]);
 });
@@ -345,7 +347,7 @@ test("holding a dragged block at the bottom edge keeps scrolling the day, and th
   await page.waitForTimeout(1500);
   const top = await page.evaluate(() => document.getElementById("schScroll").scrollTop);
   expect(top).toBeGreaterThan(100);
-  const under = await page.evaluate((y) => { const r = document.getElementById("schTl").getBoundingClientRect(); return 420 + Math.round((y - 10 - r.top) / 22) * 15; }, sc.y + sc.height - 10);
+  const under = await page.evaluate((y) => { const t = document.getElementById("schTl"), r = t.getBoundingClientRect(), row = parseFloat(getComputedStyle(t).getPropertyValue("--row")) || 22; return 420 + Math.round((y - 10 - r.top) / row) * 15; }, sc.y + sc.height - 10);
   await page.mouse.up();
   const f = (await sched(page))[0][1];
   expect(f).toBeGreaterThanOrEqual(840);
@@ -419,7 +421,7 @@ test("a busy block can be resized from its corner tab, renamed, and given more d
   expect(await page.evaluate(({ x, y }) => !!document.elementFromPoint(x, y).closest(".sch-h"), { x: h.x + h.width / 2, y: h.y + h.height / 2 })).toBe(true);
   await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2);
   await page.mouse.down();
-  await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2 + 22 * 2, { steps: 4 });
+  await page.mouse.move(h.x + h.width / 2, h.y + h.height / 2 + (await rowPx(page)) * 2, { steps: 4 });
   await page.mouse.up();
   await expect.poll(async () => (await store(page)).cfg.busy[0].t).toBe(720);
   await page.fill("#schBzName", "Algorithms lecture");
@@ -591,7 +593,7 @@ test.describe("schedule flexibility", () => {
     const bb = await page.locator(".sch-b .sch-h").boundingBox();
     await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
     await page.mouse.down();
-    await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2 + 22, { steps: 4 });
+    await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2 + (await rowPx(page)), { steps: 4 });
     await page.mouse.up();
     const b = (await store(page)).days["2026-11-02"].sched[0];
     expect(b.t).toBe(735);
@@ -895,8 +897,47 @@ test.describe("the passed part of a block under way", () => {
     const bb = await h.boundingBox();
     await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
     await page.mouse.down();
-    await page.mouse.move(bb.x + bb.width / 2, bb.y - 22 * 6, { steps: 8 });
+    await page.mouse.move(bb.x + bb.width / 2, bb.y - (await rowPx(page)) * 6, { steps: 8 });
     await page.mouse.up();
     expect(await ids(page)).toEqual([["u", 660, 750]]);
+  });
+});
+
+test.describe("now jump and hour scale", () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+  test("a mostly free day uses the denser scale; two hours planned switches back on the next open", async ({ page }) => {
+    await open(page, { now: "2026-11-02T09:00:00-05:00" });
+    await expect(page.locator("#schTl")).toHaveClass(/dense/);
+    expect(await rowPx(page)).toBe(16);
+    await page.click("#schAuto");
+    await expect(page.locator("#schTl")).toHaveClass(/dense/);
+    await page.click("#schOk");
+    await page.click("#schBtn");
+    await expect(page.locator("#schTl")).not.toHaveClass(/dense/);
+    expect(await rowPx(page)).toBe(22);
+  });
+
+  test("the Now button appears only while the now line is off screen and scrolls back to it", async ({ page }) => {
+    await open(page, { now: "2026-11-02T20:00:00-05:00" });
+    const btn = page.locator("#schNowBtn");
+    await expect(btn).toBeHidden();
+    await page.evaluate(() => { document.getElementById("schScroll").scrollTop = 0; });
+    await expect(btn).toBeVisible();
+    await expect(btn).toHaveText("▼ Now");
+    await btn.click();
+    await expect.poll(() => page.evaluate(() => { const s = document.getElementById("schScroll"), n = document.getElementById("schNow"); return n.offsetTop >= s.scrollTop && n.offsetTop <= s.scrollTop + s.clientHeight; })).toBe(true);
+    await expect(btn).toBeHidden();
+    await page.click("#schDN");
+    await expect(page.locator("#schNow")).toHaveCount(0);
+    await expect(btn).toBeHidden();
+  });
+
+  test("scrolled past the now line, the button points up", async ({ page }) => {
+    await open(page, { now: "2026-11-02T08:00:00-05:00" });
+    const btn = page.locator("#schNowBtn");
+    await expect(btn).toBeHidden();
+    await page.evaluate(() => { const s = document.getElementById("schScroll"); s.scrollTop = s.scrollHeight; });
+    await expect(btn).toHaveText("▲ Now");
   });
 });

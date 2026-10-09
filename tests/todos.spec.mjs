@@ -56,3 +56,25 @@ test("there is no End day: open to-dos are reviewed the next time the app opens,
   expect(ln.some((x) => x.id >= 2100 && x.id < 2200)).toBe(false);
   expect(ln.find((x) => x.id === 2400).at).toContain("22:30");
 });
+
+test.describe("review swipes (phone)", () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  test("swipe left marks a to-do for deletion, swipe right keeps it; Done applies", async ({ page }) => {
+    const { swipe } = await import("./helpers.mjs");
+    const Q = [{ id: "a", type: "todo", label: "Email advisor", addedOn: "2026-11-01" }, { id: "b", type: "todo", label: "Buy stamps", addedOn: "2026-11-01" }];
+    await openApp(page, { cfg: { quests: Q } });
+    await page.clock.runFor(1500);
+    await expect(page.locator("#gTitle")).toHaveText("Still need these to-dos?");
+    await expect(page.locator("#gBody .help")).toContainText("Swipe right to keep, left to delete");
+    const row = (t) => page.locator("#gBody .tdrev", { hasText: t });
+    await swipe(page, row("Buy stamps"), "left");
+    await expect(row("Buy stamps")).toHaveClass(/dropq/);
+    await expect(row("Buy stamps").locator("[data-tdr]")).toHaveText("Delete");
+    await swipe(page, row("Buy stamps"), "right");
+    await expect(row("Buy stamps")).not.toHaveClass(/dropq/);
+    await swipe(page, row("Email advisor"), "left");
+    await page.click("#tdrGo");
+    await expect(page.locator("#gModal")).toBeHidden();
+    expect(await page.evaluate(cfgQuests)).toEqual(["Buy stamps"]);
+  });
+});

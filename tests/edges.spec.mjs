@@ -129,7 +129,7 @@ test("placing a quest counts minutes already logged", async ({ page }) => {
   const Q = [{ id: "cs", type: "time", label: "CS", min: 60 }];
   await openApp(page, { cfg: { quests: Q }, days: { "2026-11-02": { q: Q, cs: 40 } } });
   await page.click("#schBtn");
-  await page.locator("#schTl").click({ position: { x: 160, y: ((10 * 60 - 7 * 60) / 15) * 22 + 6 }, force: true });
+  await page.locator("#schTl").click({ position: { x: 160, y: ((10 * 60 - 7 * 60) / 15) * (await page.evaluate(() => parseFloat(getComputedStyle(document.getElementById("schTl")).getPropertyValue("--row")) || 22)) + 6 }, force: true });
   await page.click("[data-pk='cs']");
   const s = (await store(page)).days["2026-11-02"].sched;
   expect(s.map((b) => [b.f, b.t])).toEqual([[600, 620]]);
@@ -155,7 +155,7 @@ test("swapping a block for another quest at the same time updates its reminder",
   await page.click("#schBtn");
   await page.click(".sch-b");
   await page.click("#schRm");
-  await page.locator("#schTl").click({ position: { x: 160, y: ((10 * 60 - 7 * 60) / 15) * 22 + 6 }, force: true });
+  await page.locator("#schTl").click({ position: { x: 160, y: ((10 * 60 - 7 * 60) / 15) * (await page.evaluate(() => parseFloat(getComputedStyle(document.getElementById("schTl")).getPropertyValue("--row")) || 22)) + 6 }, force: true });
   await page.click("[data-pk='fr']");
   await page.clock.runFor(2000);
   const last = (await page.evaluate(() => window.__all)).filter((x) => x.id === 3500).pop();
