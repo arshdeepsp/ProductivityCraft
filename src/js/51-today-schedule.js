@@ -10,9 +10,13 @@
      Weekly quest repeats live in cfg.rep = [{id, q, f, t, j5?, dows, from, until}]; schAll merges them into each day as
      {id:"r-"+rep, rep, ...}. Editing one occurrence detaches it (a one-off copy + e.schSkip), with "Every week" to push
      the change back to the series. */
-  var SCH_STEP=15,SCH_ROW=22,REP_MAX=26,schSel=null,schQ=null,schMsg="",schBody=null,schDrag=null,schDet=null,schRep=null,schMd="today",schWd=1,schBack=false,schShown=null;
+  var SCH_STEP=15,SCH_ROW=22,REP_MAX=26,schSel=null,schQ=null,schMsg="",schBody=null,schDrag=null,schDet=null,schRep=null,schMd="today",schWd=1,schBack=false,schShown=null,schDay=null,SCH_AHEAD=13;
+  /* The day the schedule shows: today, or one of the next SCH_AHEAD days picked with the header arrows. */
+  function schK(){var T=todayKey();return schDay&&schDay>T&&schDay<=add(T,SCH_AHEAD)?schDay:T}
+  function schFut(){return schK()!==todayKey()}
+  function schTd(){return schFut()?"this day":"today"}
   function schQuests(k){return activeDefs(k).filter(function(q){return q.type==="time"&&!q.off&&!q.ign})}
-  function schLen(q){var m=q.roll?q.roll/perWorkDays(q,todayKey()):q.min;return Math.max(SCH_STEP,Math.ceil(m/5)*5)}
+  function schLen(q,k){var m=q.roll?q.roll/perWorkDays(q,k||todayKey()):q.min;return Math.max(SCH_STEP,Math.ceil(m/5)*5)}
   function schNorm(s){if(Array.isArray(s))return s;var out=[];if(s&&typeof s==="object")Object.keys(s).sort().forEach(function(id){var b=s[id];if(b&&b.f!=null)out.push(Object.assign({id:"b-"+id,q:id},b))});return out}
   function schReps(){return cfg().rep||[]}
   function repById(id){return schReps().filter(function(r){return r.id===id})[0]}
@@ -41,30 +45,30 @@
     busySave(function(B){B.forEach(function(x){if(x.id!==id)return;if(on)x.dows=x.dows.filter(function(y){return y!==d});else x.dows=x.dows.concat([d])})});schMsg=""}
   function busyWeeks(id,n){var T=todayKey();busySave(function(B){B.forEach(function(x){if(x.id!==id)return;if(n>0)x.until=add(T,n*7-1);else delete x.until})})}
   function busyRemove(id){busySave(function(B){return B.filter(function(x){return x.id!==id})});schSel=null;schMsg="Removed."}
-  function schWin(){return dayWin(schMd==="busy"?busyKey(schWd):todayKey())}
-  function schList(){if(schMd==="busy")return busyForWd(schWd);var T=todayKey(),Q=schQuests(T);return schAll(T).filter(function(x){return x.lb||Q.some(function(q){return q.id===x.q})})}
+  function schWin(){return dayWin(schMd==="busy"?busyKey(schWd):schK())}
+  function schList(){if(schMd==="busy")return busyForWd(schWd);var T=schK(),Q=schQuests(T);return schAll(T).filter(function(x){return x.lb||Q.some(function(q){return q.id===x.q})})}
   function schOfQ(k,qid){return schAll(k).filter(function(b){return b.q===qid})}
   function schPlaced(k,qid){return schOfQ(k,qid).reduce(function(a,b){return a+(b.t-b.f)},0)}
   function hhmmOf(m){m=((m%1440)+1440)%1440;return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0")}
   function schText(b){return b.j5?"5-min start "+hhmmOf(b.f):hhmmOf(b.f)+"–"+hhmmOf(b.t)}
-  function schFloor(){return schMd==="busy"?-1e9:Math.floor(nowMinInDay()/SCH_STEP)*SCH_STEP}
+  function schFloor(){return schMd==="busy"||schFut()?-1e9:Math.floor(nowMinInDay()/SCH_STEP)*SCH_STEP}
   function schClash(L,id,f,t){var hit=null;L.forEach(function(b){if(b.id!==id&&b.f<t&&f<b.t)hit=b});return hit}
   function schNext(L,id,f,cap){var n=cap;L.forEach(function(b){if(b.id!==id&&b.f>=f&&b.f<n)n=b.f});return n}
-  function schLabel(qid){var q=schQuests(todayKey()).filter(function(x){return x.id===qid})[0];return q?q.label:"another quest"}
+  function schLabel(qid){var q=schQuests(schK()).filter(function(x){return x.id===qid})[0];return q?q.label:"another quest"}
   function schName(b){return b?(b.lb||schLabel(b.q)):"another block"}
   function schNewId(){return "b"+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36)}
-  function schSave(fn){if(locked())return false;var e=entry(),L=schNorm(e.sched).map(function(b){return Object.assign({},b)});L=fn(L,e)||L;L.sort(function(a,b){return a.f-b.f});if(L.length)e.sched=L;else delete e.sched;if(e.schSkip&&!e.schSkip.length)delete e.schSkip;commit();return true}
+  function schSave(fn){if(locked())return false;var k=schK(),fut=k!==todayKey(),e=fut?(S.days[k]=Object.assign({},S.days[k]||{})):entry(),L=schNorm(e.sched).map(function(b){return Object.assign({},b)});L=fn(L,e)||L;L.sort(function(a,b){return a.f-b.f});if(L.length)e.sched=L;else delete e.sched;if(e.schSkip&&!e.schSkip.length)delete e.schSkip;if(fut){if(!Object.keys(e).length)delete S.days[k];dirty[k]=true}commit();return true}
   /* Change one block. A repeat occurrence is first detached into a one-off for today (schDet offers "Every week"). */
   function schEdit(id,fn,offer){if(schMd==="busy"){var cur=busyById(id);if(!cur)return id;var nx=clone(cur);fn(nx,[]);var bad=null;nx.dows.forEach(function(d){var c=schClash(busyForWd(d),id,nx.f,nx.t);if(c&&!bad)bad={c:c,d:d}});
-      if(bad){schMsg="That clashes with "+bad.c.lb+" on "+WDN[bad.d]+".";return id}busySave(function(B){B.forEach(function(x){if(x.id===id)fn(x,B)})});return id}var b=schAll(todayKey()).filter(function(x){return x.id===id})[0],out=id;if(!b)return id;
+      if(bad){schMsg="That clashes with "+bad.c.lb+" on "+WDN[bad.d]+".";return id}busySave(function(B){B.forEach(function(x){if(x.id===id)fn(x,B)})});return id}var b=schAll(schK()).filter(function(x){return x.id===id})[0],out=id;if(!b)return id;
     schSave(function(L,e){var x=L.filter(function(z){return z.id===id})[0];if(!x&&b.rep){x={id:schNewId(),f:b.f,t:b.t,src:b.rep};if(b.q)x.q=b.q;if(b.lb)x.lb=b.lb;if(b.j5)x.j5=true;L.push(x);e.schSkip=(e.schSkip||[]).concat([b.rep]);out=x.id;schDet=offer?{rep:b.rep,id:x.id}:null}if(x){fn(x,L);x.ed=Date.now()}});return out}
-  function schRepDays(b){var q=b.q?schQuests(todayKey()).filter(function(x){return x.id===b.q})[0]:null;return q&&q.days&&q.days.length?q.days:[0,1,2,3,4,5,6]}
-  function schRepCount(b,dows,weeks){var T=todayKey(),u=add(T,weeks*7-1),ok=schRepDays(b),n=0;for(var d=T;d<=u;d=add(d,1)){var w=parse(d).getDay();if(dows.indexOf(w)>=0&&ok.indexOf(w)>=0)n++}return n}
+  function schRepDays(b){var q=b.q?schQuests(schK()).filter(function(x){return x.id===b.q})[0]:null;return q&&q.days&&q.days.length?q.days:[0,1,2,3,4,5,6]}
+  function schRepCount(b,dows,weeks){var T=schK(),u=add(T,weeks*7-1),ok=schRepDays(b),n=0;for(var d=T;d<=u;d=add(d,1)){var w=parse(d).getDay();if(dows.indexOf(w)>=0&&ok.indexOf(w)>=0)n++}return n}
   /* First clash a repeat would hit on a day after today (other blocks, repeats or busy times), as {b, k}. */
-  function repClash(rid,f,t,dows,until,qd){var T=todayKey();for(var d=add(T,1);d<=until;d=add(d,1)){var w=parse(d).getDay();if(dows.indexOf(w)<0||(qd&&qd.indexOf(w)<0))continue;var c=schClash(schAll(d).filter(function(x){return !rid||x.rep!==rid}),null,f,t);if(c)return {b:c,k:d}}return null}
+  function repClash(rid,f,t,dows,until,qd){var T=schK();for(var d=add(T,1);d<=until;d=add(d,1)){var w=parse(d).getDay();if(dows.indexOf(w)<0||(qd&&qd.indexOf(w)<0))continue;var c=schClash(schAll(d).filter(function(x){return !rid||x.rep!==rid}),null,f,t);if(c)return {b:c,k:d}}return null}
   function repClashMsg(c){return "That clashes with "+schName(c.b)+" on "+DAYF[parse(c.k).getDay()].slice(0,3)+" "+fmtD(c.k)+"."}
   /* keep = the week count wasn't touched, so an existing series keeps its end date. Days the quest doesn't run on are dropped. */
-  function schRepSave(id,dows,weeks,keep){var T=todayKey(),b=schAll(T).filter(function(x){return x.id===id})[0];if(!b||locked())return;if(b.q){var okd=schRepDays(b);dows=dows.filter(function(d){return okd.indexOf(d)>=0})}if(!dows.length)return;var c2=clone(cfg()),R=c2.rep=(c2.rep||[]).filter(function(r){return r.until>=T}),src=!b.rep&&b.src&&repById(b.src)?b.src:null,rid=b.rep||src,r0=rid?repById(rid):null,u=keep&&r0?r0.until:add(T,weeks*7-1);
+  function schRepSave(id,dows,weeks,keep){var T=schK(),b=schAll(T).filter(function(x){return x.id===id})[0];if(!b||locked())return;if(b.q){var okd=schRepDays(b);dows=dows.filter(function(d){return okd.indexOf(d)>=0})}if(!dows.length)return;var c2=clone(cfg()),R=c2.rep=(c2.rep||[]).filter(function(r){return r.until>=todayKey()}),src=!b.rep&&b.src&&repById(b.src)?b.src:null,rid=b.rep||src,r0=rid?repById(rid):null,u=keep&&r0?r0.until:add(T,weeks*7-1);
     var cl=repClash(rid,b.f,b.t,dows,u,b.q?schRepDays(b):null);if(cl){schMsg=repClashMsg(cl);schRep=null;return}
     if(rid){R.forEach(function(r){if(r.id===rid){r.dows=dows.slice();r.until=u;if(src){r.f=b.f;r.t=b.t;if(b.j5)r.j5=true;else delete r.j5}}})}
     else{rid="r"+schNewId();var r={id:rid,f:b.f,t:b.t,dows:dows.slice(),from:T,until:u};if(b.q)r.q=b.q;if(b.lb)r.lb=b.lb;if(b.j5)r.j5=true;R.push(r)}
@@ -73,9 +77,9 @@
     var keep=null;if(b.rep&&!today){keep=schNewId();schSave(function(L){var x={id:keep,f:b.f,t:b.t,src:b.rep};if(b.q)x.q=b.q;if(b.lb)x.lb=b.lb;if(b.j5)x.j5=true;L.push(x)})}
     schSel=keep||(b.rep||today?"r-"+rid:id);schRep=null;schDet=null;schMsg="Repeats "+repText(repById(rid))+".";nfSig="";notifSync()}
   function schRepStop(rid){var c2=clone(cfg());c2.rep=(c2.rep||[]).filter(function(r){return r.id!==rid});if(!c2.rep.length)delete c2.rep;saveCfg(c2);schSave(function(L,e){if(e.schSkip)e.schSkip=e.schSkip.filter(function(x){return x!==rid})});schSel=null;schDet=null;schMsg="Stopped repeating.";nfSig="";notifSync()}
-  function schRepEvery(){var d=schDet;if(!d)return;var b=schAll(todayKey()).filter(function(x){return x.id===d.id})[0],r0=repById(d.rep);if(!b||!r0)return;var cl=repClash(d.rep,b.f,b.t,r0.dows,r0.until,b.q?schRepDays(b):null);if(cl){schMsg=repClashMsg(cl);return}var c2=clone(cfg());(c2.rep||[]).forEach(function(r){if(r.id!==d.rep)return;r.f=b.f;r.t=b.t;if(b.j5)r.j5=true;else delete r.j5});saveCfg(c2);
+  function schRepEvery(){var d=schDet;if(!d)return;var b=schAll(schK()).filter(function(x){return x.id===d.id})[0],r0=repById(d.rep);if(!b||!r0)return;var cl=repClash(d.rep,b.f,b.t,r0.dows,r0.until,b.q?schRepDays(b):null);if(cl){schMsg=repClashMsg(cl);return}var c2=clone(cfg());(c2.rep||[]).forEach(function(r){if(r.id!==d.rep)return;r.f=b.f;r.t=b.t;if(b.j5)r.j5=true;else delete r.j5});saveCfg(c2);
     schSave(function(L,e){if(e.schSkip)e.schSkip=e.schSkip.filter(function(x){return x!==d.rep});return L.filter(function(x){return x.id!==d.id})});schSel="r-"+d.rep;schDet=null;schMsg="Changed every week.";nfSig="";notifSync()}
-  function schAdd(qid,m){var T=todayKey(),w=dayWin(T),q=schQuests(T).filter(function(x){return x.id===qid})[0];if(!q)return;
+  function schAdd(qid,m){var T=schK(),w=dayWin(T),q=schQuests(T).filter(function(x){return x.id===qid})[0];if(!q)return;
     var L=schList(),left=schLeft(T,q,L),len=left>=SCH_STEP?left:SCH_STEP*2,f=m,t=Math.min(w.e,f+len);
     if(f<schFloor()){schMsg="That time has already passed.";return}
     if(t-f<SCH_STEP){schMsg="That’s too close to bedtime.";return}
@@ -87,10 +91,10 @@
     if(t-f<SCH_STEP){schMsg="That’s too close to bedtime.";return}
     var c=schClash(L,id,f,t);if(c){schMsg="That overlaps "+schName(c)+". Pick a free time, or shorten it first.";return}
     var nid=schEdit(id,function(x){x.f=f;x.t=t},true);schMsg="";schSel=b.rep||b.tpl?nid:null}
-  function schMode(id,j5){var T=todayKey(),w=dayWin(T),L=schAll(T),b=L.filter(function(x){return x.id===id})[0];if(!b||!!b.j5===j5)return;
+  function schMode(id,j5){var T=schK(),w=dayWin(T),L=schAll(T),b=L.filter(function(x){return x.id===id})[0];if(!b||!!b.j5===j5)return;
     schSel=schEdit(id,function(x){if(j5)x.j5=true;else delete x.j5},true)}
-  function schRemove(id){var b=schAll(todayKey()).filter(function(x){return x.id===id})[0];schSave(function(S2,e){if(b&&b.rep)e.schSkip=(e.schSkip||[]).concat([b.rep]);return S2.filter(function(x){return x.id!==id})});schSel=null;schDet=null;if(b&&b.rep)schMsg="Skipped today. It still repeats."}
-  function schSplit(id){var T=todayKey(),L=schAll(T),b=L.filter(function(x){return x.id===id})[0];if(!b)return;var len=b.t-b.f;if(len<SCH_STEP*2){schMsg="Too short to split.";return}
+  function schRemove(id){var b=schAll(schK()).filter(function(x){return x.id===id})[0];schSave(function(S2,e){if(b&&b.rep)e.schSkip=(e.schSkip||[]).concat([b.rep]);return S2.filter(function(x){return x.id!==id})});schSel=null;schDet=null;if(b&&b.rep)schMsg="Skipped "+schTd()+". It still repeats."}
+  function schSplit(id){var T=schK(),L=schAll(T),b=L.filter(function(x){return x.id===id})[0];if(!b)return;var len=b.t-b.f;if(len<SCH_STEP*2){schMsg="Too short to split.";return}
     var half=Math.floor(len/2/SCH_STEP)*SCH_STEP,nid=schNewId();schEdit(id,function(x,S2){x.t=x.f+half;S2.push({id:nid,q:b.q,f:b.f+half,t:b.t})});schDet=null;schSel=nid;schMsg="Split in two. Tap a free time to move the selected half."}
   /* Full-screen page (#schPage): header, quest chips, the timeline as the only scroller, and a bottom bar that is
      either help + Auto-plan, a quest picker for a tapped free time (schPick), or controls for a selected block (schSel). */
@@ -100,23 +104,25 @@
   function schOpen(){return !!schPg&&!schPg.hidden}
   function schEnsure(){
     if(!schPg){schPg=document.createElement("div");schPg.id="schPage";schPg.className="schpage";schPg.setAttribute("role","dialog");schPg.setAttribute("aria-modal","true");schPg.setAttribute("aria-labelledby","schTitle");
-      schPg.innerHTML='<div class="sch-hd"><div class="sch-hdt"><h2 id="schTitle">Today’s schedule</h2><p class="sch-sum"><span id="schSum"></span> <button type="button" class="lnk sch-adjb" id="schAdjB" aria-expanded="false">Adjust today</button></p></div><button type="button" class="stone save" id="schOk">Done</button></div><div class="sch-adj" id="schAdj" hidden></div><div class="sch-tray" id="schTray"></div><div class="sch-scroll" id="schScroll"><div class="sch-tl" id="schTl"></div></div><div class="sch-ft" id="schFt"></div>';
-      document.body.appendChild(schPg);schPg.querySelector("#schOk").addEventListener("click",closeSchedule);schPg.querySelector("#schAdjB").addEventListener("click",function(){schAdj=!schAdj;schDraw()});schWire()}
+      schPg.innerHTML='<div class="sch-hd"><div class="sch-hdt"><div class="sch-nav"><button type="button" class="stone mini" id="schDP" aria-label="Previous day">‹</button><h2 id="schTitle">Today</h2><button type="button" class="stone mini" id="schDN" aria-label="Next day">›</button></div><p class="sch-sum"><span id="schSum"></span> <button type="button" class="lnk sch-adjb" id="schAdjB" aria-expanded="false">Adjust today</button></p></div><button type="button" class="stone save" id="schOk">Done</button></div><div class="sch-adj" id="schAdj" hidden></div><div class="sch-tray" id="schTray"></div><div class="sch-scroll" id="schScroll"><div class="sch-tl" id="schTl"></div></div><div class="sch-ft" id="schFt"></div>';
+      document.body.appendChild(schPg);schPg.querySelector("#schOk").addEventListener("click",closeSchedule);schPg.querySelector("#schAdjB").addEventListener("click",function(){schAdj=!schAdj;schDraw()});schPg.querySelector("#schDP").addEventListener("click",function(){schGoDay(-1)});schPg.querySelector("#schDN").addEventListener("click",function(){schGoDay(1)});schWire()}
     schPg.hidden=false;document.body.classList.add("sch-open");schBody=schPg}
-  function openSchedule(){if(locked())return;schMd="today";schBack=false;schSel=null;schQ=null;schPick=null;schAdj=false;schMsg="";schDet=null;schRep=null;schEnsure();schDraw(true)}
+  function schGoDay(n){var T=todayKey(),k=add(schK(),n);if(k<T||k>add(T,SCH_AHEAD))return;schDay=k>T?k:null;schSel=null;schPick=null;schRep=null;schDet=null;schMsg="";schAdj=false;haptic("light");schDraw(true)}
+  function schDayName(k){var T=todayKey();return k===T?"Today":k===add(T,1)?"Tomorrow":WDS[parse(k).getDay()]+", "+fmtD(k)}
+  function openSchedule(){if(locked())return;schMd="today";schDay=null;schBack=false;schSel=null;schQ=null;schPick=null;schAdj=false;schMsg="";schDet=null;schRep=null;schEnsure();schDraw(true)}
   function openBusy(wd,at,back){if(locked())return;schMd="busy";schWd=wd==null?parse(todayKey()).getDay():wd;schBack=!!back;schSel=null;schPick=at==null?null:at;schAdj=false;schMsg="";schDet=null;schRep=null;schEnsure();schDraw(true)}
   function closeSchedule(){if(!schPg)return;if(schMd==="busy"&&schBack){schMd="today";schBack=false;schSel=null;schPick=null;schMsg="";schDraw(true);return}schPg.hidden=true;document.body.classList.remove("sch-open");schBody=null;schDrag=null;schSel=null;schPick=null;schMd="today";render();if(typeof renderSettings==="function"&&setTab==="day")renderSettings()}
   function schGeo(){var w=schWin(),s0=Math.floor(w.s/SCH_STEP)*SCH_STEP,e0=Math.ceil(w.e/SCH_STEP)*SCH_STEP;return{w:w,s0:s0,e0:e0,px:function(m){return (m-s0)/SCH_STEP*SCH_ROW}}}
   function schAt(clientY){var tl=schPg.querySelector("#schTl"),g=schGeo(),r=tl.getBoundingClientRect();return Math.min(g.e0-SCH_STEP,Math.max(g.s0,g.s0+Math.floor((clientY-r.top)/SCH_ROW)*SCH_STEP))}
   /* What's left to place for a quest today: its daily share minus minutes already logged and blocks still ahead. */
   function schAhead(L,qid,from){return L.filter(function(b){return b.q===qid&&b.t>from}).reduce(function(a,b){return a+b.t-Math.max(b.f,from)},0)}
-  function schLeft(T,q,L){var from=Math.floor(nowMinInDay()/SCH_STEP)*SCH_STEP;var run=S.timer&&S.timer.id===q.id&&S.timer.day===T?Math.floor((Date.now()-S.timer.start)/60000):0;return schLen(q)-((S.days[T]||{})[q.id]|0)-run-schAhead(L||schAll(T),q.id,from)}
+  function schLeft(T,q,L){var td=T===todayKey(),from=td?Math.floor(nowMinInDay()/SCH_STEP)*SCH_STEP:-1e9;var run=td&&S.timer&&S.timer.id===q.id&&S.timer.day===T?Math.floor((Date.now()-S.timer.start)/60000):0;return schLen(q,T)-((S.days[T]||{})[q.id]|0)-run-schAhead(L||schAll(T),q.id,from)}
   function schFree(L,from,to,pad,minLen){var gaps=[],c=from;pad=pad||0;L.slice().sort(function(a,b){return a.f-b.f}).forEach(function(b){var bf=b.f-pad,bt=b.t+pad;if(bt<=c)return;if(bf>c)gaps.push([c,Math.min(bf,to)]);c=Math.max(c,bt)});if(c<to)gaps.push([c,to]);return gaps.filter(function(g){return g[1]-g[0]>=(minLen||SCH_STEP)})}
-  function schAuto(){var T=todayKey(),w=dayWin(T),Q=schQuests(T),e=S.days[T]||{},from=Math.max(Math.ceil(nowMinInDay()/SCH_STEP)*SCH_STEP,Math.floor(w.s/SCH_STEP)*SCH_STEP),n=0;/* each new shot keeps a 15-minute break from its neighbours and is at least 30m (or whatever is left) */
+  function schAuto(){var T=schK(),w=dayWin(T),Q=schQuests(T),e=S.days[T]||{},from=Math.max(T===todayKey()?Math.ceil(nowMinInDay()/SCH_STEP)*SCH_STEP:-1e9,Math.floor(w.s/SCH_STEP)*SCH_STEP),n=0;/* each new shot keeps a 15-minute break from its neighbours and is at least 30m (or whatever is left) */
     var RP=schAll(T).filter(function(b){return b.rep||b.busy}),vis=function(b){return !b.q||Q.some(function(q){return q.id===b.q})};
     schSave(function(L0){var L=L0.filter(vis),hid=L0.filter(function(b){return !vis(b)});Q.forEach(function(q){if(metQ(q,e))return;var left=schLeft(T,q,L.concat(RP));
       while(left>=SCH_STEP){var g=schFree(L.concat(RP),from,w.e,SCH_STEP,Math.min(left,SCH_STEP*2))[0];if(!g)break;var len=Math.min(left,g[1]-g[0]);len=Math.max(SCH_STEP,Math.floor(len/5)*5);L.push({id:schNewId(),q:q.id,f:g[0],t:g[0]+len});n++;left-=len}});return L.concat(hid)});
-    schMsg=n?"Planned "+n+" shot"+(n===1?"":"s")+" with 15-minute breaks. Drag or tap to adjust.":"Nothing left to plan, or no free time left today."}
+    schMsg=n?"Planned "+n+" shot"+(n===1?"":"s")+" with 15-minute breaks. Drag or tap to adjust.":"Nothing left to plan, or no free time left "+schTd()+"."}
   function schWire(){var sc=schPg.querySelector("#schScroll"),tl=schPg.querySelector("#schTl"),lp=null;
     tl.addEventListener("click",function(ev){if(schDrag)return;var bk=ev.target.closest("[data-sb]");if(bk){var id=bk.getAttribute("data-sb");schSel=schSel===id?null:id;schPick=null;schRep=null;schDet=null;schMsg="";schDraw();return}
       var m=schAt(ev.clientY);if(schRep){schRep=null;schDraw();return}if(schSel&&schSel.indexOf("z-")===0)schSel=null;else if(schSel){schMove(schSel,m);schDraw();return}
@@ -145,23 +151,23 @@
     function mv(e2){as.at(e2.clientY)}
     function up(){as.stop();blk.classList.remove("sizing");hd.removeEventListener("pointermove",mv);hd.removeEventListener("pointerup",up);hd.removeEventListener("pointercancel",up);var sid=id;if(t!==bl.t)sid=schEdit(id,function(x){x.t=t},true);schSel=sid;schPick=null;schDraw();setTimeout(function(){schDrag=null},0)}
     hd.addEventListener("pointermove",mv);hd.addEventListener("pointerup",up);hd.addEventListener("pointercancel",up)}
-  function schDraw(first){if(!schOpen())return;var T=todayKey(),g=schGeo(),w=g.w,BZ=schMd==="busy",Q=BZ?[]:schQuests(T),L=schList(),e=S.days[T]||{},px=g.px,fl=schFloor(),now=nowMinInDay();
+  function schDraw(first){if(!schOpen())return;var T=schK(),FT=T!==todayKey(),g=schGeo(),w=g.w,BZ=schMd==="busy",Q=BZ?[]:schQuests(T),L=schList(),e=S.days[T]||{},px=g.px,fl=schFloor(),now=nowMinInDay();
     var sum=schPg.querySelector("#schSum"),tray=schPg.querySelector("#schTray"),tl=schPg.querySelector("#schTl"),ft=schPg.querySelector("#schFt");
     if(schSel&&!L.some(function(x){return x.id===schSel}))schSel=null;if(schRep&&!L.some(function(x){return x.id===schRep.id}))schRep=null;if(schDet&&schDet.id!==schSel)schDet=null;
-    var adj=schPg.querySelector("#schAdj"),adjB=schPg.querySelector("#schAdjB");schPg.classList.toggle("busymode",BZ);schPg.querySelector("#schTitle").textContent=BZ?"Busy times":"Today’s schedule";schPg.querySelector("#schOk").textContent=BZ&&schBack?"Back":"Done";
-    adjB.hidden=BZ;adj.hidden=BZ||!schAdj;adjB.setAttribute("aria-expanded",schAdj);adjB.textContent=schAdj?"Close":"Adjust today";
-    if(!BZ&&schAdj){adj.innerHTML='<label>Wake up <input type="time" id="setWakeT" value="'+esc(w.wake)+'"></label><label>Bedtime <input type="time" id="setBedT" value="'+esc(w.bed)+'"></label>'+(w.today?'<button type="button" class="stone mini" id="setDayReset">Use usual</button>':'');
+    var adj=schPg.querySelector("#schAdj"),adjB=schPg.querySelector("#schAdjB");schPg.classList.toggle("busymode",BZ);schPg.querySelector("#schTitle").textContent=BZ?"Busy times":schDayName(T);var dP=schPg.querySelector("#schDP"),dN=schPg.querySelector("#schDN");dP.hidden=dN.hidden=BZ;dP.disabled=!FT;dN.disabled=T>=add(todayKey(),SCH_AHEAD);schPg.querySelector("#schOk").textContent=BZ&&schBack?"Back":"Done";
+    adjB.hidden=BZ||FT;adj.hidden=BZ||FT||!schAdj;adjB.setAttribute("aria-expanded",schAdj);adjB.textContent=schAdj?"Close":"Adjust today";
+    if(!BZ&&!FT&&schAdj){adj.innerHTML='<label>Wake up <input type="time" id="setWakeT" value="'+esc(w.wake)+'"></label><label>Bedtime <input type="time" id="setBedT" value="'+esc(w.bed)+'"></label>'+(w.today?'<button type="button" class="stone mini" id="setDayReset">Use usual</button>':'');
       ["setWakeT","setBedT"].forEach(function(id){adj.querySelector("#"+id).addEventListener("change",function(){if(dayOvSave(adj.querySelector("#setWakeT").value,adj.querySelector("#setBedT").value))schDraw();else schDraw()})});
       var ur=adj.querySelector("#setDayReset");if(ur)ur.addEventListener("click",function(){dayOvClear();schDraw()})}
     var tot=0,bz=0,nq=0;L.forEach(function(x){if(x.lb)bz+=x.t-x.f;else tot+=x.t-x.f});Q.forEach(function(q){if(L.some(function(x){return x.q===q.id}))nq++});
     if(BZ){sum.textContent=WDN[schWd]+" · "+(L.length?L.length+" block"+(L.length===1?"":"s")+" · "+hm(bz):"nothing blocked");
       tray.innerHTML='<div class="sch-wds" role="tablist" aria-label="Weekday">'+wkOrder().map(function(d){var n=busyForWd(d).length;return '<button type="button" class="stone'+(d===schWd?' on':'')+'" data-wd="'+d+'" role="tab" aria-selected="'+(d===schWd)+'">'+DN[d].slice(0,2)+(n?'<small>'+n+'</small>':'')+'</button>'}).join("")+'</div>'}
-    else{sum.textContent=w.wake+"–"+w.bed+(w.today?" (today only)":"")+" · "+nq+" of "+Q.length+" placed"+(tot?" · "+hm(tot)+" blocked":"")+(bz?" · "+hm(bz)+" busy":"");
-      tray.innerHTML=Q.length?Q.map(function(q){var pl=schPlaced(T,q.id),n=L.filter(function(x){return x.q===q.id}).length,need=schLen(q);return '<span class="sch-q'+(pl>=need?' placed':pl?' part':'')+'" data-sq="'+q.id+'">'+esc(q.label)+' <small>'+(pl?hm(pl)+' / '+hm(need)+(n>1?' · '+n+' shots':''):hm(need))+'</small></span>'}).join(""):'<p class="help">No time quests today. Add one to schedule it.</p>'}
+    else{sum.textContent=(FT&&T===add(todayKey(),1)?WDS[parse(T).getDay()]+", "+fmtD(T)+" · ":"")+w.wake+"–"+w.bed+(w.today?" (today only)":"")+" · "+nq+" of "+Q.length+" placed"+(tot?" · "+hm(tot)+" blocked":"")+(bz?" · "+hm(bz)+" busy":"");
+      tray.innerHTML=Q.length?Q.map(function(q){var pl=schPlaced(T,q.id),n=L.filter(function(x){return x.q===q.id}).length,need=schLen(q,T);return '<span class="sch-q'+(pl>=need?' placed':pl?' part':'')+'" data-sq="'+q.id+'">'+esc(q.label)+' <small>'+(pl?hm(pl)+' / '+hm(need)+(n>1?' · '+n+' shots':''):hm(need))+'</small></span>'}).join(""):'<p class="help">No time quests '+schTd()+'. Add one to schedule it.</p>'}
     var h='';
     for(var m=g.s0;m<g.e0;m+=SCH_STEP)h+='<i class="sch-ln'+(m%60===0?' hr':'')+'" style="top:'+px(m)+'px"></i>'+(m%60===0?'<span class="sch-hr" style="top:'+px(m)+'px">'+hhmmOf(m)+'</span>':'');
     if(!BZ&&fl>g.s0)h+='<i class="sch-past" style="height:'+Math.min(px(g.e0),px(fl))+'px"></i>';
-    if(!BZ&&now>=g.s0&&now<=g.e0)h+='<i class="sch-now" id="schNow" style="top:'+px(now)+'px"></i>';
+    if(!BZ&&!FT&&now>=g.s0&&now<=g.e0)h+='<i class="sch-now" id="schNow" style="top:'+px(now)+'px"></i>';
     if(schPick!=null)h+='<i class="sch-ghost" style="top:'+px(schPick)+'px;height:'+SCH_ROW*2+'px"><span>'+hhmmOf(schPick)+'</span></i>';
     var BL=L.filter(function(x){return x.busy});
     function clashOf(bl){return bl.q?BL.filter(function(z){return z.f<bl.t&&bl.f<z.t})[0]:null}
@@ -183,13 +189,13 @@
         '<div class="sch-wk"><span>For</span><button type="button" class="stone" id="schWkM" aria-label="Fewer weeks"'+(schRep.weeks<=1?' disabled':'')+'>−</button><b id="schWkN">'+schRep.weeks+' week'+(schRep.weeks===1?'':'s')+'</b><button type="button" class="stone" id="schWkP" aria-label="More weeks"'+(schRep.weeks>=REP_MAX?' disabled':'')+'>+</button></div>'+
         '<p class="help sch-help" id="schRepSum">'+(n?n+' time'+(n===1?'':'s')+', until '+fmtD(u):'Pick at least one day.')+'</p><div class="sch-acts"><button type="button" class="stone" id="schRepNo">Cancel</button><button type="button" class="stone save" id="schRepOk"'+(n?'':' disabled')+'>Save repeat</button></div>'}
     else if(sb&&sb.busy){var bt2=busyById(sb.busy);
-      f2='<p class="sch-ft-h"><b>'+esc(sb.lb)+'</b> '+hhmmOf(sb.f)+'–'+hhmmOf(sb.t)+' <small class="sch-tag">Busy</small></p>'+(bt2?'<p class="sch-rep">↻ '+esc(busyText(bt2))+'</p>':'')+'<p class="help sch-help">Busy times are set in Busy times. Quests already placed on top of it stay for today.</p><div class="sch-acts"><button type="button" class="stone" id="schBzEdit">Edit busy times</button><button type="button" class="stone sch-x" id="schDesel" aria-label="Deselect">✕</button></div>'}
+      f2='<p class="sch-ft-h"><b>'+esc(sb.lb)+'</b> '+hhmmOf(sb.f)+'–'+hhmmOf(sb.t)+' <small class="sch-tag">Busy</small></p>'+(bt2?'<p class="sch-rep">↻ '+esc(busyText(bt2))+'</p>':'')+'<p class="help sch-help">Busy times are set in Busy times. Quests already placed on top of it stay for '+schTd()+'.</p><div class="sch-acts"><button type="button" class="stone" id="schBzEdit">Edit busy times</button><button type="button" class="stone sch-x" id="schDesel" aria-label="Deselect">✕</button></div>'}
     else if(sb){var rp=sb.rep?repById(sb.rep):null,det=schDet&&schDet.id===sb.id,cz=clashOf(sb);
-      f2='<p class="sch-ft-h"><b>'+esc(nameOf(sb))+'</b> '+hhmmOf(sb.f)+'–'+hhmmOf(sb.t)+'</p>'+(rp?'<p class="sch-rep">↻ '+esc(repText(rp))+'</p>':'')+(cz?'<p class="sch-clash">Overlaps '+esc(cz.lb)+'. It stays for today, but can’t be moved onto busy time.</p>':'')+
-        '<p class="help sch-help">'+(det?'Changed for today only.':(sb.j5?'Its reminder starts a 5-minute timer. ':'Drag the corner tab to resize. ')+'Hold and drag to move, or tap a free time.')+'</p>'+
+      f2='<p class="sch-ft-h"><b>'+esc(nameOf(sb))+'</b> '+hhmmOf(sb.f)+'–'+hhmmOf(sb.t)+'</p>'+(rp?'<p class="sch-rep">↻ '+esc(repText(rp))+'</p>':'')+(cz?'<p class="sch-clash">Overlaps '+esc(cz.lb)+'. It stays for '+schTd()+', but can’t be moved onto busy time.</p>':'')+
+        '<p class="help sch-help">'+(det?'Changed for '+schTd()+' only.':(sb.j5?'Its reminder starts a 5-minute timer. ':'Drag the corner tab to resize. ')+'Hold and drag to move, or tap a free time.')+'</p>'+
         (sb.q?'<div class="sch-row"><div class="sjpick" role="radiogroup" aria-label="How to start"><button type="button" class="stone mini'+(sb.j5?'':' on')+'" data-sm="range" role="radio" aria-checked="'+!sb.j5+'">Time range</button><button type="button" class="stone mini'+(sb.j5?' on':'')+'" data-sm="j5" role="radio" aria-checked="'+!!sb.j5+'">5-min start</button></div></div>':'')+
         '<div class="sch-acts">'+(det?'<button type="button" class="stone save" id="schEvery">Every week</button>':'')+(schLeftIn(T,sb)?'<button type="button" class="stone save" id="schRes">Resume \u00b7 '+hm(schLeftIn(T,sb))+' left</button>':'')+
-        (rp?'<button type="button" class="stone" id="schRepB">Edit repeat</button><button type="button" class="stone" id="schRm">Skip today</button><button type="button" class="stone del" id="schStop">Stop</button>'
+        (rp?'<button type="button" class="stone" id="schRepB">Edit repeat</button><button type="button" class="stone" id="schRm">Skip '+schTd()+'</button><button type="button" class="stone del" id="schStop">Stop</button>'
           :'<button type="button" class="stone" id="schRepB">Repeat</button>'+(sb.q&&!sb.j5?'<button type="button" class="stone" id="schSplit">Split</button>':'')+'<button type="button" class="stone del" id="schRm">Remove</button>')+
         '<button type="button" class="stone sch-x" id="schDesel" aria-label="Deselect">✕</button></div>'}
     else if(schPick!=null){var past=schPick<fl,open=Q.slice().sort(function(a,b){return (schLeft(T,b)>0)-(schLeft(T,a)>0)});
@@ -217,7 +223,7 @@
     on("schBzAdd",function(){busyAdd(ft.querySelector("#schBzIn").value,schPick);schDraw()});var bzi=ft.querySelector("#schBzIn");if(bzi)bzi.addEventListener("keydown",function(ev){if(ev.key==="Enter"){busyAdd(bzi.value,schPick);schDraw()}});
     on("schSplit",function(){schSplit(schSel);schDraw()});on("schRm",function(){schRemove(schSel);schDraw()});on("schDesel",function(){schSel=null;schDet=null;schMsg="";schDraw()});
     on("schAuto",function(){schAuto();schDraw()});
-    var cl=ft.querySelector("#schClr"),arm=null;if(cl)cl.addEventListener("click",function(){if(!arm){cl.textContent="Confirm clear";arm=setTimeout(function(){arm=null;cl.textContent="Clear all"},4000);return}clearTimeout(arm);var rr=schAll(T).filter(function(b){return b.rep}).map(function(b){return b.rep});schSave(function(L2,e2){if(rr.length)e2.schSkip=(e2.schSkip||[]).concat(rr);return []});schSel=null;schMsg=rr.length?"Cleared today. Repeats continue next time.":"";schDraw()});
+    var cl=ft.querySelector("#schClr"),arm=null;if(cl)cl.addEventListener("click",function(){if(!arm){cl.textContent="Confirm clear";arm=setTimeout(function(){arm=null;cl.textContent="Clear all"},4000);return}clearTimeout(arm);var rr=schAll(T).filter(function(b){return b.rep}).map(function(b){return b.rep});schSave(function(L2,e2){if(rr.length)e2.schSkip=(e2.schSkip||[]).concat(rr);return []});schSel=null;schMsg=rr.length?"Cleared "+schTd()+". Repeats continue next time.":"";schDraw()});
     var sc0=schPg.querySelector("#schScroll"),onB=tl.querySelector(".sch-b.on");if(onB&&schSel!==schShown&&!schDrag){var bb=onB.offsetTop+onB.offsetHeight,vb=sc0.scrollTop+sc0.clientHeight;if(bb>sc0.scrollTop+sc0.clientHeight*.6)sc0.scrollTop=Math.min(onB.offsetTop-8,bb-Math.round(sc0.clientHeight*.55));else if(onB.offsetTop<sc0.scrollTop)sc0.scrollTop=onB.offsetTop-8}schShown=schSel;
     if(first){var nw=tl.querySelector("#schNow"),sc=schPg.querySelector("#schScroll");sc.scrollTop=0;if(nw)sc.scrollTop=Math.max(0,nw.offsetTop-sc.clientHeight/3);else if(schPick!=null)sc.scrollTop=Math.max(0,px(schPick)-sc.clientHeight/3)}
   }
@@ -225,7 +231,7 @@
      left and no timer on its quest. Once its end has passed (or you pull the end in to finish early) there's nothing to resume. The schedule footer and the quest row offer Resume, and a persistent notification (id 905, ongoing) stays
      up until it's resumed, removed, or the day ends. */
   function schDoneIn(T,b){var s0=atMin(T,b.f),s1=atMin(T,b.t),m=0;((S.days[T]||{}).sess||[]).forEach(function(z){if(z.id!==b.q)return;var a=Math.max(z.s,s0),c=Math.min(z.e,s1);if(c>a)m+=(c-a)/60000});return Math.round(m)}
-  function schLeftIn(T,b){var nw=nowMinInDay();if(!b||!b.q||b.lb||b.j5||nw<b.f||nw>=b.t||(S.timer&&S.timer.id===b.q))return 0;var q=schQuests(T).filter(function(x){return x.id===b.q})[0];if(!q||metQ(q,S.days[T]||{}))return 0;var d=schDoneIn(T,b);if(d<1||(b.ed&&schLastIn(T,b)<=b.ed))return 0;var l=(b.t-b.f)-d;return l>=1?l:0}
+  function schLeftIn(T,b){var nw=nowMinInDay();if(T!==todayKey()||!b||!b.q||b.lb||b.j5||nw<b.f||nw>=b.t||(S.timer&&S.timer.id===b.q))return 0;var q=schQuests(T).filter(function(x){return x.id===b.q})[0];if(!q||metQ(q,S.days[T]||{}))return 0;var d=schDoneIn(T,b);if(d<1||(b.ed&&schLastIn(T,b)<=b.ed))return 0;var l=(b.t-b.f)-d;return l>=1?l:0}
   /* End of the latest timed stretch inside the block. A block edited after that (shortened, moved, delayed) means you've
      re-planned it yourself, so there's nothing to resume until you work in it again. */
   function schLastIn(T,b){var s0=atMin(T,b.f),s1=atMin(T,b.t),m=0;((S.days[T]||{}).sess||[]).forEach(function(z){if(z.id===b.q&&z.e>s0&&z.s<s1&&z.e>m)m=z.e});return m}
@@ -238,8 +244,8 @@
   function schRows(defs,k){defs.forEach(function(q){var el=qEls[q.id];if(!el||q.type!=="time")return;var L=schOfQ(k,q.id);if(!L.length)return;var txt=L.map(function(b){var l=k===todayKey()?schLeftIn(k,b):0;return schText(b)+(l?" ("+hm(l)+" left)":"")}).join(", "),rq=el.row.querySelector(".req");if(rq&&rq.textContent.indexOf(txt)<0)rq.textContent+=" · "+txt})}
   function schNotifs(T,e,push){var Q=schQuests(T);schAll(T).forEach(function(bl,i){var q=Q.filter(function(x){return x.id===bl.q})[0];if(!q||metQ(q,e)||(S.timer&&S.timer.id===q.id))return;
       push(3500+i,(bl.j5?"5 minutes on ":"Time for ")+q.label,bl.j5?"Tap to start a 5-minute timer. Planned until "+hhmmOf(bl.t)+".":hhmmOf(bl.f)+"–"+hhmmOf(bl.t)+". Tap to start the timer.",atMin(T,bl.f),{sched:q.id,j5:!!bl.j5})});
-    /* Repeats on the next 6 days are scheduled too (3700 + day×20 + n), so they remind even if the app isn't opened that day. */
-    for(var dd=1;dd<=6;dd++){var k=add(T,dd),Qk=schQuests(k),n=0;schAll(k).forEach(function(bl){if(!bl.rep||n>=20)return;var q=Qk.filter(function(x){return x.id===bl.q})[0];if(!q)return;
+    /* Blocks on the next SCH_AHEAD days (planned ahead or repeats) are scheduled too (3700 + day×20 + n), so they remind even if the app isn't opened that day. */
+    for(var dd=1;dd<=SCH_AHEAD;dd++){var k=add(T,dd),Qk=schQuests(k),n=0;schAll(k).forEach(function(bl){if(!bl.q||n>=20)return;var q=Qk.filter(function(x){return x.id===bl.q})[0];if(!q)return;
       push(3700+dd*20+n++,(bl.j5?"5 minutes on ":"Time for ")+q.label,bl.j5?"Tap to start a 5-minute timer. Planned until "+hhmmOf(bl.t)+".":hhmmOf(bl.f)+"–"+hhmmOf(bl.t)+". Tap to start the timer.",atMin(k,bl.f),{sched:q.id,j5:!!bl.j5})})}}
   /* A reminder tap only starts a timer if that quest still has a block today (or, for 905, is still resumable). */
   function schTap(x){var T=todayKey(),q=schQuests(T).filter(function(z){return z.id===x.sched})[0];if(!q||locked()||(S.timer&&S.timer.id===q.id))return;

@@ -298,7 +298,7 @@ test("a repeated quest shot reminds you like any other", async ({ page }) => {
   await page.addInitScript(mock);
   await openApp(page, { cfg: { quests: Q, nf: { on: true }, rep: [{ id: "r2", q: "cs", f: 600, t: 660, dows: [1], from: "2026-11-02", until: "2026-11-29" }] } });
   await page.clock.runFor(2000);
-  const n = (await page.evaluate(() => window.__ln)).filter((x) => x.id >= 3500 && x.id < 4000);
+  const n = (await page.evaluate(() => window.__ln)).filter((x) => x.id >= 3500 && x.id < 3700);
   expect(n.map((x) => [x.title, x.extra.sched])).toEqual([["Time for CS work", "cs"]]);
 });
 
@@ -481,7 +481,7 @@ test("on Today, busy times are read-only, planned around, and shots placed befor
   await expect(page.locator("#schTitle")).toHaveText("Busy times");
   await expect(page.locator(".sch-b.on")).toHaveCount(1);
   await page.click("#schOk");
-  await expect(page.locator("#schTitle")).toHaveText("Today’s schedule");
+  await expect(page.locator("#schTitle")).toHaveText("Today");
 });
 
 test("tapping a past time on Today offers to block it as busy", async ({ page }) => {
@@ -628,5 +628,71 @@ test.describe("schedule flexibility", () => {
     await page.evaluate(() => document.getElementById("schAuto") && document.getElementById("schAuto").click());
     const s = ((await store(page)).days["2026-11-02"].sched || []).map((b) => [b.f, b.t]);
     expect(s).toEqual([[570, 610]]);
+  });
+});
+
+test.describe("scheduling ahead", () => {
+  const day = (page, k) => page.evaluate((k) => JSON.parse(localStorage.getItem("pc-cache-v1")).days[k] || null, k);
+  test("the arrows step to tomorrow, where any time of the day can be planned and it's saved on that day", async ({ page }) => {
+    await open(page);
+    await expect(page.locator("#schDP")).toBeDisabled();
+    await page.click("#schDN");
+    await expect(page.locator("#schTitle")).toHaveText("Tomorrow");
+    await expect(page.locator("#schSum")).toContainText("Tue, Nov 3");
+    await expect(page.locator("#schAdjB")).toBeHidden();
+    await expect(page.locator("#schNow")).toHaveCount(0);
+    await expect(page.locator(".sch-past")).toHaveCount(0);
+    await place(page, "cs", "08:00");
+    const d = await day(page, "2026-11-03");
+    expect(d.sched.map((b) => [b.q, b.f, b.t])).toEqual([["cs", 480, 540]]);
+    expect(d.q).toBeUndefined();
+    expect(await sched(page)).toBeNull();
+    await page.click("#schDP");
+    await expect(page.locator("#schTitle")).toHaveText("Today");
+    await expect(page.locator(".sch-b")).toHaveCount(0);
+  });
+
+  test("the arrows go 13 days ahead and no further, and reopening starts on today", async ({ page }) => {
+    await open(page);
+    for (let i = 0; i < 13; i++) await page.click("#schDN");
+    await expect(page.locator("#schTitle")).toHaveText("Sun, Nov 15");
+    await expect(page.locator("#schDN")).toBeDisabled();
+    await page.click("#schOk");
+    await page.click("#schBtn");
+    await expect(page.locator("#schTitle")).toHaveText("Today");
+  });
+
+  test("Auto-plan on a later day starts at wake-up and plans each quest's full share", async ({ page }) => {
+    await open(page);
+    await page.click("#schDN");
+    await page.click("#schDN");
+    await page.click("#schAuto");
+    const d = await day(page, "2026-11-04");
+    expect(d.sched.map((b) => [b.q, b.f, b.t])).toEqual([["cs", 420, 480], ["fr", 495, 555]]);
+    expect(await sched(page)).toBeNull();
+  });
+
+  test("removing the only block on a later day leaves no empty entry", async ({ page }) => {
+    await open(page, { days: { "2026-11-03": { sched: [{ id: "a", q: "cs", f: 600, t: 660 }] } } });
+    await page.click("#schDN");
+    await page.click(".sch-b");
+    await expect(page.locator("#schRes")).toHaveCount(0);
+    await page.click("#schRm");
+    expect(await day(page, "2026-11-03")).toBeNull();
+  });
+
+  test("blocks planned on a later day get their reminder now", async ({ page }) => {
+    await page.addInitScript(`window.__ln=[];window.Capacitor={isNativePlatform:()=>true,Plugins:{LocalNotifications:{requestPermissions:()=>Promise.resolve({display:'granted'}),createChannel:()=>Promise.resolve(),getPending:()=>Promise.resolve({notifications:[]}),cancel:()=>Promise.resolve(),schedule:(o)=>{o.notifications.forEach(n=>window.__ln.push({id:n.id,title:n.title,at:String(n.schedule.at)}));return Promise.resolve()},addListener:()=>Promise.resolve({})},App:{addListener:()=>Promise.resolve({})},KeepAwake:{keepAwake:()=>Promise.resolve(),allowSleep:()=>Promise.resolve()}}};`);
+    await openApp(page, { cfg: { quests: Q, nf: { on: true } }, days: { "2026-11-12": { sched: [{ id: "a", q: "cs", f: 600, t: 660 }] } } });
+    await page.clock.runFor(2000);
+    const n = (await page.evaluate(() => window.__ln)).filter((x) => x.id >= 3700 && x.id < 4000);
+    expect(n.map((x) => [x.id, x.title])).toEqual([[3700 + 10 * 20, "Time for CS work"]]);
+    expect(n[0].at).toContain("Thu Nov 12 2026 10:00");
+  });
+
+  test("a block planned ahead is that day's schedule when it comes", async ({ page }) => {
+    await open(page, { now: "2026-11-03T09:00:00-05:00", days: { "2026-11-03": { sched: [{ id: "a", q: "cs", f: 600, t: 660 }] } } });
+    await expect(page.locator("#schTitle")).toHaveText("Today");
+    await expect(page.locator(".sch-b")).toHaveCount(1);
   });
 });

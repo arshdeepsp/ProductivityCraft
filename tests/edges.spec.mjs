@@ -94,14 +94,15 @@ test("blocks for a quest that isn't on today don't take up time", async ({ page 
   expect(s.map((b) => [b.q, b.f, b.t])).toEqual([["cs", 540, 600], ["gone", 600, 720]]);
 });
 
-test("repeats on the coming days get their reminders now", async ({ page }) => {
+test("repeats on the next 13 days get their reminders now", async ({ page }) => {
   await page.addInitScript(mock);
   const rep = [{ id: "r1", q: "cs", f: 600, t: 660, dows: [3], from: "2026-11-02", until: "2026-11-29" }];
   await openApp(page, { cfg: { quests: [{ id: "cs", type: "time", label: "CS", min: 60 }], rep, nf: { on: true } } });
   await page.clock.runFor(2000);
   const n = (await page.evaluate(() => window.__ln)).filter((x) => x.id >= 3700 && x.id < 4000);
-  expect(n.map((x) => x.title)).toEqual(["Time for CS"]);
+  expect(n.map((x) => [x.id, x.title])).toEqual([[3740, "Time for CS"], [3880, "Time for CS"]]);
   expect(n[0].at).toContain("Wed Nov 04 2026 10:00");
+  expect(n[1].at).toContain("Wed Nov 11 2026 10:00");
 });
 
 test("Trends' topic time leaves out deleted topics", async ({ page }) => {
