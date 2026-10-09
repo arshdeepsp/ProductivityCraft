@@ -20,9 +20,9 @@
 
   function compute(asOf){
     lockPast();buildBank();
-        var T=asOf?add(asOf,1):todayKey(),Y=add(T,-1),st={fz:0,streak:0,best:0,total:0,miss:0,rebase:false,rc:0,resets:[],start:null,marks:{}},fzAt=[],gk=null;
-    function success(k){st.streak++;st.total++;st.miss=0;if(st.streak%14===0&&st.fz<fzCap()){st.fz++;fzAt.push(k)}if(st.streak===1)st.start=k;if(st.rebase){st.rc++;if(st.rc>=3){st.rebase=false;st.rc=0}}st.marks[k]="ok"}
-    function reset(k){if(st.resets[st.resets.length-1]!==k)st.resets.push(k);st.streak=0;st.start=null;st.rebase=true;st.rc=0;st.miss=0}
+        var T=asOf?add(asOf,1):todayKey(),Y=add(T,-1),st={fz:0,streak:0,best:0,total:0,miss:0,resets:[],start:null,marks:{}},fzAt=[],gk=null;
+    function success(k){st.streak++;st.total++;st.miss=0;if(st.streak%14===0&&st.fz<fzCap()){st.fz++;fzAt.push(k)}if(st.streak===1)st.start=k;st.marks[k]="ok"}
+    function reset(k){if(st.resets[st.resets.length-1]!==k)st.resets.push(k);st.streak=0;st.start=null;st.miss=0}
     st.carry=0;st.lost=[];
     if(T<START_KEY)return st;
     function dayEval(k){
@@ -30,8 +30,7 @@
       if(!reqDefsFor(k).length){st.marks[k]="rest";return}
       if(ok(S.days[k])){success(k);return}
       st.miss++;
-      if(st.rebase){if(st.streak>0||st.rc>0){st.marks[k]="miss";reset(k)}else st.marks[k]="miss";st.rc=0}
-      else if(st.miss>=2&&st.fz>0&&st.streak>0){st.fz--;st.miss=1;st.marks[k]="frozen";gk=k}
+      if(st.miss>=2&&st.fz>0&&st.streak>0){st.fz--;st.miss=1;st.marks[k]="frozen";gk=k}
       else if(st.miss>=2){st.marks[k]="miss";if(gk&&(st.marks[gk]==="grace"||st.marks[gk]==="frozen"))st.marks[gk]="miss";if(st.streak>0)reset(k)}
       else{st.marks[k]=st.streak>0?"grace":"miss";gk=k}}
     /* Period totals (weekly, 2-week, monthly) are checked at the halfway checkpoint (e.ck on the passed day) and on the
@@ -51,7 +50,6 @@
     if(!asOf&&T>=START_KEY){if(noStreakOn(T))st.marks[T]="pause";else if(!reqDefsFor(T).length)st.marks[T]="rest";else if(ok(S.days[T]))success(T);else st.marks[T]="pend"}
     /* Best streak = most cleared ("ok") days between two resets, so days lost later never count toward it. */
     var rs={},run=0;st.resets.forEach(function(d){rs[d]=1});for(var d=START_KEY;d<=T;d=add(d,1)){if(rs[d]){st.best=Math.max(st.best,run);run=0}if(st.marks[d]==="ok")run++}st.best=Math.max(st.best,run);
-    var last=st.resets[st.resets.length-1];st.gate=last&&!S.refl[last]&&!noStreakOn(todayKey())?last:null;
     return st;
   }
 

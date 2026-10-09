@@ -96,11 +96,4 @@
   function daysCol(){return db.doc("data/users/"+uid+"/tracker").collection("days")}
   function reflDoc(){return db.doc("data/users/"+uid+"/reflections")}
   var syncT=0;function setSync(t){var el=document.getElementById("sync");el.textContent=t;clearTimeout(syncT);if(t)syncT=setTimeout(function(){if(el.textContent===t)el.textContent=""},6000)}
-  var gateText=document.getElementById("gateText"),gateGo=document.getElementById("gateGo");
-  gateText.addEventListener("input",function(){gateGo.disabled=gateText.value.trim().length<10});
-  gateGo.addEventListener("click",function(){
-    var st=compute();if(!st.gate)return;
-    S.refl=Object.assign({},S.refl);S.refl[st.gate]={text:gateText.value.trim(),at:new Date().toISOString()};cache();gateText.value="";gateGo.disabled=true;render();
-    if(db&&uid)reflDoc().set({map:S.refl}).catch(function(){setSync("Couldn't sync. Saved on this device.")});
-  });
 

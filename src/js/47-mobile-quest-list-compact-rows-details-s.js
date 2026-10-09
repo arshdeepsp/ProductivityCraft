@@ -19,8 +19,6 @@
       var SLd=qSubjs(q),TLd=qTopics(q);if(SLd.length)r(TLd.length?(TLd.length>1?"Topics":"Topic"):(SLd.length>1?"Subjects":"Subject"),SLd.map(function(id){var sj=subjById(id),tn=TLd.filter(function(t){return topicById(t).s.id===id}).map(function(t){return esc(topicName(t))});return esc(sj.name)+(tn.length?" \u203a "+tn.join(", "):"")}).join("; "));
       if(cq.fin)r("Done when",cq.fin.t==="total"?"Project total reached":(cq.fin.t==="topic"?"Topic reaches ":"Subject reaches ")+LV[cq.fin.lvl||4]);
       if(q.dl)r("Deadline",num(q.dl.total)+(q.ul?" "+esc(q.ul):"")+" by "+fmtD(q.dl.due));
-      if(q.type!=="todo"&&strictOn())r("Change rules",(LOCKS.filter(function(L){return L[0]===lockOf(cq)})[0]||LOCKS[0])[1]);
-      if(cq.pending)r("Scheduled",pendText(cq.pending)+" on "+fmtD(cq.pending.due));
       b.innerHTML='<div class="dtl">'+rows.join("")+'</div><div class="edrow end"><button type="button" class="stone" id="dtEdit">Edit quests</button><button type="button" class="stone save" id="dtOk">Close</button></div>';
       b.querySelector("#dtOk").addEventListener("click",closeG);b.querySelector("#dtEdit").addEventListener("click",function(){closeG();openMgr()})})}
   var offOpen=false;try{offOpen=localStorage.getItem("pc-offopen")==="1"}catch(x){}

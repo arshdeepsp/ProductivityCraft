@@ -26,22 +26,19 @@
   });
   function render(fromClick){
     try{lockPast();rollTimer()}catch(x){}
-    try{if(S.cfg&&(S.cfg.quests||[]).some(function(q){return q.pending}))applyPending()}catch(x){}
     try{if(S.cfg)cleanDoneTodos()}catch(x){}
     var st=compute(),T=todayKey(),k=dayKey(),e=S.days[k]||{},off=rewardsOff();document.body.classList.toggle("nostreak",off);if(off&&(curView==="achievements"||groveOpen))setTimeout(function(){if(groveOpen)closeGrove();if(curView==="achievements")go("today")},0);
     // HUD
     var r=RANKS[0];RANKS.forEach(function(x){if(st.streak>=x[0])r=x});
     var rn=document.getElementById("rankName"),ri=document.getElementById("rankIcon");
-    rn.textContent=st.rebase?"Rebasing":r[1];ri.innerHTML=svg(st.rebase?"sprout":r[2]);ri.firstChild.style.filter=st.rebase?"grayscale(1)":"";
+    rn.textContent=r[1];ri.innerHTML=svg(r[2]);
     document.getElementById("stStreak").textContent=st.streak+(st.streak===1?" day":" days");
     document.getElementById("stBest").textContent=st.best;
     document.getElementById("stTotal").textContent=st.total;var ms=document.getElementById("moreStats"),stb=document.getElementById("statsToggle");ms.hidden=!statsOpen;stb.textContent=statsOpen?"Less":"More";stb.setAttribute("aria-expanded",statsOpen);document.getElementById("stFz").textContent=st.fz;
     var note=document.getElementById("hudNote"),nx=null;
     RANKS.forEach(function(x){if(!nx&&x[0]>st.streak)nx=x});
     note.className="note";
-    if(off){note.textContent="Streaks paused: tracking only. Your streak picks up where it was when you switch them back on.";note.className="note"}
-    else if(st.gate){note.textContent="Streak lost. Log what broke it to unlock the quests.";note.className="note warn"}
-    else if(st.rebase){note.textContent="Rebase: "+st.rc+"/3 clean days in a row. No grace day until then.";note.className="note warn"}
+    if(off){note.textContent="Casual mode: XP and levels, no streak or checkpoints. Your streak picks up where it was when you switch to Challenge.";note.className="note"}
     else if(st.miss===1){note.textContent="Grace day used. Clear today to keep the streak.";note.className="note warn"}
     else note.textContent=nx?"Next rank: "+nx[1]+" in "+(nx[0]-st.streak)+" clean days":"Top rank reached.";
     // strip
@@ -55,7 +52,7 @@
     // quests
     var past=ro();
     document.getElementById("mbNew").disabled=locked();
-    document.getElementById("gate").hidden=!st.gate||past;document.getElementById("questsWrap").hidden=(!!st.gate&&!past);if(ro()&&mgrOpen){mgrOpen=false;qmgr.hidden=true}document.getElementById("qEditBtn").disabled=ro();document.getElementById("nqBtn").disabled=locked();document.getElementById("qEditBtn").innerHTML=mgrOpen?"Close<span class=\"lg\"> editor</span>":"Edit<span class=\"lg\"> quests</span>";
+    document.getElementById("questsWrap").hidden=false;if(ro()&&mgrOpen){mgrOpen=false;qmgr.hidden=true}document.getElementById("qEditBtn").disabled=ro();document.getElementById("nqBtn").disabled=locked();document.getElementById("qEditBtn").innerHTML=mgrOpen?"Close<span class=\"lg\"> editor</span>":"Edit<span class=\"lg\"> quests</span>";
     document.getElementById("gui").classList.toggle("ro",past);document.getElementById("gui").classList.toggle("noplan",!cfg().showPlan);
     document.getElementById("guiTitleT").textContent=ro()?parse(viewKey).toLocaleDateString("en-CA",{weekday:"short",month:"short",day:"numeric"}):"Today's quests";
     document.getElementById("backToday").hidden=!ro();lockIn();if(typeof wrapLabel==="function"&&wrapBtn)wrapLabel();
@@ -77,7 +74,7 @@
     if(!past){checkFinish();maybeReviewTodos()}renderCarryNote();
     var cqm={};cfg().quests.forEach(function(q){cqm[q.id]=q});
     defs.forEach(function(q){var el=qEls[q.id];if(!el)return;var ch=el.row.querySelector(".sjchip");if(ch){var sl=qSubjs(q),pool=qTopicPool(q);if(sl.length){var due=pool.some(function(id){return topicStats(topicById(id).t).due});ch.innerHTML='<span class="sjn">...</span>'+(due?'<i class="rdot"></i>':'');ch.setAttribute("aria-label","Feeds "+(pool.length?pool.map(topicName):sl.map(function(id){return subjById(id).name})).join(", "));ch.hidden=false}else ch.hidden=true}
-      var cq=cqm[q.id];el.row.classList.toggle("doneq",!!(cq&&cq.completed));var pt=el.row.querySelector(".pendtag");if(cq&&cq.pending){if(!pt){pt=document.createElement("span");pt.className="pendtag";el.row.children[3].appendChild(pt)}pt.textContent=pendText(cq.pending)+" scheduled for "+fmtD(cq.pending.due)}else if(pt)pt.remove();});
+      var cq=cqm[q.id];el.row.classList.toggle("doneq",!!(cq&&cq.completed));var pt=el.row.querySelector(".pendtag");if(pt)pt.remove()});
     timerTick();renderHudExtras(T);renderShelf();notifSync();applyHide();mobileList(defs,e,past);renderPark();renderHeat();
     defs.forEach(function(q){var el=qEls[q.id];if(!el||q.type!=="time")return;var rq=el.row.querySelector(".req"),base=reqText(q),xtra="";
       if(q.roll){var rk=k,rs=rollSum(q.id,rk),rn=rollNeed(q,rk),df=rs-rn;xtra=" \u00b7 7-day: "+hm(rs)+" / "+hm(rn)+(df>=0?(df===0?" \u00b7 on pace":" \u00b7 ahead "+hm(df)):" \u00b7 "+hm(-df)+" more today keeps you on pace")}else if(cfg().bank){var cv=(bankCov.get(e)||{})[q.id]||0,bk=bankNow[q.id]||0;if(cv)xtra=" \u00b7 +"+hm(cv)+" from bank";else if(bk)xtra=" \u00b7 bank "+hm(bk)}
@@ -86,7 +83,7 @@
     if(off&&k===T)defs.forEach(function(q){var el=qEls[q.id];if(!el||q.type!=="time"||!q.roll)return;var rq=el.row.querySelector(".req");if(rq)rq.textContent+=" \u00b7 "+hm(rollSum(q.id,k,q))+" of "+hm(weekTarget(q,k))+" done this "+perWord(q)});
     defs.forEach(function(q){var el=qEls[q.id];if(!el||q.type!=="time"||!q.roll)return;var wt=weekTarget(q,k);if(wt<q.roll){var rq=el.row.querySelector(".req");if(rq&&rq.textContent.indexOf("this "+perWord(q))<0)rq.textContent+=" \u00b7 "+hm(wt)+" this "+perWord(q)+" (started "+fmtD(weekFrom(q,k))+")"}});
     defs.forEach(function(q){var el=qEls[q.id];if(!el||q.type!=="time"||!q.roll||scheduled(q,k))return;var rq=el.row.querySelector(".req");if(rq&&rq.textContent.indexOf("off day")<0)rq.textContent+=" \u00b7 off day, extra time still counts"});
-    defs.forEach(function(q){var el=qEls[q.id];if(!el||!lateStart(q,k))return;var rq=el.row.querySelector(".req");if(rq&&rq.textContent.indexOf("counts from")<0)rq.textContent+=" \u00b7 counts from "+(q.type==="time"&&q.roll?"next week":"tomorrow")});schRows(defs,k);if(gEl)maybeGateModal(st);document.getElementById("tdRow").hidden=past;
+    defs.forEach(function(q){var el=qEls[q.id];if(!el||!lateStart(q,k))return;var rq=el.row.querySelector(".req");if(rq&&rq.textContent.indexOf("counts from")<0)rq.textContent+=" \u00b7 counts from "+(q.type==="time"&&q.roll?"next week":"tomorrow")});schRows(defs,k);renderResetCard(st);document.getElementById("tdRow").hidden=past;
     var pn=document.getElementById("pausedNote"),pq=(k===T)?cfg().quests.filter(function(q){return isPaused(q,T)}):[],uq=(k===T)?cfg().quests.filter(function(q){return !isPaused(q,T)&&!scheduled(q,T)&&!(q.type==="time"&&q.roll)}):[];
     var pt=[];if(pq.length)pt.push("Paused: "+pq.map(function(q){return q.label+" (until "+fmtD(add(q.pausedUntil,-1))+")"}).join(", "));if(uq.length)pt.push("Not scheduled today: "+uq.map(function(q){return q.label}).join(", "));if(k===T&&isVac(T))pt.push("Vacation: everything is optional today.");else if(k===T&&!reqOf(defs).length&&cfg().quests.length)pt.push("Rest day: nothing required today.");
     pn.textContent=pt.join(" \u00b7 ");pn.hidden=!pt.length;
@@ -96,13 +93,13 @@
     document.getElementById("xpText").textContent=(nreq.length?"Today: "+n+" of "+nreq.length+" done":"Nothing required today")+(lb?" \u00b7 "+lb+" limit"+(lb===1?"":"s")+" broken":"");
     var cl=document.getElementById("cleared");
     var isGold=gold(e),isOk=ok(e),isLim=limBroken(e);
-    if(off){cl.textContent="";cl.className=""}
+    if(off){cl.textContent=isOk?"All done today!":"";cl.className=isOk?"cleared":""}
     else if(isOk){cl.textContent=isGold?"Gold day!":"Day cleared!";cl.className="cleared"+(isGold?" gold":"")+(fromClick&&(lastCleared===false||(isGold&&!lastEval.gold))?" pop":"")}
     else if(isLim){cl.textContent="Limit broken: day failed";cl.className="failtxt"}
     else{cl.textContent="";cl.className=""}
     lastCleared=isOk;
     var xp=totalXP(),lv=level(xp);
-    document.getElementById("lvlNum").textContent="Lv "+lv.l;document.getElementById("hudLine").innerHTML=off?'<span class="hl-r">Tracking only</span><span>Streaks paused</span><i class="hl-c" aria-hidden="true"></i>':'<span class="hl-r">'+esc(document.getElementById("rankName").textContent)+'</span><span>Streak <b>'+st.streak+'</b></span><span>Lv <b>'+lv.l+'</b></span><i class="hl-c" aria-hidden="true"></i>';
+    document.getElementById("lvlNum").textContent="Lv "+lv.l;document.getElementById("hudLine").innerHTML=off?'<span class="hl-r">'+esc(document.getElementById("rankName").textContent)+'</span><span>Casual</span><span>Lv <b>'+lv.l+'</b></span><i class="hl-c" aria-hidden="true"></i>':'<span class="hl-r">'+esc(document.getElementById("rankName").textContent)+'</span><span>Streak <b>'+st.streak+'</b></span><span>Lv <b>'+lv.l+'</b></span><i class="hl-c" aria-hidden="true"></i>';
     document.getElementById("lvlText").textContent=lv.cur+" / "+lv.need+" XP";
     document.getElementById("xpFill").style.width=Math.round(lv.cur/lv.need*100)+"%";
     if(fromClick&&!past&&lastEval.set){

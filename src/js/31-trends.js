@@ -21,7 +21,7 @@
     function tile(col,icon,label,big,sub,cls){return '<div class="ttile" style="--tc:'+col+'"><div class="tt-i">'+svg(icon)+'</div><div class="tt-b"><div class="tt-l">'+label+'</div><div class="tt-v">'+big+'</div>'+(sub?'<div class="tt-s '+(cls||'')+'">'+sub+'</div>':'')+'</div></div>'}
     var h='<div class="tsec"><div class="tsec-h">This week</div><div class="tgrid">'+
       tile("#3C8527","clock","Focus time",hm(thisW),(dW===0?"Same as last week":(dW>0?"▲ "+hm(dW):"▼ "+hm(-dW))+" vs last week"),dW>0?"up":dW<0?"dn":"")+
-      (off?tile("#2C6FB0","metronome","Days logged",lgd+"/"+Math.max(1,dIn),"Streaks paused"):tile("#2C6FB0","metronome","Days cleared",clr+"/"+Math.max(1,dIn),clr===dIn&&dIn?"Perfect so far!":"Streak "+st.streak+"d"))+
+      (off?tile("#2C6FB0","metronome","Days logged",lgd+"/"+Math.max(1,dIn),"Casual mode"):tile("#2C6FB0","metronome","Days cleared",clr+"/"+Math.max(1,dIn),clr===dIn&&dIn?"Perfect so far!":"Streak "+st.streak+"d"))+
       tile("#8A3A9E","book","Topic time",hm(ttTot),ttTop?"Most: "+esc(topicName(ttTop)):"No topic time yet")+
       tile("#C0392B","calendar","Plan kept",plN?plK+"/"+plN:"—",plN?"planned days":planKept(T)===false?"Today’s plan in progress":"Nothing scheduled")+
       tile("#B8860B","bell","Reminders",calls,"answered in 2 min")+

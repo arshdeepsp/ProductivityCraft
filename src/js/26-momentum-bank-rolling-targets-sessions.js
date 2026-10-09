@@ -34,8 +34,7 @@
   var lockedThru=null,lockDays=null,lockStart=null,ddm={},ddmKey="";
   function lockReset(){lockedThru=null;ddm={}}
   /* Quest list for a passed day: as the settings stood, with any scheduled (pending) change already due by then applied. */
-  function lockDefs(d){var P=S.cfg.quests.filter(function(q){return q.pending&&q.pending.due<=d});if(!P.length)return activeDefs(d);var c0=S.cfg;
-    try{var c1=clone(c0);c1.quests=pendingApplied(c1.quests,d);S.cfg=c1;return activeDefs(d)}finally{S.cfg=c0}}
+  function lockDefs(d){return activeDefs(d)}
   /* Repeats that fell on a passed day are copied onto it (as one-offs with src, plus a skip), so stopping or editing a
      repeat later never changes that day's plan or "Plan kept". */
   function lockReps(d,e){if(!(S.cfg.rep||[]).length)return;var R=schAll(d).filter(function(b){return b.rep});if(!R.length)return;

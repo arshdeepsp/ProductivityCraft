@@ -24,7 +24,6 @@
     if(q.type!=="todo"){var T0=todayKey(),optsS=[["",'Today'],[add(T0,1),'Tomorrow'],[nextMonday(T0),'Next week']];if(NQ.startOn===undefined&&q.type==="time"&&q.roll&&!perOf(q)&&lateInWeek(T0))NQ.startOn=nextMonday(T0);var cur=NQ.startOn||"",more='';
       more+='<div class="sjfield"><span class="sjlab">Starts</span><div class="sjpick">'+optsS.map(function(o){return '<button type="button" class="stone mini'+(cur===o[0]?' on':'')+'" data-start="'+o[0]+'" aria-pressed="'+(cur===o[0])+'">'+o[1]+(o[0]?' <small>'+fmtD(o[0])+'</small>':'')+'</button>'}).join("")+'</div></div>';
       if(q.type==="time")more+='<div class="edrow"><label>Daily limit, minutes (optional)<input type="number" data-n="lim" min="0" step="5" value="'+(q.lim||"")+'" placeholder="none"></label></div>';
-      if(strictOn())more+='<div class="edrow"><label>Change rules<select id="nqLock">'+LOCKS.map(function(L){return '<option value="'+L[0]+'"'+((q.lock||"flex")===L[0]?" selected":"")+'>'+L[1]+'</option>'}).join("")+'</select></label></div>';
       if(subjList().length)more+='<div class="sjfield"><span class="sjlab">Feeds topics (optional)</span>'+topicPick("data-nq",q)+'</div>';
       h+='<button type="button" class="stone mini more-tog" id="nqMoreOpt" aria-expanded="'+!!NQ._more+'">'+(NQ._more?'Fewer options':'More options')+(NQ._more?'':'<small>'+esc(moreSum(q))+'</small>')+'</button>'+(NQ._more?'<div class="moreb">'+more+'</div>':'')}
     h+='<p class="cmsg2">'+esc(msg||"")+'</p><div class="edrow end"><button type="button" class="stone" id="nqCancel">Cancel</button><button type="button" class="stone save" id="nqSave">Add quest</button></div></div>';
@@ -38,7 +37,6 @@
     nqB.querySelectorAll("[data-start]").forEach(function(x){x.addEventListener("click",function(){var v=x.getAttribute("data-start");NQ.startOn=v||null;drawNQ()})});
     nqB.querySelectorAll("[data-per]").forEach(function(x){x.addEventListener("click",function(){var p=x.getAttribute("data-per"),k0={"":1,"2w":2,month:4.3},was=perOf(NQ);NQ.roll=Math.max(30,Math.round(NQ.roll/k0[was]*k0[p]/30)*30);if(p)NQ.per=p;else delete NQ.per;drawNQ()})});
     nqB.querySelectorAll("[data-goal]").forEach(function(x){x.addEventListener("click",function(){if(x.getAttribute("data-goal"))NQ.roll=NQ.roll||420;else delete NQ.roll;drawNQ()})});
-    var nlk=nqB.querySelector("#nqLock");if(nlk)nlk.addEventListener("change",function(){NQ.lock=this.value});
     var nrh=nqB.querySelector("#nqRollH");if(nrh)nrh.addEventListener("input",function(){var v=num(this.value);if(v>0)NQ.roll=Math.round(v*60)});
     nqB.querySelectorAll("[data-n]").forEach(function(x){x.addEventListener(x.tagName==="SELECT"?"change":"input",function(){var f=x.getAttribute("data-n");NQ[f]=num(x.value);if(f==="scale"){if(NQ.min>NQ.scale)NQ.min=NQ.scale;drawNQ()}})});
     nqB.querySelectorAll("[data-s]").forEach(function(x){x.addEventListener(x.tagName==="SELECT"?"change":"input",function(){var f=x.getAttribute("data-s");if(x.value)NQ[f]=x.value;else delete NQ[f];if(f==="unit")drawNQ()})});
@@ -46,7 +44,7 @@
     var ob=nqB.querySelector("#nqOpt");if(ob)ob.addEventListener("click",function(){if(NQ.opt)delete NQ.opt;else NQ.opt=true;drawNQ()});
     nqB.querySelector("#nqCancel").addEventListener("click",closeNQ);
     nqB.querySelector("#nqSave").addEventListener("click",function(){
-      var q=NQ;q.label=(q.label||"").trim();stampAdded(q);if(!q.startOn)delete q.startOn;if(q.lock==="fortnight")q.lockFrom=todayKey();if(q.lock==="flex")delete q.lock;if(countsOnDay(q)){var ovq=wouldExceed(q);if(ovq.length){drawNQ(overMsg(ovq));return}}
+      var q=NQ;q.label=(q.label||"").trim();stampAdded(q);if(!q.startOn)delete q.startOn;if(countsOnDay(q)){var ovq=wouldExceed(q);if(ovq.length){drawNQ(overMsg(ovq));return}}
       if(!q.label){drawNQ("Give the quest a name.");return}
       if(!(q.lim>0))delete q.lim;if(((q.type==="time"||q.type==="weekly"||q.type==="target")&&!(q.min>0))||(q.type==="time"&&q.lim&&q.lim<(q.roll?5:q.min))||(q.type==="scale"&&!(q.min>=1&&q.min<=(q.scale||5)))||(q.type==="wake"&&!(q.from&&q.to&&q.from<q.to))||(q.type==="limit"&&!(q.max>=0))||(q.days&&!q.days.length)){drawNQ("Check the values: something is missing or out of range.");return}
       delete q._all;delete q._more;if(q.type==="weekly"||q.type==="todo"){delete q.days;delete q.opt}

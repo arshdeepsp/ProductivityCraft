@@ -19,7 +19,7 @@
   function subjMinutes(sid){var t=0;Object.keys(S.days).forEach(function(d){var e=S.days[d];if(!e)return;defsOf(e).forEach(function(q){if(q.type==="time"&&qSubjs(q).indexOf(sid)>=0)t+=e[q.id]|0})});return t}
   function capOf(){return cfg().cap||10}
   function activeCount(L){return (L||cfg().quests).filter(function(q){return q.type!=="todo"&&!q.completed}).length}
-  function capLockedUntil(){var c=cfg();return strictOn()&&c.capSet?add(c.capSet,30):null}
+  function capLockedUntil(){return null}
   var WDN=["Sundays","Mondays","Tuesdays","Wednesdays","Thursdays","Fridays","Saturdays"],WDS=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
   function countsOnDay(q){return q&&q.type!=="todo"&&q.type!=="weekly"&&!q.completed&&!q.opt}
   function dayLoad(L){var c=[0,0,0,0,0,0,0];(L||cfg().quests).forEach(function(q){if(!countsOnDay(q))return;var d=q.days&&q.days.length?q.days:[0,1,2,3,4,5,6];d.forEach(function(w){c[w]++})});return c}
@@ -39,11 +39,11 @@
     if(!silent&&how!=="archived"){sfx("level");showToast({icon:"trophy",kicker:"Quest complete!",title:q.label,desc:how!=="manual"?how:""});setSync("Quest complete: "+q.label+"."+(rewardsOff()?"":" It moves to Badges \u203a Completed from tomorrow."))}}
   var finChecking=false;
   function checkFinish(){if(finChecking||locked())return;finChecking=true;try{cfg().quests.forEach(function(q){if(q.completed||q.type==="todo")return;var m=finishMet(q);if(m)completeQuest(q.id,m)})}finally{finChecking=false}}
-  function completionXP(upto){return cfg().quests.reduce(function(a,q){return a+(q.completed&&!noStreakOn(q.completed.on)&&(!upto||q.completed.on<=upto)?(q.completed.how==="archived"?0:q.completed.how==="manual"?25:100):0)},0)}
-  function markCompleteManual(q){var cq=cfg().quests.filter(function(x){return x.id===q.id})[0];if(cq&&lockOf(cq)==="fortnight"&&!easeInfo().setup&&!finishMet(q)){var d2=queueChange(q.id,"complete");render();setSync(q.label+" is locked. Completion scheduled for "+fmtD(d2)+".");return}
+  function completionXP(upto){return cfg().quests.reduce(function(a,q){return a+(q.completed&&(!upto||q.completed.on<=upto)?(q.completed.how==="archived"?0:q.completed.how==="manual"?25:100):0)},0)}
+  function markCompleteManual(q){
     var met=finishMet(q);if(met){completeQuest(q.id,met);render();return}
     openG("Mark quest complete?",function(b){var inf=easeInfo();
-      b.innerHTML='<p class="mhead">Finish \u201c'+esc(q.label)+'\u201d?</p><p class="help">It stays on today\u2019s list, then moves to Badges \u203a Completed from tomorrow. Its history is kept.</p>'+(inf.setup?'':'<p class="help">This counts as one easing change ('+inf.left+'/'+EASE_BUDGET+' left this week).</p>')+'<div class="edrow end"><button type="button" class="stone" id="mcNo">Cancel</button><button type="button" class="stone save" id="mcGo">Mark complete</button></div>';
+      b.innerHTML='<p class="mhead">Finish \u201c'+esc(q.label)+'\u201d?</p><p class="help">It stays on today\u2019s list, then moves to Badges \u203a Completed from tomorrow. Its history is kept.</p>'+'<div class="edrow end"><button type="button" class="stone" id="mcNo">Cancel</button><button type="button" class="stone save" id="mcGo">Mark complete</button></div>';
       b.querySelector("#mcNo").addEventListener("click",closeG);
       b.querySelector("#mcGo").addEventListener("click",function(){var c=clone(cfg()),old=clone(c.quests),g=guardEasing(c,old,inf.setup?[]:[q.id]);if(!g.ok){b.querySelector(".help").textContent=g.msg;return}var t=c.quests.filter(function(x){return x.id===q.id})[0];t.completed={on:todayKey(),how:"manual"};saveCfg(c);qSig="";closeG();sfx("level");showToast({icon:"trophy",kicker:"Quest complete!",title:q.label,desc:""});render()})})}
   function openCapPicker(newCap,done){

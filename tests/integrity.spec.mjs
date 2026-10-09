@@ -144,12 +144,12 @@ test("halfway checks start from the upgrade: an older week met at the end stays 
   expect((await store(page)).cfg.ckFrom).toBe("2026-11-02");
 });
 
-test("a scheduled change applies to days the app wasn't opened", async ({ page }) => {
-  const K = { id: "k", type: "check", label: "Read", pending: { op: "delete", due: "2026-11-04" } };
-  await openApp(page, { now: "2026-11-06T09:00:00-05:00", cfg: { quests: [J, K] }, days: { "2026-11-02": { j: true, k: true, q: [J, { id: "k", type: "check", label: "Read" }] } } });
+test("days the app wasn't opened are snapshotted with the quests as they stand", async ({ page }) => {
+  const K = { id: "k", type: "check", label: "Read" };
+  await openApp(page, { now: "2026-11-06T09:00:00-05:00", cfg: { quests: [J, K] }, days: { "2026-11-02": { j: true, k: true, q: [J, K] } } });
   const s = await store(page);
   expect(s.days["2026-11-03"].q.map((q) => q.id)).toEqual(["j", "k"]);
-  expect(s.days["2026-11-05"].q.map((q) => q.id)).toEqual(["j"]);
+  expect(s.days["2026-11-05"].q.map((q) => q.id)).toEqual(["j", "k"]);
 });
 
 test("a repeat that fell on a passed day is kept on it after the repeat stops", async ({ page }) => {

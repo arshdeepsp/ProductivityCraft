@@ -9,15 +9,7 @@
       b.querySelectorAll("[data-b5]").forEach(function(x){x.addEventListener("click",function(){var q=L.filter(function(z){return z.id===x.getAttribute("data-b5")})[0];closeG();if(q)start5(q,after)})})})}
   function start5(q,after){if(locked())return;if(!q&&allTimeDone()){openBonus5(after);return}q=q||behindTime();if(!q){setSync("Add a time quest to use Just 5 minutes.");return}if(S.timer&&S.timer.id===q.id){setSync("Already running.");return}
     function go(first){S.noTopicAsk=true;toggleTimer(q);S.noTopicAsk=false;if(S.timer){S.timer.commit=5;if(first)S.timer.first=first;cache()}if(after)after();setSync(first?"5 minutes on "+q.label+". First: "+first:"Just 5 minutes on "+q.label+". You can stop after that.")}
-    if(!commitOn()){go("");return}
-    openG("Just 5 minutes?",function(b){
-      var TL=activeDefs(todayKey()).filter(function(x){return x.type==="time"});
-      b.innerHTML='<p class="mhead good">Low pressure. Just 5 minutes'+(TL.length>1?'':' on '+esc(q.label))+'.</p>'+(TL.length>1?'<label class="tpk">On which quest?<select id="j5Q">'+TL.map(function(x){var e1=S.days[todayKey()]||{};return '<option value="'+x.id+'"'+(x.id===q.id?" selected":"")+'>'+esc(x.label)+' ('+hm(e1[x.id]|0)+(x.roll?'':' of '+hm(x.min))+')'+(x.id===q.id?' \u2014 next in your list':'')+'</option>'}).join("")+'</select></label>':'')+'<p class="help" style="margin-top:6px"></p><ul class="stakes soft"><li>That\u2019s the whole promise: <b>5 minutes</b>.</li><li>At 5 minutes you\u2019ll hear a chime. Stop guilt-free, or keep going if it\u2019s flowing.</li><li>No XP is lost either way. Starting is the win here.</li></ul><label class="tpk">The tiniest first action (optional)<input id="j5First" maxlength="80" placeholder="e.g. open the file and read one paragraph"></label><p class="help">Tip: put your phone face-down before you tap start.</p><div class="edrow end"><button type="button" class="stone" id="j5No">Not now</button><button type="button" class="stone save" id="j5Go">Start 5 minutes</button></div>';
-      b.querySelector("#j5No").addEventListener("click",closeG);
-      var qs=b.querySelector("#j5Q");if(qs)qs.addEventListener("change",function(){q=TL.filter(function(x){return x.id===qs.value})[0]||q});
-      b.querySelector("#j5Go").addEventListener("click",function(){var f=b.querySelector("#j5First").value.trim();closeG();if(S.timer&&S.timer.id===q.id){setSync("Already running.");return}go(f)});
-      var inp=b.querySelector("#j5First");inp.addEventListener("keydown",function(e){if(e.key==="Enter"){var f=inp.value.trim();closeG();go(f)}});
-    });
+    go("")
   }
   function markDone(q){var T=todayKey();if(q.type==="todo"){toggleTodo(q);return}var e=entry();e[q.id]=true;commit()}
   var lastPick=null;

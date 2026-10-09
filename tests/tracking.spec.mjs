@@ -13,7 +13,7 @@ test("Settings pauses streaks today; switching back the same day still leaves to
   await page.click("#setStreak");
   expect((await store(page)).cfg.noStreak).toEqual([{ from: "2026-11-02" }]);
   await expect(page.locator("#setStreak")).toHaveAttribute("aria-checked", "false");
-  await expect(page.locator(".srow", { has: page.locator("#setStreak") })).toContainText("Paused since");
+  await expect(page.locator(".srow", { has: page.locator("#setStreak") })).toContainText("Casual since");
   await expect(page.locator("body")).toHaveClass(/nostreak/);
   await page.click("#setStreak");
   expect((await store(page)).cfg.noStreak).toEqual([{ from: "2026-11-02", to: "2026-11-03" }]);
@@ -30,18 +30,21 @@ test("during setup both directions take effect today, so a same-day flip undoes 
   expect((await store(page)).cfg.noStreak).toBeUndefined();
 });
 
-test("while paused the reward UI is hidden and Badges or Grove can't be opened", async ({ page }) => {
+test("in Casual the streak, badges and grove are hidden, rank and level stay, and Badges or Grove can't be opened", async ({ page }) => {
   await openApp(page, { cfg: { quests: [J], noStreak: [{ from: "2026-11-01" }], addTrends: true }, hash: "#achievements" });
   await expect(page.locator("[data-view='today']")).toBeVisible();
   await expect(page.locator("body")).toHaveClass(/nostreak/);
-  await expect(page.locator("#hudNote")).toContainText("Streaks paused: tracking only");
-  await expect(page.locator("#hudLine")).toContainText("Tracking only");
+  await expect(page.locator("#hudNote")).toContainText("Casual mode: XP and levels");
+  await expect(page.locator("#hudLine")).toContainText("Casual");
+  await expect(page.locator("#hudLine")).toContainText("Lv");
   await expect(page.locator(".mainnav [data-go='achievements']")).toBeHidden();
   await expect(page.locator(".mainnav [data-go='grove']")).toBeHidden();
   await expect(page.locator("#stStreak")).toBeHidden();
-  await expect(page.locator("#lvlText")).toBeHidden();
+  await expect(page.locator("#rankName")).toBeVisible();
+  await expect(page.locator("#lvlText")).toBeVisible();
   await page.locator("#quests .q .sw").click();
-  await expect(page.locator("#cleared")).toHaveText("");
+  await expect(page.locator("#cleared")).toHaveText("All done today!");
+  await expect(page.locator("#lvlText")).toHaveText("170 / 300 XP");
   await page.evaluate(() => { location.hash = "grove"; });
   await page.waitForTimeout(200);
   await expect(page.locator("#grove")).toBeHidden();
@@ -56,7 +59,7 @@ test("switching back on ends the pause tomorrow; switching again the same day ca
   await page.click("#setStreak");
   expect((await store(page)).cfg.noStreak).toEqual([{ from: "2026-10-20", to: "2026-11-03" }]);
   await expect(page.locator("#setStreak")).toHaveAttribute("aria-checked", "true");
-  await expect(page.locator(".srow", { has: page.locator("#setStreak") })).toContainText("back on from tomorrow");
+  await expect(page.locator(".srow", { has: page.locator("#setStreak") })).toContainText("Challenge again from tomorrow");
   await expect(page.locator("body")).toHaveClass(/nostreak/);
   await page.click("#setStreak");
   expect((await store(page)).cfg.noStreak).toEqual([{ from: "2026-10-20" }]);
@@ -80,18 +83,26 @@ test("a paused day between two misses stays paused", async ({ page }) => {
   expect([m["2026-10-31"], m["2026-11-01"], m["2026-11-02"]]).toEqual(["miss", "pause", "miss"]);
 });
 
-test("a weekly quest's bonus doesn't count a check-off made while paused", async ({ page }) => {
+test("a weekly quest's bonus counts a check-off made in Casual (XP is earned in both modes)", async ({ page }) => {
   const W = { id: "w", type: "weekly", label: "Gym", min: 2 };
   await openApp(page, { now: "2026-11-03T09:00:00-05:00", cfg: { quests: [W], start: "2026-11-02T05:00:00.000Z", noStreak: [{ from: "2026-11-02", to: "2026-11-03" }] }, days: { "2026-11-02": { w: true, q: [W] }, "2026-11-03": { w: true, q: [W] } } });
-  await expect(page.locator("#lvlText")).toHaveText("20 / 300 XP");
+  await expect(page.locator("#lvlText")).toHaveText("140 / 300 XP");
 });
 
-test("no commitment check or XP stakes while paused, even in strict mode", async ({ page }) => {
-  const CS = { id: "cs", type: "time", label: "Coursework", min: 30 };
-  await openApp(page, { cfg: { quests: [CS], strict: true, noStreak: [{ from: "2026-11-01" }] } });
+test("timers start at once in both modes; old strict-mode fields are dropped on upgrade", async ({ page }) => {
+  const CS = { id: "cs", type: "time", label: "Coursework", min: 30, lock: "fortnight", lockFrom: "2026-10-20", pending: { op: "delete", due: "2026-11-20" } };
+  await openApp(page, { cfg: { quests: [CS], strict: true, easeLog: [{ date: "2026-11-02", n: 1 }], capSet: "2026-11-01", noStreak: [{ from: "2026-11-01" }] }, days: { "2026-11-01": { cs: 10, brk: 1, q: [CS] } } });
   await page.click("#quests .q .tmr");
   await expect(page.locator("#quests .q.running")).toHaveCount(1);
   await expect(page.locator("#gModal")).toBeHidden();
+  const s = await store(page);
+  expect(s.schema).toBe(16);
+  expect(s.cfg.strict).toBeUndefined();
+  expect(s.cfg.easeLog).toBeUndefined();
+  expect(s.cfg.capSet).toBeUndefined();
+  expect(s.cfg.quests[0].lock).toBeUndefined();
+  expect(s.cfg.quests[0].pending).toBeUndefined();
+  expect(s.days["2026-11-01"].brk).toBeUndefined();
 });
 
 test("paused days are neutral: the streak picks up where it was", async ({ page }) => {
@@ -102,9 +113,9 @@ test("paused days are neutral: the streak picks up where it was", async ({ page 
   expect([m["2026-11-01"], m["2026-11-03"], m["2026-11-04"]]).toEqual(["pause", "pause", "ok"]);
 });
 
-test("a paused day never earns XP, even after streaks are back on", async ({ page }) => {
+test("a Casual day earns XP, and keeps it after switching back to Challenge", async ({ page }) => {
   await openApp(page, { now: "2026-11-03T09:00:00-05:00", cfg: { quests: [J], start: "2026-11-02T05:00:00.000Z", noStreak: [{ from: "2026-11-02", to: "2026-11-03" }] }, days: { "2026-11-02": { j: true, q: [J] } } });
-  await expect(page.locator("#lvlText")).toHaveText("0 / 300 XP");
+  await expect(page.locator("#lvlText")).toHaveText("170 / 300 XP");
 });
 
 test("a total isn't judged in a period that had a paused day", async ({ page }) => {
@@ -134,10 +145,22 @@ for (const paused of [false, true]) {
     expect(ids.includes(2600)).toBe(!paused);
   });
 
-  test(`a lost-streak gate ${paused ? "stays out of the way while paused" : "blocks quests"}`, async ({ page }) => {
+  test(`after a streak reset the reflection card ${paused ? "stays away in Casual" : "shows, and never blocks the quests"}`, async ({ page }) => {
     const days = dayRange("2026-10-27", "2026-10-30", () => ({ j: true, q: [J] }));
     await openApp(page, { now: "2026-11-02T09:00:00-05:00", cfg: { quests: [J], ...(paused ? { noStreak: [{ from: "2026-11-02" }] } : {}) }, days });
-    if (paused) await expect(page.locator("#gate")).toBeHidden(); else await expect(page.locator("#gate")).toBeVisible();
+    await expect(page.locator("#quests .q")).toHaveCount(1);
+    if (paused) { await expect(page.locator("#resetCard")).toBeHidden(); return; }
+    await expect(page.locator("#resetCard")).toBeVisible();
+    await expect(page.locator("#resetCard")).toContainText("Streak reset on Nov 1");
+    await page.locator("#quests .q .sw").click();
+    await expect(page.locator("#quests .q")).toHaveClass(/met/);
+    await page.fill("#rcText", "No plan for the weekend");
+    await page.click("#rcSave");
+    await expect(page.locator("#resetCard")).toBeHidden();
+    expect((await store(page)).refl["2026-11-01"].text).toBe("No plan for the weekend");
+    await page.reload();
+    await expect(page.locator("#quests .q")).toHaveCount(1);
+    await expect(page.locator("#resetCard")).toBeHidden();
   });
 }
 

@@ -33,19 +33,7 @@ test("missing the weekly total loses the whole week and resets the streak", asyn
   await expect(page.locator("#gBody")).toContainText("1h · 4h of 7h this week");
 });
 
-test("strict mode adds the commitment check and weekly easing budget", async ({ page }) => {
-  const Q = [...Array(5)].map((_, i) => ({ id: "a" + i, type: "check", label: "Quest " + i })).concat([{ id: "cs", type: "time", label: "CS", min: 60 }]);
-  await openApp(page, { now: "2026-11-20T09:00:00-05:00", cfg: { quests: Q, strict: true } });
-  await page.click("#quests .q.t-time .tmr");
-  await expect(page.locator("#gTitle")).toHaveText("Commit to this timer?");
-  await page.click("#ccNo");
-  await page.click("#hdrEdit");
-  for (let k = 0; k < 4; k++) await page.evaluate(() => { const b = document.querySelector("#qmgr [data-del]"); b.click(); document.querySelector("#qmgr [data-del]").click(); });
-  await page.click("#mgrSaveTop");
-  await expect(page.locator("#qmgr [data-mmsg]")).toContainText("3 of 3 left");
-});
-
-test("without strict mode timers start immediately", async ({ page }) => {
+test("timers start immediately", async ({ page }) => {
   await openApp(page, { cfg: { quests: [{ id: "cs", type: "time", label: "CS", min: 60 }] } });
   await page.click("#quests .q.t-time .tmr");
   await expect(page.locator("#gModal")).toBeHidden();

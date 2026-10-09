@@ -29,3 +29,9 @@
 .more-tog small{font:15px var(--vt);color:#3F3F3F;text-transform:none;letter-spacing:0;font-weight:400;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
 .moreb{display:grid;gap:8px;padding:8px;margin:4px 0 6px;border:3px dashed #8B8B8B;background:rgba(0,0,0,.05)}
 .moreb .sjfield{margin:0}
+/* After a streak reset: a dismissible card under the HUD (Challenge only), never a gate. */
+.resetcard{display:grid;gap:6px;margin:0 0 10px;padding:10px 12px;background:#C6C6C6;border:3px solid;border-color:#fff #555 #555 #fff;box-shadow:0 0 0 3px #000;color:#1E1E1E;text-shadow:none}
+.resetcard b{font:10px var(--px)}
+.resetcard span{font:16px var(--vt);color:#3F3F3F}
+.resetcard textarea{font:18px var(--vt);background:#373737;color:#fff;border:3px solid;border-color:#1E1E1E #8B8B8B #8B8B8B #1E1E1E;padding:6px 8px;resize:vertical;min-height:44px}
+.resetcard[hidden]{display:none!important}
