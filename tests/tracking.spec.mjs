@@ -6,24 +6,28 @@ const strip = (page) => page.evaluate(() => Object.fromEntries([...document.quer
 const J = { id: "j", type: "check", label: "Journal" };
 const mock = `window.__ln=[];window.Capacitor={isNativePlatform:()=>true,Plugins:{LocalNotifications:{requestPermissions:()=>Promise.resolve({display:'granted'}),createChannel:()=>Promise.resolve(),getPending:()=>Promise.resolve({notifications:[]}),cancel:()=>Promise.resolve(),schedule:(o)=>{o.notifications.forEach(n=>window.__ln.push({id:n.id}));return Promise.resolve()},addListener:()=>Promise.resolve({})},App:{addListener:()=>Promise.resolve({})},KeepAwake:{keepAwake:()=>Promise.resolve(),allowSleep:()=>Promise.resolve()}}};`;
 
-test("Settings pauses streaks from tomorrow; switching back the same day undoes it", async ({ page }) => {
+test("Settings pauses streaks today; switching back the same day still leaves today paused and resumes tomorrow", async ({ page }) => {
   await openApp(page, { cfg: { quests: [J] }, hash: "#settings" });
   await page.click("[data-st='quests']");
   await expect(page.locator("#setStreak")).toHaveAttribute("aria-checked", "true");
   await page.click("#setStreak");
-  expect((await store(page)).cfg.noStreak).toEqual([{ from: "2026-11-03" }]);
+  expect((await store(page)).cfg.noStreak).toEqual([{ from: "2026-11-02" }]);
   await expect(page.locator("#setStreak")).toHaveAttribute("aria-checked", "false");
-  await expect(page.locator(".srow", { has: page.locator("#setStreak") })).toContainText("Pauses from tomorrow");
-  await expect(page.locator("body")).not.toHaveClass(/nostreak/);
+  await expect(page.locator(".srow", { has: page.locator("#setStreak") })).toContainText("Paused since");
+  await expect(page.locator("body")).toHaveClass(/nostreak/);
   await page.click("#setStreak");
-  expect((await store(page)).cfg.noStreak).toBeUndefined();
+  expect((await store(page)).cfg.noStreak).toEqual([{ from: "2026-11-02", to: "2026-11-03" }]);
+  await expect(page.locator("#setStreak")).toHaveAttribute("aria-checked", "true");
+  await expect(page.locator("body")).toHaveClass(/nostreak/);
 });
 
-test("during setup a pause starts today", async ({ page }) => {
+test("during setup both directions take effect today, so a same-day flip undoes the pause", async ({ page }) => {
   await openApp(page, { cfg: { quests: [J], start: "2026-10-30T04:00:00.000Z" }, hash: "#settings" });
   await page.click("[data-st='quests']");
   await page.click("#setStreak");
   expect((await store(page)).cfg.noStreak).toEqual([{ from: "2026-11-02" }]);
+  await page.click("#setStreak");
+  expect((await store(page)).cfg.noStreak).toBeUndefined();
 });
 
 test("while paused the reward UI is hidden and Badges or Grove can't be opened", async ({ page }) => {
@@ -45,11 +49,28 @@ test("while paused the reward UI is hidden and Badges or Grove can't be opened",
   await expect(page.locator(".ttile", { hasText: "Gold days" })).toHaveCount(0);
 });
 
-test("switching back on ends the pause today", async ({ page }) => {
+test("switching back on ends the pause tomorrow; switching again the same day cancels that", async ({ page }) => {
   await openApp(page, { cfg: { quests: [J], noStreak: [{ from: "2026-10-20" }] }, hash: "#settings" });
   await page.click("[data-st='quests']");
+  await expect(page.locator("#setStreak")).toHaveAttribute("aria-checked", "false");
   await page.click("#setStreak");
-  expect((await store(page)).cfg.noStreak).toEqual([{ from: "2026-10-20", to: "2026-11-02" }]);
+  expect((await store(page)).cfg.noStreak).toEqual([{ from: "2026-10-20", to: "2026-11-03" }]);
+  await expect(page.locator("#setStreak")).toHaveAttribute("aria-checked", "true");
+  await expect(page.locator(".srow", { has: page.locator("#setStreak") })).toContainText("back on from tomorrow");
+  await expect(page.locator("body")).toHaveClass(/nostreak/);
+  await page.click("#setStreak");
+  expect((await store(page)).cfg.noStreak).toEqual([{ from: "2026-10-20" }]);
+  await expect(page.locator("#setStreak")).toHaveAttribute("aria-checked", "false");
+});
+
+test("during setup switching back on ends the pause today", async ({ page }) => {
+  await openApp(page, { cfg: { quests: [J], start: "2026-10-30T04:00:00.000Z", noStreak: [{ from: "2026-10-31" }], ignore: ["j"] }, hash: "#settings" });
+  await page.click("[data-st='quests']");
+  await page.click("#setStreak");
+  const c = (await store(page)).cfg;
+  expect(c.noStreak).toEqual([{ from: "2026-10-31", to: "2026-11-02" }]);
+  expect(c.ignore).toBeUndefined();
+  await expect(page.locator("body")).not.toHaveClass(/nostreak/);
 });
 
 test("a paused day between two misses stays paused", async ({ page }) => {
@@ -170,7 +191,7 @@ test("an ignored quest leaves the schedule, its reminders, Just 5 and the count"
   await expect.poll(async () => ((await store(page)).timer || {}).id).toBe("fr");
 });
 
-test("the row menu ignores too, and switching streaks back on clears the list", async ({ page }) => {
+test("the row menu ignores too; the list stays for the paused day left and a fresh pause starts without it", async ({ page }) => {
   const CS = { id: "cs", type: "time", label: "Coursework", min: 60 };
   await openApp(page, { cfg: { quests: [J, CS], noStreak: [{ from: "2026-11-01" }] } });
   await page.locator("#quests .q", { hasText: "Coursework" }).locator(".pzb").click();
@@ -180,8 +201,17 @@ test("the row menu ignores too, and switching streaks back on clears the list", 
   await page.click("[data-st='quests']");
   await page.click("#setStreak");
   const c = (await store(page)).cfg;
-  expect(c.ignore).toBeUndefined();
-  expect(c.noStreak).toEqual([{ from: "2026-11-01", to: "2026-11-02" }]);
+  expect(c.ignore).toEqual(["cs"]);
+  expect(c.noStreak).toEqual([{ from: "2026-11-01", to: "2026-11-03" }]);
+  await page.goto("http://127.0.0.1:4173/index.html#home");
+  await expect(page.locator("#quests .q.ignq")).toHaveCount(1);
+  await page.clock.setFixedTime(new Date("2026-11-04T09:00:00-05:00"));
+  await page.goto("http://127.0.0.1:4173/index.html#settings");
+  await page.click("[data-st='quests']");
+  await page.click("#setStreak");
+  const c2 = (await store(page)).cfg;
+  expect(c2.ignore).toBeUndefined();
+  expect(c2.noStreak).toEqual([{ from: "2026-11-01", to: "2026-11-03" }, { from: "2026-11-04" }]);
 });
 
 test("while paused, totals show done out of target, with no pace or need figures", async ({ page }) => {

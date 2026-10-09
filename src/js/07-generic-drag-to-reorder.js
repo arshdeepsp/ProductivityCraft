@@ -66,6 +66,7 @@
     if(R.length>1)sortable(rulesEl,"details.rules",".sdrag",function(order,fi){var R2=reorder(rulesData(),order),os={};order.forEach(function(k,ni){if(openSec[k])os[ni]=true});openSec=os;saveCfg(Object.assign(clone(cfg()),{rules:R2}));renderRules();var g=rulesEl.querySelectorAll(".sdrag")[fi];if(g)g.focus();setSync("Sections reordered")});else{var sg=rulesEl.querySelector(".sdrag");if(sg)sg.hidden=true}
     rulesEl.querySelectorAll("details").forEach(function(d){d.addEventListener("toggle",function(){openSec[d.getAttribute("data-i")]=d.open})});
     rulesEl.querySelectorAll("[data-edit]").forEach(function(b){b.addEventListener("click",function(){editSection(+b.getAttribute("data-edit"))})});
+    rulesEl.querySelectorAll("details.rules > summary").forEach(function(sm){var i=+sm.parentNode.getAttribute("data-i");swipeMenu(sm,function(){return [["Edit section",function(){editSection(i)}],["Delete section",function(){deleteSection(i)},{arm:"Delete section?"}]]})});
     document.getElementById("addSec").addEventListener("click",function(){var R=rulesData();R.push({title:"New section",motto:"",blocks:[{h:"",t:""}]});saveCfg(Object.assign(clone(cfg()),{rules:R}));openSec[R.length-1]=true;editSection(R.length-1)});
     var rr=document.getElementById("resetRules"),arm=null;
     if(rr)rr.addEventListener("click",function(){if(!arm){rr.textContent="Confirm reset";arm=setTimeout(function(){arm=null;rr.textContent="Clear all rules"},4000);return}clearTimeout(arm);saveCfg(Object.assign(clone(cfg()),{rules:[]}));openSec={};renderRules()});
@@ -97,6 +98,7 @@
     });
     return out.join("\n");
   }
+  function deleteSection(i){var R2=rulesData();if(!R2[i])return;R2.splice(i,1);saveCfg(Object.assign(clone(cfg()),{rules:R2}));openSec={};closeG();renderRules();setSync("Section deleted")}
   function editSection(i){
     var R=rulesData(),sec=R[i],body=null,draft=clone(sec);openSec[i]=true;
     draft.blocks.forEach(function(b){b.items=parseLines(b.t);if(!b.items.length)b.items=[{k:"p",v:[""]}]});
@@ -127,7 +129,7 @@
       body.querySelector("[data-add]").addEventListener("click",function(){draft.blocks.push({h:"",t:"",items:[{k:"p",v:[""]}]});draw()});
       body.querySelector("[data-cancel]").addEventListener("click",function(){closeG()});
       var ds=body.querySelector("[data-delsec]"),arm=null;
-      ds.addEventListener("click",function(){if(!arm){ds.textContent="Confirm delete";arm=setTimeout(function(){arm=null;ds.textContent="Delete section"},4000);return}var R2=rulesData();R2.splice(i,1);saveCfg(Object.assign(clone(cfg()),{rules:R2}));openSec={};closeG();renderRules()});
+      ds.addEventListener("click",function(){if(!arm){ds.textContent="Confirm delete";arm=setTimeout(function(){arm=null;ds.textContent="Delete section"},4000);return}deleteSection(i)});
       body.querySelector("[data-save]").addEventListener("click",function(){
         var out={title:(draft.title||"").trim()||"Untitled",motto:(draft.motto||"").trim(),blocks:draft.blocks.map(function(b){return{h:(b.h||"").trim(),t:serLines(b.items)}}).filter(function(b){return b.h||b.t})};
         var R2=rulesData();R2[i]=out;saveCfg(Object.assign(clone(cfg()),{rules:R2}));closeG();renderRules();

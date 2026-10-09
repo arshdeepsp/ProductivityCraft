@@ -1,0 +1,4 @@
+/* Swipe-left-for-menu on list rows outside the quest list (swipeMenu, 45): the same blue edge as a quest row's swipe. */
+.sjsec-h,.tr,details.rules>summary{touch-action:pan-y}
+.sjsec-h.sw-l,.tr.sw-l,details.rules>summary.sw-l{box-shadow:inset -8px 0 0 #2C6FB0,0 0 0 3px #6FB6EA}
+.qmenu button.armed{background:#B3261E;color:#fff}

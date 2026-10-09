@@ -16,6 +16,14 @@
     function end(){if(x0==null&&!act)return;x0=null;row.style.transform="";var r=row.classList.contains("sw-r"),ig=row.classList.contains("sw-ign"),l=row.classList.contains("sw-l");row.classList.remove("sw-r","sw-l","sw-ign");if(!act)return;act=false;if(ro()||locked())return;
       if(ig){haptic("medium");setIgnore(q.id,!ignoredOn(q.id,todayKey()))}else if(r){if(q.type==="todo")toggleTodo(q);else{var e=entry();e[q.id]=!e[q.id];commit()}haptic("medium")}else if(l){haptic("light");openQMenu(q,row.querySelector(".pzb"))}}
     row.addEventListener("touchend",end);row.addEventListener("touchcancel",function(){x0=null;act=false;row.style.transform="";row.classList.remove("sw-r","sw-l","sw-ign")})}
+  /* swipeMenu(el, items, skipSel): swipe left on any list row opens its popMenu (same gesture as a quest row). items is a
+     function returning popMenu items so labels reflect the state at the time of the swipe; touches that start on a control
+     (inputs, links, `.stone` buttons, pips, drag grips, or skipSel) never swipe; a row-wide toggle button such as a subject's fold header does. Horizontal only: a vertical drift cancels, so scrolling is untouched. */
+  function swipeMenu(el,items,skipSel){var x0=null,y0=0,act=false,sk="input,select,textarea,a,.dragh,.stone,.pp,.lnk"+(skipSel?","+skipSel:"");
+    el.addEventListener("touchstart",function(e){if(e.target.closest(sk)){x0=null;return}var t=e.touches[0];x0=t.clientX;y0=t.clientY;act=false},{passive:true});
+    el.addEventListener("touchmove",function(e){if(x0==null)return;var t=e.touches[0],ddx=t.clientX-x0,ddy=t.clientY-y0;if(!act){if(ddx<-14&&Math.abs(ddx)>Math.abs(ddy)*1.4)act=true;else if(Math.abs(ddy)>14||ddx>14){x0=null;return}else return}var dx=Math.max(-110,Math.min(0,ddx));el.style.transform="translateX("+dx+"px)";el.classList.toggle("sw-l",dx<-64)},{passive:true});
+    function end(){if(x0==null&&!act)return;x0=null;el.style.transform="";var l=el.classList.contains("sw-l");el.classList.remove("sw-l");if(!act)return;act=false;if(!l)return;haptic("light");popMenu(el,items())}
+    el.addEventListener("touchend",end);el.addEventListener("touchcancel",function(){x0=null;act=false;el.style.transform="";el.classList.remove("sw-l")})}
   /* Ignore / add back (tracking-only mode only): swipe right on a row, or the row menu. */
   function setIgnore(id,on){if(!rewardsOff())return;var c2=clone(cfg()),L=(c2.ignore||[]).filter(function(x){return x!==id});if(on)L.push(id);if(L.length)c2.ignore=L;else delete c2.ignore;saveCfg(c2);qSig="";nfSig="";render();var q=c2.quests.filter(function(x){return x.id===id})[0];setSync((q?q.label:"Quest")+(on?" ignored. Swipe right in Ignored to add it back.":" is back on your list."))}
   var lowBatt=false;

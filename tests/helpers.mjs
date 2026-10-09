@@ -28,3 +28,17 @@ export function dayRange(from, to, make) {
   }
   return out;
 }
+
+/* Touch swipe over an element's left/right part (needs hasTouch); dir = "left" | "right". */
+export async function swipe(page, locator, dir = "left") {
+  await locator.evaluate((el) => el.scrollIntoView({ block: "center" }));
+  await page.waitForTimeout(100);
+  const b = await locator.boundingBox();
+  const cdp = await page.context().newCDPSession(page);
+  const y = b.y + b.height / 2, x = dir === "left" ? b.x + b.width * 0.55 : b.x + 10, step = dir === "left" ? -20 : 20;
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y, id: 1 }] });
+  for (let i = 1; i <= 6; i++) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: x + i * step, y, id: 1 }] });
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  await cdp.detach();
+  await page.waitForTimeout(200);
+}

@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { openApp } from "./helpers.mjs";
+import { openApp, swipe } from "./helpers.mjs";
 
 const SUBJ = [
   { id: "s1", name: "Computer Science", topics: [{ id: "t1", name: "Consensus", p: 2, hist: [] }] },
@@ -23,7 +23,8 @@ test("the quest editor picks topics grouped by subject, and the subjects follow"
   expect(q.topics).toEqual(["t1", "t2", "t3"]);
   expect(q.subjs).toEqual(["s1", "s2", "s3"]);
   expect(q.subj).toBe("s1");
-  await expect(page.locator("#quests .sjchip .sjmore")).toHaveText("+2");
+  await expect(page.locator("#quests .sjchip")).toHaveText("\u2026");
+  await expect(page.locator("#quests .sjchip")).toHaveAttribute("aria-label", "Feeds Consensus, Probability, Linear algebra");
 });
 
 test("unticking a subject's last topic unlinks the subject", async ({ page }) => {
@@ -49,13 +50,27 @@ test("a new quest can feed a topic", async ({ page }) => {
   await expect.poll(async () => (await store(page)).cfg.quests.map((q) => [q.topics, q.subjs])).toEqual([[["t3"], ["s2"]]]);
 });
 
-test("the today chip shows the topic the next timer will land on, with its level", async ({ page }) => {
-  const Q = [{ id: "cs", type: "time", label: "Maths", min: 60, subj: "s2", subjs: ["s2"], topics: ["t2", "t3"] }];
-  const S2 = [SUBJ[0], { ...SUBJ[1], topics: [SUBJ[1].topics[0], { ...SUBJ[1].topics[1], target: 4 }] }];
+test("the today row shows a \u2026 box; tapping it lists each topic with its level and opens the subject", async ({ page }) => {
+  const Q = [{ id: "cs", type: "time", label: "Maths", min: 60, subj: "s2", subjs: ["s2", "s3"], topics: ["t2", "t3"] }];
+  const S2 = [SUBJ[0], { ...SUBJ[1], topics: [SUBJ[1].topics[0], { ...SUBJ[1].topics[1], target: 4 }] }, SUBJ[2]];
   await openApp(page, { cfg: { quests: Q, subjects: S2 } });
-  await expect(page.locator("#quests .sjchip .sjn")).toHaveText("Linear algebra");
-  await expect(page.locator("#quests .sjchip")).toContainText("1/5");
-  await expect(page.locator("#quests .sjchip .sjmore")).toHaveText("+1");
+  const chip = page.locator("#quests .sjchip");
+  await expect(chip).toHaveText("\u2026");
+  await expect(chip).not.toContainText("Linear");
+  await chip.click();
+  const items = page.locator(".qmenu button");
+  await expect(items).toHaveText(["Mathematics \u203a Probability \u00b7 3/5", "Mathematics \u203a Linear algebra \u00b7 1/5", "Statistics \u00b7 No topics yet", "Cancel"]);
+  await items.nth(1).click();
+  await expect(page.locator(".qmenu")).toHaveCount(0);
+  await expect(page.locator(".sjsec[data-sid='s2']")).toBeVisible();
+});
+
+test("deleting every subject leaves no trace of the box on the row", async ({ page }) => {
+  const Q = [{ id: "cs", type: "time", label: "Maths", min: 60, subj: "s2", subjs: ["s2"], topics: ["t2", "t3"] }];
+  await openApp(page, { cfg: { quests: Q, subjects: [] } });
+  await expect(page.locator("#quests .q", { hasText: "Maths" })).toBeVisible();
+  await expect(page.locator("#quests .sjchip")).toBeHidden();
+  expect(await page.evaluate(() => { const c = document.querySelector("#quests .sjchip"); return c ? getComputedStyle(c).display : "none"; })).toBe("none");
 });
 
 test("time logged on a multi-subject quest counts for each subject", async ({ page }) => {
@@ -68,8 +83,9 @@ test("time logged on a multi-subject quest counts for each subject", async ({ pa
 test("old single-subject quests still work and feed all of that subject's topics", async ({ page }) => {
   const Q = [{ id: "cs", type: "time", label: "CS work", min: 60, subj: "s1" }];
   await openApp(page, { cfg: { quests: Q, subjects: SUBJ } });
-  await expect(page.locator("#quests .sjchip")).toContainText("Consensus");
-  await expect(page.locator("#quests .sjchip .sjmore")).toHaveCount(0);
+  await expect(page.locator("#quests .sjchip")).toHaveAttribute("aria-label", "Feeds Consensus");
+  await page.click("#quests .sjchip");
+  await expect(page.locator(".qmenu button")).toHaveText(["Computer Science \u203a Consensus \u00b7 2/5", "Cancel"]);
 });
 
 const TS = (over) => [{ id: "s1", name: "Maths", topics: [
@@ -255,4 +271,56 @@ test("a topic can be renamed from Edit", async ({ page }) => {
   await page.locator("[data-tname='s2,t2']").press("Enter");
   await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("pc-cache-v1")).cfg.subjects[1].topics[0].name)).toBe("Probability theory");
   await expect(page.locator(".tr[data-tid='t2'] .tr-n")).toHaveText("Probability theory");
+});
+
+test.describe("swipe menus (phone)", () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+  test("swiping a subject header left opens its menu; Delete asks once, then deletes", async ({ page }) => {
+    await openApp(page, { cfg: { subjects: SUBJ }, hash: "#subjects" });
+    const hd = page.locator(".sjsec[data-sid='s2'] .sjsec-h");
+    await swipe(page, hd, "left");
+    await expect(page.locator(".qmenu button")).toHaveText(["Rename subject", "Fold", "Delete subject", "Cancel"]);
+    await page.click(".qmenu button:has-text('Delete subject')");
+    await expect(page.locator(".qmenu button.armed")).toHaveText("Delete subject?");
+    expect((await store(page)).cfg.subjects.map((s) => s.id)).toEqual(["s1", "s2", "s3"]);
+    await page.click(".qmenu button.armed");
+    await expect(page.locator(".qmenu")).toHaveCount(0);
+    expect((await store(page)).cfg.subjects.map((s) => s.id)).toEqual(["s1", "s3"]);
+    await expect(page.locator(".sjsec[data-sid='s2']")).toHaveCount(0);
+  });
+
+  test("Cancel or a tap elsewhere drops an armed delete; Rename and Fold work from the menu", async ({ page }) => {
+    await openApp(page, { cfg: { subjects: SUBJ }, hash: "#subjects" });
+    const hd = page.locator(".sjsec[data-sid='s1'] .sjsec-h");
+    await swipe(page, hd, "left");
+    await page.click(".qmenu button:has-text('Delete subject')");
+    await page.click(".qmenu button:has-text('Cancel')");
+    expect((await store(page)).cfg.subjects).toHaveLength(3);
+    await swipe(page, hd, "left");
+    await page.click(".qmenu button:has-text('Fold')");
+    await expect(page.locator(".sjsec[data-sid='s1']")).toHaveClass(/fold/);
+    await swipe(page, hd, "left");
+    await expect(page.locator(".qmenu button").nth(1)).toHaveText("Unfold");
+    await page.click(".qmenu button:has-text('Rename')");
+    await page.fill("#sjRen", "CS Theory");
+    await page.click("#sjRenGo");
+    await expect(page.locator(".sjsec[data-sid='s1'] .sjsec-h b")).toHaveText("CS Theory");
+    expect((await store(page)).cfg.subjects[0].name).toBe("CS Theory");
+  });
+
+  test("swiping a topic row left offers Edit and an armed Delete; a vertical drag does nothing", async ({ page }) => {
+    await openApp(page, { cfg: { subjects: SUBJ }, hash: "#subjects" });
+    const tr = page.locator(".tr[data-tid='t2']");
+    await swipe(page, tr, "left");
+    await expect(page.locator(".qmenu button")).toHaveText(["Edit topic", "Delete topic", "Cancel"]);
+    await page.click(".qmenu button:has-text('Edit topic')");
+    await expect(page.locator(".tr[data-tid='t2'] .sj-ed")).toBeVisible();
+    await swipe(page, page.locator(".tr[data-tid='t3']"), "left");
+    await page.click(".qmenu button:has-text('Delete topic')");
+    await page.click(".qmenu button.armed");
+    expect((await store(page)).cfg.subjects[1].topics.map((t) => t.id)).toEqual(["t2"]);
+    await swipe(page, page.locator(".tr[data-tid='t2']"), "right");
+    await expect(page.locator(".qmenu")).toHaveCount(0);
+  });
 });

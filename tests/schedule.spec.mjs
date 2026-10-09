@@ -856,6 +856,9 @@ test.describe("the passed part of a block under way", () => {
     await tapTime(page, "13:30");
     expect(await ids(page)).toEqual([["u", 720, 750], ["new", 810, 870]]);
     await expect(page.locator(".sch-b[data-sb='u']")).toHaveClass(/past/);
+    const look = (sel) => page.locator(sel).evaluate((el) => [getComputedStyle(el).opacity, getComputedStyle(el).filter]);
+    expect(await look(".sch-b[data-sb='u']")).toEqual(["0.6", "saturate(0.25)"]);
+    expect(await look(".sch-b:not([data-sb='u'])")).toEqual(["1", "none"]);
   });
 
   test("removing it keeps the passed part", async ({ page }) => {

@@ -4,7 +4,10 @@
 .mgr .sjlab,#qmgr .sjlab{color:inherit}
 .sjpick{display:flex;flex-wrap:wrap;gap:6px}
 .sjpick .stone{font-size:8px;padding:7px 9px}
-.sjchip{display:inline-flex!important;align-items:center;flex-wrap:nowrap;white-space:nowrap;max-width:100%;min-width:0;overflow:hidden}
+.sjchip{display:inline-flex!important;align-items:center;flex-wrap:nowrap;white-space:nowrap;max-width:100%;min-width:0;overflow:hidden;min-height:22px;padding:0 8px;line-height:1}
+.sjchip[hidden]{display:none!important}
+.sjchip .sjn{font-weight:700;letter-spacing:1px}
+.qmenu .rdot{width:8px;height:8px;background:#FF3B30;display:inline-block;margin-left:4px}
 .sjchip .sjlv{flex:none}
 .sjchip .sjn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px}
 .sjchip .sjmore{font-weight:400;background:#5A5AA0;color:#fff;padding:0 4px;margin-left:2px}
