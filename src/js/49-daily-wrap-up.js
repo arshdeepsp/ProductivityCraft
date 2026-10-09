@@ -165,7 +165,7 @@
   calmSync();
   go((location.hash||"#today").slice(1),true);
   setTimeout(function(){try{
-    if(db&&uid)return;var logged=Object.keys(S.days).filter(function(k){return hasEntry(S.days[k])}).length;if(logged<3)return;
+    var logged=Object.keys(S.days).filter(function(k){return hasEntry(S.days[k])}).length;if(logged<3)return;
     var last=+localStorage.getItem("pc-lastExport")||0,snooze=+localStorage.getItem("pc-backupSnooze")||0,now=Date.now();
     if(now-last<7*864e5||now<snooze)return;
     var bn=document.getElementById("bkNudge");bn.hidden=false;

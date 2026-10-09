@@ -8,7 +8,7 @@
   /* Answered the call: start a timer within CALL_MIN minutes of a reminder you tapped. e.calls counts them per day. */
   var CALL_MIN=2,CALL_XP=10,CALL_CAP=5;
   var RANKS=[[0,"Apprentice","sprout"],[7,"Journeyman","sprout"],[21,"Session Player","flame"],[42,"Bandleader","metronome"],[90,"Virtuoso","dumbbell"],[180,"Master","trophy"],[365,"Maestro","star"]];
-  var S={days:{},refl:{},cfg:null},db=null,uid=null,dl=null,dlChecked=false,view="today",dirty={},timer=null;
+  var S={days:{},refl:{},cfg:null},dl=null,dlChecked=false,view="today",dirty={},timer=null;
   /* Data schema. Bump SCHEMA and add a step to migrate() whenever the stored shape changes. */
   var SCHEMA=16,RERATE_MIN=60,MID_FRAC=1/3;
   function migrate(c){c=c||{};var v=c.schema||2;
@@ -32,9 +32,36 @@
   /* If saved data can't be read, or comes from a newer app version, a copy goes to pc-cache-rescue and nothing is saved
      over it (cacheBlock) until a backup is imported. */
   var cacheBlock="";
-  (function(){var raw=null;try{raw=localStorage.getItem("pc-cache-v1");var c0=JSON.parse(raw||"{}");if((c0.schema|0)>SCHEMA)throw "newer";var c=migrate(c0);S.days=c.days||{};S.refl=c.refl||{};S.cfg=c.cfg||null;S.timer=c.timer||null;S.sprint=c.sprint||null;if(c.spLen)S.spLen=c.spLen;if(c.spRounds!=null)S.spRounds=c.spRounds;if(c.spLongOn===false)S.spLongOn=false}
-    catch(e){S.days={};S.refl={};S.cfg=null;S.timer=null;S.sprint=null;if(raw){cacheBlock=e==="newer"?"newer":"error";try{if(!localStorage.getItem("pc-cache-rescue"))localStorage.setItem("pc-cache-rescue",raw)}catch(x){}}}})();
-  function cache(){if(cacheBlock)return;try{S.schema=SCHEMA;localStorage.setItem("pc-cache-v1",JSON.stringify(S))}catch(e){}}
+  /* ---- the store ----
+     State lives in S; persistence goes through `store`, which thinks in documents so a sync backend can be plugged in
+     without touching the app: `cfg` (one doc, carries `updated`), `refl` (one doc, a map by day), `days/<date>` (one doc
+     per day), and `session` (device-local: timer, sprint, sprint defaults, the answered call — never synced).
+     cache() = store.flush(): it works out which docs changed since the last flush by identity (the app replaces S.cfg,
+     S.refl and S.days[k] rather than mutating them in place), stamps S.meta.u[doc] with the time (and S.meta.del[doc] for
+     days removed, so a sync can delete them), then hands the whole state plus the changed list to the adapter.
+     The only adapter today writes the whole state to localStorage["pc-cache-v1"] as before; a Firestore adapter would
+     write the changed docs (users/<uid>/cfg, users/<uid>/refl, users/<uid>/days/<date>) and merge remote docs by their
+     `u` stamp — the Firestore SDK's own offline cache covers the local side, so no IndexedDB code is needed here.
+     store.docs() returns the state in that document shape. Loading, schema migration and the rescue copy
+     (pc-cache-rescue + cacheBlock when the data can't be read or is from a newer version) are unchanged. */
+  var STORE_KEY="pc-cache-v1";
+  var localAdapter={name:"local",
+    load:function(){return localStorage.getItem(STORE_KEY)},
+    save:function(state){localStorage.setItem(STORE_KEY,JSON.stringify(state))}};
+  var store=(function(){var ad=localAdapter,last={cfg:null,refl:null,days:{}};
+    function changed(){var ch=[];if(S.cfg!==last.cfg)ch.push("cfg");if(S.refl!==last.refl)ch.push("refl");Object.keys(S.days).forEach(function(k){if(S.days[k]!==last.days[k])ch.push("days/"+k)});Object.keys(last.days).forEach(function(k){if(!(k in S.days))ch.push("-days/"+k)});return ch}
+    function remember(){last.cfg=S.cfg;last.refl=S.refl;last.days={};Object.keys(S.days).forEach(function(k){last.days[k]=S.days[k]})}
+    return{
+      use:function(a){ad=a},adapter:function(){return ad},
+      load:function(){var raw=null;try{raw=ad.load();var c0=typeof raw==="string"?JSON.parse(raw):(raw||{});if((c0.schema|0)>SCHEMA)throw "newer";var c=migrate(c0);S.days=c.days||{};S.refl=c.refl||{};S.cfg=c.cfg||null;S.meta=c.meta||{u:{}};if(!S.meta.u)S.meta.u={};S.timer=c.timer||null;S.sprint=c.sprint||null;if(c.spLen)S.spLen=c.spLen;if(c.spRounds!=null)S.spRounds=c.spRounds;if(c.spLongOn===false)S.spLongOn=false;remember()}
+        catch(e){S.days={};S.refl={};S.cfg=null;S.meta={u:{}};S.timer=null;S.sprint=null;if(raw){cacheBlock=e==="newer"?"newer":"error";try{if(!localStorage.getItem("pc-cache-rescue"))localStorage.setItem("pc-cache-rescue",typeof raw==="string"?raw:JSON.stringify(raw))}catch(x){}}}},
+      changed:changed,
+      flush:function(){if(cacheBlock)return[];var ch=changed(),now=Date.now();S.meta=S.meta||{u:{}};ch.forEach(function(d){if(d.charAt(0)==="-"){delete S.meta.u[d.slice(1)];(S.meta.del=S.meta.del||{})[d.slice(1)]=now}else{S.meta.u[d]=now;if(S.meta.del)delete S.meta.del[d]}});S.schema=SCHEMA;remember();try{ad.save(S,ch.concat(["session"]))}catch(e){}return ch},
+      docs:function(){var d={cfg:S.cfg,refl:{map:S.refl},days:S.days,session:{timer:S.timer,sprint:S.sprint,spLen:S.spLen,spRounds:S.spRounds,spLongOn:S.spLongOn,call:S.call},meta:S.meta};return d}
+    }})();
+  store.load();
+  function cache(){store.flush()}
+  function flush(){cache()}
   function key(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
   function parse(k){var p=k.split("-");return new Date(+p[0],p[1]-1,+p[2])}
   function add(k,n){var d=parse(k);d.setDate(d.getDate()+n);return key(d)}

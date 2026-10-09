@@ -64,8 +64,7 @@
   }
   var rulesEl=document.getElementById("rules"),openSec={},editSec=-1;
   function rulesData(){return clone(cfg().rules||DEFAULT_RULES)}
-  function saveCfg(nc){nc.updated=new Date().toISOString();S.cfg=nc;cache();if(db&&uid)cfgDoc().set(clone(S.cfg)).catch(function(){setSync("Couldn't sync. Saved on this device.")})}
-  function cfgDoc(){return db.doc("data/users/"+uid+"/config")}
+  function saveCfg(nc){nc.updated=new Date().toISOString();S.cfg=nc;cache()}
   function renderRules(){
     if(editSec>=0)return;
     var R=rulesData(),h="";

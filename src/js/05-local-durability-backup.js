@@ -32,7 +32,6 @@
       if(!cu&&usedMig&&!(cfg().quests||[]).length){var c4=clone(cfg());c4.quests=clone(MIG);saveCfg(c4);cu=true;qSig=""}
       if(earliest&&typeof setStart==="function"&&earliest<START_KEY){setStart(parse(earliest).toISOString());var c3=clone(cfg());c3.start=START_AT.toISOString();saveCfg(c3);elapsed()}
       lockReset();cache();render();flush();
-      if(r&&db&&uid)reflDoc().set({map:S.refl}).catch(function(){});
       setSync("Imported "+n+" day"+(n===1?"":"s")+(r?" and "+r+" reflection"+(r===1?"":"s"):"")+(cu?" and your quests/rules":""));
     }).catch(function(x){if(x!==0)setSync("Import failed. Try exporting a fresh backup.")}).finally(function(){impFile.value=""});
   });
