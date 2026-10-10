@@ -41,3 +41,8 @@
 .qstk b{font-weight:400}
 .qstk[hidden]{display:none!important}
 .strip i.repaired{background:#9B7FD6}
+/* Account page */
+.acct{display:grid;gap:8px;padding:10px 12px}
+.acct label{display:grid;gap:4px;font:8px var(--px);color:#3F3F3F}
+.acct input{font:19px var(--vt);background:#373737;color:#fff;border:3px solid;border-color:#1E1E1E #8B8B8B #8B8B8B #1E1E1E;padding:6px 8px;min-width:0}
+.acct .cmsg2.bad{color:#9E2A1F}

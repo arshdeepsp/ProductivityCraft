@@ -3,7 +3,7 @@ import { openApp } from "./helpers.mjs";
 
 test("settings open on a list of categories with live summaries", async ({ page }) => {
   await openApp(page, { hash: "#settings", cfg: { day: { wake: "06:30", bed: "01:00" }, nf: { on: true, checkinAt: "20:00" } } });
-  await expect(page.locator(".scat b")).toHaveText(["Your day", "Quests & rules", "Notifications", "Look", "Sound & touch", "Extras", "Your data"]);
+  await expect(page.locator(".scat b")).toHaveText(["Your day", "Quests & rules", "Notifications", "Look", "Sound & touch", "Extras", "Account", "Your data"]);
   await expect(page.locator("[data-st='day'] small")).toHaveText("06:30–01:00 · locks at 1:00 am");
   await expect(page.locator("[data-st='alerts'] small")).toHaveText("On · check-in 20:00");
 });
@@ -14,7 +14,7 @@ test("a category opens its own page, and back returns to the list", async ({ pag
   await expect(page.locator(".stitle")).toHaveText("Sound & touch");
   await expect(page.locator(".srow-t b")).toHaveText(["Sound", "Tap sounds", "Vibration", "Keep screen on"]);
   await page.click("#setBack");
-  await expect(page.locator(".scat")).toHaveCount(7);
+  await expect(page.locator(".scat")).toHaveCount(8);
 });
 
 test("toggles are switches that save and stay in place", async ({ page }) => {
@@ -41,7 +41,7 @@ test("leaving settings and coming back starts at the list", async ({ page }) => 
   await page.click("[data-st='look']");
   await page.click("[data-go='today']");
   await page.click("#setBtn");
-  await expect(page.locator(".scat")).toHaveCount(7);
+  await expect(page.locator(".scat")).toHaveCount(8);
 });
 
 test("a ? in a group opens How it works at that topic", async ({ page }) => {

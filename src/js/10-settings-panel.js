@@ -4,7 +4,9 @@
   /* Settings: a home list of categories, each opening its own page of rows (srow: title + one-line hint + control).
      Toggles use the same .sw switch as Today. Longer explanations live in How it works; group headers link there with "?". */
   var setTab=null;
-  var SET_CATS=[["day","Your day","sprout"],["quests","Quests & rules","dumbbell"],["alerts","Notifications","flame"],["look","Look","star"],["sound","Sound & touch","note"],["extras","Extras","trophy"],["data","Your data","metronome"]];
+  var SET_CATS=[["day","Your day","sprout"],["quests","Quests & rules","dumbbell"],["alerts","Notifications","flame"],["look","Look","star"],["sound","Sound & touch","note"],["extras","Extras","trophy"],["account","Account","star"],["data","Your data","metronome"]];
+  /* cloud (54) runs after this file; during startup renders fall back to the stored account and an "off" state. */
+  function cl(){return typeof cloud!=="undefined"&&cloud?cloud:{account:cloudAccount,state:{status:"off",err:"",last:0}}}
   function bind(id,ev,fn){var x=document.getElementById(id);if(x)x.addEventListener(ev,fn)}
   /* Streaks and rewards on/off, asymmetric: pausing takes effect today (today becomes a paused day right away), resuming takes effect tomorrow (today during setup), so switching back can never rescue a failing day or earn today's XP. Pausing opens a cfg.noStreak range from today (or reopens one ending today or later, e.g. a pending resume); resuming closes the open range at tomorrow. The switch shows tomorrow's state. */
   function setStreaks(on){var c2=clone(cfg()),T=todayKey(),L=(c2.noStreak||[]).slice(),rs=easeInfo().setup?T:add(T,1);
@@ -23,6 +25,7 @@
     if(id==="look")return (THEME_NAMES[c.theme||""]||"Auto")+" theme";
     if(id==="sound")return (sfxOn?"Sound on":"Sound off")+" · vibration "+(c.haptics!==false?"on":"off");
     if(id==="extras"){var on=[c.sparkTools&&"Quick-start",c.addShare&&"Share week",c.addTrends&&"Trends"].filter(Boolean);return on.length?on.join(", "):"No add-ons"}
+    if(id==="account"){var a=cl().account(),st=cl().state;if(!a)return "Not signed in \u00b7 this device only";return a.email+" \u00b7 "+(st.status==="error"?"sync problem":st.status==="on"?"synced":st.status==="syncing"?"syncing\u2026":"connecting\u2026")}
     if(id==="data"){var le=0;try{le=+localStorage.getItem("pc-lastExport")||0}catch(x){}return le?"Last backup "+new Date(le).toLocaleDateString("en-CA",{month:"short",day:"numeric"}):"No backup yet"}
     return ""}
   function renderSettings(){
@@ -58,9 +61,12 @@
       h+=sgroup("",srow("Sound","Game sounds and chimes",swc("setSfx",sfxOn,"Sound"))+srow("Tap sounds","A click with every tap",swc("setTapSnd",c.tapSound!==false,"Tap sounds"))+srow("Vibration","",swc("setHap",c.haptics!==false,"Vibration"))+srow("Keep screen on","While a timer or sprint runs",swc("setAwake",c.keepAwake!==false,"Keep screen on")))}
     else if(setTab==="extras"){
       h+=sgroup("Add-ons",srow("Quick-start tools","Pick for me and Batch to-dos in the ⋮ menu",swc("setSpark",c.sparkTools,"Quick-start tools"))+srow("Share week","A summary card to send",swc("setShare",c.addShare,"Share week"))+srow("Trends page","Weekly charts in the nav",swc("setTrends",c.addTrends,"Trends page")));}
+    else if(setTab==="account"){var ac=cl().account(),cs=cl().state;
+      if(!ac)h+=sgroup("Sign in",'<div class="acct"><p class="help">Sign in to keep your quests, days and subjects in sync across devices. Everything keeps working offline; changes merge when you\u2019re back online.</p><label>Email<input type="email" id="acEmail" autocomplete="email" inputmode="email"></label><label>Password<input type="password" id="acPw" autocomplete="current-password" minlength="6"></label><div class="edrow end"><button type="button" class="stone" id="acReset">Forgot password</button><button type="button" class="stone" id="acUp">Create account</button><button type="button" class="stone save" id="acIn">Sign in</button></div><p class="cmsg2" id="acMsg"></p></div>',"account");
+      else h+=sgroup("Account",srow("Signed in as",esc(ac.email),'<button type="button" class="stone mini" id="acOut">Sign out</button>')+srow("Sync",cs.status==="error"?"Problem: "+esc(cs.err||"unknown"):cs.status==="syncing"?"Syncing\u2026":cs.status==="on"?"Up to date"+(cs.last?" \u00b7 "+new Date(cs.last).toLocaleTimeString("en-CA",{hour:"numeric",minute:"2-digit"}):""):"Connecting\u2026",'<button type="button" class="stone mini" id="acSync">Sync now</button>')+srow("What syncs","Quests, rules, subjects, settings, every day\u2019s log and reflections. Not the running timer or this device\u2019s look-and-feel toggles."),"account")+'<p class="help sfoot">Signing out keeps everything on this device.</p>'}
     else if(setTab==="data"){
-      h+=sgroup("Backup",srow("Export backup",esc(setSummary("data")),'<button type="button" class="stone mini save" id="setExp">Export</button>')+srow("Import backup","Merges with what’s here",'<button type="button" class="stone mini" id="setImp">Import</button>')+srow("Your data","Stays on this device. Nothing is sent anywhere; a backup is how it moves."),"data");
-      h+='<p class="help sfoot">Everything stays on this device; nothing is sent anywhere.</p>'}
+      h+=sgroup("Backup",srow("Export backup",esc(setSummary("data")),'<button type="button" class="stone mini save" id="setExp">Export</button>')+srow("Import backup","Merges with what’s here",'<button type="button" class="stone mini" id="setImp">Import</button>')+srow("Your data",cl().account()?"On this device and in your account; a backup is still a good idea.":"Stays on this device. Nothing is sent anywhere unless you sign in; a backup is how it moves."),"data");
+      h+='<p class="help sfoot">'+(cl().account()?"Stored on this device and in your account.":"Everything stays on this device; nothing is sent anywhere unless you sign in.")+'</p>'}
     el.innerHTML=h;
     bind("setBack","click",function(){setTab=null;renderSettings();window.scrollTo(0,0)});
     el.querySelectorAll("[data-help]").forEach(function(b){b.addEventListener("click",function(){openHelp(b.getAttribute("data-help"))})});
@@ -95,6 +101,14 @@
     bind("setStreak","click",function(){setStreaks(noStreakOn(easeInfo().setup?todayKey():add(todayKey(),1)))});
     bind("setPlan","click",function(){var c2=clone(cfg());c2.showPlan=!c2.showPlan;saveCfg(c2);render();renderSettings()});
     bind("setSfx","click",function(){document.getElementById("sndBtn").click();renderSettings()});
+    (function(){var msg=function(t,bad){var m=document.getElementById("acMsg");if(m){m.textContent=t;m.className="cmsg2"+(bad?" bad":"")}};function creds(){var e=(document.getElementById("acEmail")||{}).value||"",p=(document.getElementById("acPw")||{}).value||"";return{email:e.trim(),pw:p}}
+      function fail(e){var c=String(e&&e.code||""),t=c.indexOf("invalid-credential")>=0||c.indexOf("wrong-password")>=0||c.indexOf("user-not-found")>=0?"Wrong email or password.":c.indexOf("email-already-in-use")>=0?"That email already has an account. Sign in instead.":c.indexOf("weak-password")>=0?"Use at least 6 characters.":c.indexOf("invalid-email")>=0?"That doesn\u2019t look like an email.":c.indexOf("network")>=0?"No connection. Try again when you\u2019re online.":String(e&&e.message||e);msg(t,true)}
+      bind("acIn","click",function(){var c=creds();if(!c.email||!c.pw){msg("Email and password, please.",true);return}msg("Signing in\u2026");cl().signIn(c.email,c.pw).then(function(){renderSettings();setSync("Signed in. Syncing\u2026")},fail)});
+      bind("acUp","click",function(){var c=creds();if(!c.email||c.pw.length<6){msg("Email and a password of 6+ characters, please.",true);return}msg("Creating your account\u2026");cl().signUp(c.email,c.pw).then(function(){renderSettings();setSync("Account created. Your data is syncing.")},fail)});
+      bind("acReset","click",function(){var c=creds();if(!c.email){msg("Type your email first.",true);return}cl().reset(c.email).then(function(){msg("Reset email sent to "+c.email+".")},fail)});
+      bind("acOut","click",function(){cl().signOut().then(function(){renderSettings();setSync("Signed out. Your data stays on this device.")})});
+      bind("acSync","click",function(){var p=cl().syncNow();if(p)p.then(renderSettings,renderSettings)});
+      var pw=document.getElementById("acPw");if(pw)pw.addEventListener("keydown",function(e){if(e.key==="Enter")document.getElementById("acIn").click()})})();
     bind("setExp","click",function(){document.getElementById("expBtn").click()});
     bind("setImp","click",function(){document.getElementById("impBtn").click()});
     function upDl(fn2){var c2=clone(cfg());c2.deadlines=c2.deadlines||[];fn2(c2.deadlines);saveCfg(c2);render()}

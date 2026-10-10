@@ -28,6 +28,12 @@ cpSync(join(root, "public"), out, { recursive: true });
 rmSync(join(out, "sw.template.js"));
 writeFileSync(join(out, "index.html"), html);
 
+/* Firebase SDK facade → dist/vendor/firebase.js (loaded on demand by the app; see src/firebase/fb.js). */
+try {
+  const { buildSync } = await import("esbuild");
+  buildSync({ entryPoints: [join(src, "firebase", "fb.js")], bundle: true, format: "esm", minify: true, target: ["es2020"], outfile: join(out, "vendor", "firebase.js"), logLevel: "silent" });
+} catch (e) { throw new Error("vendor/firebase.js could not be built (run npm install; esbuild and firebase are needed): " + String(e.message || e).split("\n")[0]); }
+
 const hash = createHash("sha256").update(html).digest("hex").slice(0, 8);
 const version = `${pkg.version}-${hash}`;
 const sw = readFileSync(join(root, "public", "sw.template.js"), "utf8").replace("__VERSION__", version);

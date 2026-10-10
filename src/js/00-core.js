@@ -53,12 +53,15 @@
     function remember(){last.cfg=S.cfg;last.refl=S.refl;last.days={};Object.keys(S.days).forEach(function(k){last.days[k]=S.days[k]})}
     return{
       use:function(a){ad=a},adapter:function(){return ad},
+      markClean:function(id,obj){if(id==="cfg")last.cfg=obj;else if(id==="refl")last.refl=obj||S.refl;else if(id.indexOf("days/")===0){var k=id.slice(5);if(obj)last.days[k]=obj;else delete last.days[k]}},
       load:function(){var raw=null;try{raw=ad.load();var c0=typeof raw==="string"?JSON.parse(raw):(raw||{});if((c0.schema|0)>SCHEMA)throw "newer";var c=migrate(c0);S.days=c.days||{};S.refl=c.refl||{};S.cfg=c.cfg||null;S.meta=c.meta||{u:{}};if(!S.meta.u)S.meta.u={};S.timer=c.timer||null;S.sprint=c.sprint||null;if(c.spLen)S.spLen=c.spLen;if(c.spRounds!=null)S.spRounds=c.spRounds;if(c.spLongOn===false)S.spLongOn=false;remember()}
         catch(e){S.days={};S.refl={};S.cfg=null;S.meta={u:{}};S.timer=null;S.sprint=null;if(raw){cacheBlock=e==="newer"?"newer":"error";try{if(!localStorage.getItem("pc-cache-rescue"))localStorage.setItem("pc-cache-rescue",typeof raw==="string"?raw:JSON.stringify(raw))}catch(x){}}}},
       changed:changed,
       flush:function(){if(cacheBlock)return[];var ch=changed(),now=Date.now();S.meta=S.meta||{u:{}};ch.forEach(function(d){if(d.charAt(0)==="-"){delete S.meta.u[d.slice(1)];(S.meta.del=S.meta.del||{})[d.slice(1)]=now}else{S.meta.u[d]=now;if(S.meta.del)delete S.meta.del[d]}});S.schema=SCHEMA;remember();try{ad.save(S,ch.concat(["session"]))}catch(e){}return ch},
       docs:function(){var d={cfg:S.cfg,refl:{map:S.refl},days:S.days,session:{timer:S.timer,sprint:S.sprint,spLen:S.spLen,spRounds:S.spRounds,spLongOn:S.spLongOn,call:S.call},meta:S.meta};return d}
     }})();
+  /* The signed-in account on this device (pc-account), readable before the sync code (54) has run. */
+  function cloudAccount(){try{return JSON.parse(localStorage.getItem("pc-account")||"null")}catch(x){return null}}
   store.load();
   function cache(){store.flush()}
   function flush(){cache()}
