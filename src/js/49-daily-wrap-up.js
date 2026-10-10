@@ -172,7 +172,7 @@
     bn.querySelector("#bkLater").addEventListener("click",function(){localStorage.setItem("pc-backupSnooze",String(now+3*864e5));bn.hidden=true});
   }catch(x){}},4000);
   /* First run: the welcome waits while the account gate (55) is up; closing the gate calls this again. */
-  function welcomeCheck(ms){try{if(!localStorage.getItem("pc-welcomed")&&!(cfg().quests||[]).length)setTimeout(function(){if(!(typeof authOpen==="function"&&authOpen())&&!(cfg().quests||[]).length)openWelcome()},ms)}catch(x){}}
+  function welcomeCheck(ms){try{if(cloudAccount()&&!(typeof cloud!=="undefined"&&cloud.state.status==="on"))return;if(!localStorage.getItem("pc-welcomed")&&!(cfg().quests||[]).length)setTimeout(function(){if(!(typeof authOpen==="function"&&authOpen())&&!(cfg().quests||[]).length)openWelcome()},ms)}catch(x){}}
   welcomeCheck(300);
   var lastDay=todayKey();
   if(cacheBlock)setTimeout(function(){openG("Saved data not loaded",function(b){b.innerHTML='<p class="mhead bad">'+(cacheBlock==="newer"?"Your data is from a newer version of the app.":"Your saved data couldn\u2019t be read.")+'</p><p class="help">It\u2019s untouched, and a copy is kept on this device. Nothing will be saved over it until you '+(cacheBlock==="newer"?"update the app or ":"")+'import a backup (Settings \u203a Your data).</p><div class="edrow end"><button type="button" class="stone" id="cbOk">Got it</button></div>';b.querySelector("#cbOk").addEventListener("click",closeG)})},600);

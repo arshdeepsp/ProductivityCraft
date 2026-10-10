@@ -4,7 +4,7 @@
      it opens as the gate: no Close, and "Use without account" at the bottom (remembered; Settings › Account can sign in
      later). Signing out, deleting the account, or the session ending elsewhere opens the gate again. A signed-in session
      never expires on its own: fb.js persists it in IndexedDB. All calls go through cloud (54); errors read via authErr. */
-  var NOACCT_KEY="pc-noacct",auPg=null,auView="login",auGate=false,auNote="",auEm="",auArm=0,auBusy=false;
+  var acOutArm=0,NOACCT_KEY="pc-noacct",auPg=null,auView="login",auGate=false,auNote="",auEm="",auArm=0,auBusy=false;
   function noAcct(){try{return !!localStorage.getItem(NOACCT_KEY)}catch(x){return true}}
   function setNoAcct(on){try{if(on)localStorage.setItem(NOACCT_KEY,"1");else localStorage.removeItem(NOACCT_KEY)}catch(x){}}
   function authOpen(){return !!auPg&&!auPg.hidden}
@@ -24,13 +24,12 @@
     if(!auPg){auPg=document.createElement("div");auPg.id="authPage";auPg.className="aupage";auPg.setAttribute("role","dialog");auPg.setAttribute("aria-modal","true");auPg.setAttribute("aria-labelledby","auTitle");document.body.appendChild(auPg)}
     auPg.hidden=false;document.body.classList.add("au-open");if(!auEm){var a=cloudAccount();if(a)auEm=a.email}authDraw()}
   function closeAuth(){if(!auPg)return;var was=auGate;auPg.hidden=true;auGate=false;document.body.classList.remove("au-open");if(was&&typeof welcomeCheck==="function")welcomeCheck(0);if(typeof renderSettings==="function"&&typeof setTab!=="undefined"&&setTab==="account")renderSettings()}
-  function authEnded(){openAuth("login",true,"You were signed out. Sign in again to keep syncing, or carry on without an account.")}
   function authDraw(){var v=auView,ac=cloudAccount(),body="",links="";
     if(v==="login"){body=auField("auEmail","Email","email","email",auEm)+auField("auPw","Password","password","current-password");links='<button type="button" class="lnk" data-av="reset">Forgot password?</button><button type="button" class="lnk" data-av="signup">Create an account</button>'}
     else if(v==="signup"){body=auField("auEmail","Email","email","email",auEm)+auField("auPw","Password","password","new-password")+auField("auPw2","Confirm password","password","new-password")+'<p class="help">At least 6 characters. We’ll email you a link to verify your address.</p>';links='<button type="button" class="lnk" data-av="login">I already have an account</button>'}
     else if(v==="reset"){body=auField("auEmail","Email","email","email",auEm)+'<p class="help">We’ll email you a link to set a new password.</p>';links='<button type="button" class="lnk" data-av="login">Back to sign in</button>'}
     else if(v==="change"){body='<p class="help">Signed in as <b>'+esc(ac?ac.email:"")+'</b>.</p>'+auField("auPw0","Current password","password","current-password")+auField("auPw","New password","password","new-password")+auField("auPw2","Confirm new password","password","new-password")}
-    else if(v==="delete"){body='<p class="help au-warn">This deletes <b>'+esc(ac?ac.email:"")+'</b> and everything synced to it, on every device that syncs. It can’t be undone. This device keeps its data, signed out.</p>'+auField("auPw0","Password","password","current-password")}
+    else if(v==="delete"){body='<p class="help au-warn">This deletes <b>'+esc(ac?ac.email:"")+'</b> and all its data, in the cloud and on every device, including this one. It can’t be undone. Want a copy? Export a backup first (Settings › Your data).</p>'+auField("auPw0","Password","password","current-password")}
     var go=v==="delete"?(auArm&&Date.now()-auArm<4000?"Tap again to delete":"Delete account"):v==="reset"?"Send reset link":AU_T[v];
     auPg.innerHTML='<div class="au-hd"><h2 id="auTitle">'+AU_T[v]+'</h2>'+(auGate?'':'<button type="button" class="stone save" id="auClose">Close</button>')+'</div>'+
       '<div class="au-scroll"><form class="au-box" id="auForm" novalidate>'+(auGate&&v==="login"?'<p class="au-lead">Sign in to sync your quests, days and subjects across devices.</p>':'')+(auNote?'<p class="au-note" id="auNote">'+esc(auNote)+'</p>':'')+body+
@@ -50,9 +49,9 @@
     function fail(e){auBusy=false;var b=auPg.querySelector("#auGo");if(b)b.disabled=false;auSay(authErr(e),true)}
     var mailOk=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em);
     if(v==="login"){if(!mailOk){auSay("That doesn’t look like an email.",true);return}if(!pw){auSay("Type your password.",true);return}
-      busy("Signing in…");cloud.signIn(em,pw).then(function(){setNoAcct(false);closeAuth();setSync("Signed in. Your data is syncing.")},fail)}
+      busy("Signing in…");cloud.signIn(em,pw).then(function(){setNoAcct(false);auSay("Signed in. Loading your data…")},fail)}
     else if(v==="signup"){if(!mailOk){auSay("That doesn’t look like an email.",true);return}if(pw.length<6){auSay("Use at least 6 characters.",true);return}if(pw!==pw2){auSay("The passwords don’t match.",true);return}
-      busy("Creating your account…");cloud.signUp(em,pw).then(function(){setNoAcct(false);closeAuth();setSync("Account created. Check your inbox to verify your email.")},fail)}
+      busy("Creating your account…");cloud.signUp(em,pw).then(function(){setNoAcct(false);auSay("Account created. Loading…")},fail)}
     else if(v==="reset"){if(!mailOk){auSay("That doesn’t look like an email.",true);return}
       var ok=function(){auBusy=false;var b=auPg.querySelector("#auGo");if(b)b.disabled=false;auSay("If there’s an account for "+em+", a reset link is on its way. Check your spam folder too.")};
       busy("Sending…");cloud.reset(em).then(ok,function(e){if(/user-not-found/.test(String(e&&e.code)))ok();else fail(e)})}
@@ -60,6 +59,7 @@
       busy("Changing your password…");cloud.changePw(pw0,pw).then(function(){closeAuth();setSync("Password changed.")},fail)}
     else if(v==="delete"){if(!pw0){auSay("Type your password to confirm.",true);return}
       if(!(auArm&&Date.now()-auArm<4000)){auArm=Date.now();var b=auPg.querySelector("#auGo");if(b)b.textContent="Tap again to delete";setTimeout(function(){if(authOpen()&&auView==="delete"&&auArm&&Date.now()-auArm>=4000){auArm=0;var b2=auPg.querySelector("#auGo");if(b2&&!auBusy)b2.textContent="Delete account"}},4100);return}
-      auArm=0;busy("Deleting your account…");cloud.deleteAccount(pw0).then(function(){openAuth("login",true,"Your account was deleted. This device keeps its data.")},fail)}}
-  /* Launch gate. */
-  if(!cloudAccount()&&!noAcct())openAuth("login",true);
+      auArm=0;busy("Deleting your account…");cloud.deleteAccount(pw0).then(function(){auSay("Deleted.")},fail)}}
+  /* Launch: a note left by a sign-in/out reload (pc-authnote), then the gate when nobody is signed in. */
+  (function(){var note="";try{note=sessionStorage.getItem("pc-authnote")||"";sessionStorage.removeItem("pc-authnote")}catch(x){}
+    if(!cloudAccount()&&!noAcct())openAuth("login",true,note);else if(note)setSync(note)})();

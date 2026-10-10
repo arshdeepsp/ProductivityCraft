@@ -1,5 +1,5 @@
   var START_KEY,START_AT;
-  (function(){var st=null;try{st=(JSON.parse(localStorage.getItem("pc-cache-v1")||"{}").cfg||{}).start}catch(e){}
+  (function(){var st=null;try{st=(JSON.parse(localStorage.getItem(storeKey())||"{}").cfg||{}).start}catch(e){}
     if(!st){var n=new Date();st=new Date(n.getFullYear(),n.getMonth(),n.getDate()).toISOString()}setStart(st)})();
   function setStart(st){START_AT=new Date(st);START_KEY=START_AT.getFullYear()+"-"+String(START_AT.getMonth()+1).padStart(2,"0")+"-"+String(START_AT.getDate()).padStart(2,"0")}
   var D=JSON.parse(document.getElementById("achData").textContent);
@@ -44,10 +44,16 @@
      `u` stamp — the Firestore SDK's own offline cache covers the local side, so no IndexedDB code is needed here.
      store.docs() returns the state in that document shape. Loading, schema migration and the rescue copy
      (pc-cache-rescue + cacheBlock when the data can't be read or is from a newer version) are unchanged. */
-  var STORE_KEY="pc-cache-v1";
+  /* Data is linked to accounts: each account signed in on this device has its own copy (pc-cache-u-<uid>), and data
+     made without an account lives in pc-cache-v1 (the guest copy). Only the copy of whoever is signed in is loaded.
+     Switching (sign in, sign out, account deleted) writes nothing more (storeHold) and reloads the app. One-time
+     upgrade: a device that was signed in before copies were per account hands its data to that account. */
+  function storeKey(){var a=null,up=false;try{a=JSON.parse(localStorage.getItem("pc-account")||"null");if(!localStorage.getItem("pc-slots")){localStorage.setItem("pc-slots","1");up=true}}catch(x){}if(!a||!a.uid)return "pc-cache-v1";var k="pc-cache-u-"+a.uid;
+    try{if(up&&localStorage.getItem(k)===null&&localStorage.getItem("pc-cache-v1")!==null){localStorage.setItem(k,localStorage.getItem("pc-cache-v1"));localStorage.removeItem("pc-cache-v1")}}catch(x){}return k}
+  var storeHold=false;
   var localAdapter={name:"local",
-    load:function(){return localStorage.getItem(STORE_KEY)},
-    save:function(state){localStorage.setItem(STORE_KEY,JSON.stringify(state))}};
+    load:function(){return localStorage.getItem(storeKey())},
+    save:function(state){if(storeHold)return;localStorage.setItem(storeKey(),JSON.stringify(state))}};
   var store=(function(){var ad=localAdapter,last={cfg:null,refl:null,days:{}};
     function changed(){var ch=[];if(S.cfg!==last.cfg)ch.push("cfg");if(S.refl!==last.refl)ch.push("refl");Object.keys(S.days).forEach(function(k){if(S.days[k]!==last.days[k])ch.push("days/"+k)});Object.keys(last.days).forEach(function(k){if(!(k in S.days))ch.push("-days/"+k)});return ch}
     function remember(){last.cfg=S.cfg;last.refl=S.refl;last.days={};Object.keys(S.days).forEach(function(k){last.days[k]=S.days[k]})}

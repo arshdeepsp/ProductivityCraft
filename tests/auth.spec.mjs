@@ -3,31 +3,40 @@ import { openApp } from "./helpers.mjs";
 
 /* In-memory Firebase facade: accounts by email, documents by path, and a log of emails "sent". */
 const fake = `window.__fb={users:{"arsh@example.com":{pw:"secret1",uid:"u1",verified:true}},user:null,docs:{},sent:[],cbs:[]};
+/* Survives the app's reloads on sign-in/out through localStorage __fb. */
+(function(){try{var s=JSON.parse(localStorage.getItem("__fb")||"null");if(s)["users","user","docs","sent"].forEach(function(k){window.__fb[k]=s[k]})}catch(e){}})();
+window.__fb.save=function(){var F=window.__fb;localStorage.setItem("__fb",JSON.stringify({users:F.users,user:F.user,docs:F.docs,sent:F.sent}))};
 (function(F){function me(){var u=F.user&&F.users[F.user];return u?{uid:u.uid,email:F.user,verified:u.verified}:null}
 function no(c){return Promise.reject({code:c,message:c})}
 function segs(p,even){var n=p.split("/").length;if((n%2===0)!==even)throw new Error("Invalid "+(even?"document":"collection")+" reference: "+p+" has "+n+" segments")}
 window.PCFB={init:function(){},
   auth:{user:me,onAuth:function(cb){F.cbs.push(cb);setTimeout(function(){cb(me())},0);return function(){}},
-    signIn:function(e,p){var u=F.users[e];if(!u||u.pw!==p)return no("auth/invalid-credential");F.user=e;return Promise.resolve(me())},
-    signUp:function(e,p){if(F.users[e])return no("auth/email-already-in-use");F.users[e]={pw:p,uid:"u2",verified:false};F.user=e;F.sent.push(["verify",e]);return Promise.resolve(me())},
-    signOut:function(){F.user=null;return Promise.resolve()},
-    reset:function(e){F.sent.push(["reset",e]);return Promise.resolve()},
-    verify:function(){F.sent.push(["verify",F.user]);return Promise.resolve()},
+    signIn:function(e,p){var u=F.users[e];if(!u||u.pw!==p)return no("auth/invalid-credential");F.user=e;F.save();return Promise.resolve(me())},
+    signUp:function(e,p){if(F.users[e])return no("auth/email-already-in-use");F.users[e]={pw:p,uid:"u2",verified:false};F.user=e;F.sent.push(["verify",e]);F.save();return Promise.resolve(me())},
+    signOut:function(){F.user=null;F.save();return Promise.resolve()},
+    reset:function(e){F.sent.push(["reset",e]);F.save();return Promise.resolve()},
+    verify:function(){F.sent.push(["verify",F.user]);F.save();return Promise.resolve()},
     refresh:function(){return Promise.resolve(me())},
     reauth:function(p){return F.users[F.user]&&F.users[F.user].pw===p?Promise.resolve():no("auth/wrong-password")},
-    changePassword:function(c,n){return window.PCFB.auth.reauth(c).then(function(){F.users[F.user].pw=n})},
-    deleteUser:function(){delete F.users[F.user];F.user=null;return Promise.resolve()}},
+    changePassword:function(c,n){return window.PCFB.auth.reauth(c).then(function(){F.users[F.user].pw=n;F.save()})},
+    deleteUser:function(){delete F.users[F.user];F.user=null;F.save();return Promise.resolve()}},
   db:{get:function(p){segs(p,true);return Promise.resolve({id:p.split("/").pop(),data:F.docs[p]?JSON.parse(JSON.stringify(F.docs[p])):null,pending:false})},
     list:function(p){segs(p,false);return Promise.resolve(Object.keys(F.docs).filter(function(k){return k.indexOf(p+"/")===0}).map(function(k){return {id:k.split("/").pop(),data:F.docs[k],pending:false}}))},
     set:function(p,d){segs(p,true);F.docs[p]=d;return Promise.resolve()},
-    batch:function(ops){ops.forEach(function(o){segs(o.path,true)});ops.forEach(function(o){F.docs[o.path]=JSON.parse(JSON.stringify(o.data))});return Promise.resolve()},
-    remove:function(ps){ps.forEach(function(p){segs(p,true)});ps.forEach(function(p){delete F.docs[p]});return Promise.resolve()},
+    batch:function(ops){ops.forEach(function(o){segs(o.path,true)});ops.forEach(function(o){F.docs[o.path]=JSON.parse(JSON.stringify(o.data))});F.save();return Promise.resolve()},
+    remove:function(ps){ps.forEach(function(p){segs(p,true)});ps.forEach(function(p){delete F.docs[p]});F.save();return Promise.resolve()},
     onDoc:function(p){segs(p,true);return function(){}},onCol:function(p){segs(p,false);return function(){}}}}})(window.__fb);`;
 
 const J = { id: "j", type: "check", label: "Journal" };
 const gate = { "pc-noacct": "" };
 const fb = (page) => page.evaluate(() => window.__fb);
-const signedIn = (page) => page.addInitScript(() => { localStorage.setItem("pc-account", JSON.stringify({ uid: "u1", email: "arsh@example.com" })); window.__fb.user = "arsh@example.com"; });
+const signedIn = (page) => page.addInitScript(() => { if (localStorage.getItem("__fb")) return; localStorage.setItem("pc-account", JSON.stringify({ uid: "u1", email: "arsh@example.com" })); window.__fb.user = "arsh@example.com"; });
+const ev = async (page, fn) => { try { return await page.evaluate(fn); } catch (e) { return null; } };
+async function reloadOn(page, fn) {
+  await page.evaluate(() => { window.__pre = 1; });
+  await fn();
+  await expect.poll(async () => { try { return await page.evaluate(() => !window.__pre && document.readyState === "complete"); } catch (e) { return false; } }, { timeout: 10000 }).toBe(true);
+}
 async function account(page) {
   await page.goto("http://127.0.0.1:4173/index.html#settings");
   await page.click("[data-st='account']");
@@ -66,8 +75,9 @@ test("sign in from the gate: wrong password explained, then in", async ({ page }
   await page.press("#auPw", "Enter");
   await expect(page.locator("#auMsg")).toHaveText("Wrong email or password.");
   await page.fill("#auPw", "secret1");
-  await page.click("#auGo");
-  await expect(page.locator("#authPage")).toBeHidden();
+  await reloadOn(page, () => page.click("#auGo"));
+  await expect(page.locator("#authPage")).toHaveCount(0);
+  await expect(page.locator("#sync")).toHaveText("Signed in.");
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("pc-account")))).toEqual({ uid: "u1", email: "arsh@example.com" });
 });
 
@@ -97,8 +107,8 @@ test("create an account: checks the passwords, sends a verification email, and S
   await page.click("#auGo");
   await expect(page.locator("#auMsg")).toHaveText("The passwords don’t match.");
   await page.fill("#auPw2", "abcdef");
-  await page.click("#auGo");
-  await expect(page.locator("#authPage")).toBeHidden();
+  await reloadOn(page, () => page.click("#auGo"));
+  await expect(page.locator("#authPage")).toHaveCount(0);
   expect((await fb(page)).sent).toEqual([["verify", "new@example.com"]]);
   await page.evaluate(() => { location.hash = "settings"; });
   await page.click("[data-st='account']");
@@ -154,11 +164,12 @@ test("change password needs the current one", async ({ page }) => {
   expect((await fb(page)).users["arsh@example.com"].pw).toBe("newpass");
 });
 
-test("delete account asks twice, removes the synced data and the account, and keeps this device's data", async ({ page }) => {
+test("delete account asks twice, then removes the account and all its data, in the cloud and on this device", async ({ page }) => {
   await page.addInitScript(fake);
   await signedIn(page);
-  await page.addInitScript(() => { window.__fb.docs = { "users/u1/data/cfg": { quests: [], u: 1 }, "users/u1/data/refl": { map: {}, u: 1 }, "users/u1/days/2026-10-30": { j: true, u: 1 }, "users/u2/data/cfg": { u: 1 } }; });
-  await openApp(page, { cfg: { quests: [J] }, days: { "2026-11-01": { j: true } } });
+  await page.addInitScript(() => { if (localStorage.getItem("__fb")) return; window.__fb.docs = { "users/u1/data/cfg": { quests: [], u: 1 }, "users/u1/data/refl": { map: {}, u: 1 }, "users/u1/days/2026-10-30": { j: true, u: 1 }, "users/u2/data/cfg": { u: 1 } }; });
+  await openApp(page, { cfg: { quests: [J] }, days: { "2026-11-01": { j: true } }, extra: gate });
+  await expect.poll(() => ev(page, () => localStorage.getItem("pc-cache-u-u1"))).not.toBeNull();
   await account(page);
   await page.click("#acDel");
   await expect(page.locator("#auTitle")).toHaveText("Delete account");
@@ -166,22 +177,19 @@ test("delete account asks twice, removes the synced data and the account, and ke
   await page.click("#auGo");
   await expect(page.locator("#auGo")).toHaveText("Tap again to delete");
   expect(Object.keys((await fb(page)).docs).some((k) => k.startsWith("users/u1/"))).toBe(true);
-  await page.click("#auGo");
-  await expect(page.locator("#auNote")).toHaveText("Your account was deleted. This device keeps its data.");
+  await reloadOn(page, () => page.click("#auGo"));
+  await expect(page.locator("#auNote")).toHaveText("Your account and its data were deleted.");
   await expect(page.locator("#auSkip")).toBeVisible();
   const F = await fb(page);
   expect(Object.keys(F.docs)).toEqual(["users/u2/data/cfg"]);
   expect(F.users["arsh@example.com"]).toBeUndefined();
-  expect(await page.evaluate(() => localStorage.getItem("pc-account"))).toBeNull();
-  const S = await page.evaluate(() => JSON.parse(localStorage.getItem("pc-cache-v1")));
-  expect(S.cfg.quests.map((q) => q.id)).toEqual(["j"]);
-  expect(S.days["2026-11-01"]).toMatchObject({ j: true });
+  expect(await page.evaluate(() => [localStorage.getItem("pc-account"), localStorage.getItem("pc-cache-u-u1")])).toEqual([null, null]);
 });
 
 test("a wrong password on delete changes nothing", async ({ page }) => {
   await page.addInitScript(fake);
   await signedIn(page);
-  await page.addInitScript(() => { window.__fb.docs = { "users/u1/data/cfg": { quests: [], u: 1 } }; });
+  await page.addInitScript(() => { if (localStorage.getItem("__fb")) return; window.__fb.docs = { "users/u1/data/cfg": { quests: [], u: 1 } }; });
   await openApp(page, { cfg: { quests: [J] } });
   await account(page);
   await page.click("#acDel");

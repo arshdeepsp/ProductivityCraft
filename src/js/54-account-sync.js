@@ -50,22 +50,36 @@
       unsub.push(fb.db.onDoc(docPath("refl"),function(s,e){if(e||!s||s.pending)return;if(takeRemote("refl",s.data)){cache();render()}flushQueue()}));
       unsub.push(fb.db.onCol(base()+"/days",function(ch,e){if(e||!ch)return;var any=false;ch.forEach(function(s){if(s.pending)return;if(takeRemote("days/"+s.id,s.data))any=true});if(any){cache();qSig="";render()}flushQueue()}))}
     /* start() is reached twice on a sign-in when boot's auth listener is live (the SDK notifies it before the sign-in promise resolves): the same uid reuses the first run. Listeners attach only once the first merge has gone through (syncNow attaches them after a later successful one). */
-    function start(u){if(user&&user.uid===u.uid&&startP)return startP;user=u;setAcct({uid:u.uid,email:u.email});store.use(cloudAdapter);setStatus("syncing");startP=Promise.resolve().then(merge).then(function(){if(user&&!unsub.length)listen()},function(e){setStatus("error",String(e&&e.message||e))});return startP}
+    function start(u){if(user&&user.uid===u.uid&&startP)return startP;user=u;setAcct({uid:u.uid,email:u.email});store.use(cloudAdapter);setStatus("syncing");startP=Promise.resolve().then(merge).then(function(){if(user&&!unsub.length)listen();if(typeof welcomeCheck==="function")welcomeCheck(0)},function(e){setStatus("error",String(e&&e.message||e))});return startP}
     function stop(){unsub.forEach(function(f){try{f()}catch(x){}});unsub=[];user=null;startP=null;queue={};store.use(localAdapter);setStatus("off")}
+    /* Changes not yet in the cloud: queued or in flight, or sync not up to date. */
+    function unsynced(){return Object.keys(queue).length+(pushing?1:0)+(user&&state.status!=="on"?1:0)}
+    /* After auth succeeds: pick this account's copy on the device and reload into it. A new account takes the data made
+       without an account (the guest copy). Signing in to an account that has nothing in the cloud does too; one that
+       already has data loads its own copy (or starts empty and pulls everything), and the guest copy stays put. */
+    function enter(u,isNew){var key="pc-cache-u-"+u.uid,has=false;try{has=localStorage.getItem(key)!==null}catch(x){}
+      var p=isNew?Promise.resolve(true):has?Promise.resolve(false):Promise.resolve().then(function(){return Promise.all([fb.db.get("users/"+u.uid+"/data/cfg"),fb.db.list("users/"+u.uid+"/days")])}).then(function(r){return !r[0].data&&!r[1].length},function(){return false});
+      return p.then(function(take){cache();storeHold=true;try{if(take&&!has){var g=localStorage.getItem("pc-cache-v1");if(g!==null)localStorage.setItem(key,g);localStorage.removeItem("pc-cache-v1")}}catch(x){}setAcct({uid:u.uid,email:u.email});reloadApp(isNew?"Account created. Check your inbox to verify your email.":"Signed in.");return u})}
+    function reloadApp(note){try{sessionStorage.setItem("pc-authnote",note||"")}catch(x){}setTimeout(function(){location.reload()},0)}
     return{
       state:state,on:function(f){listeners.push(f)},user:function(){return user},account:acct,
-      boot:function(){if(!acct())return;setStatus("connecting");lib().then(function(f){f.auth.onAuth(function(u){if(u){if(!user||user.uid!==u.uid){if(user)stop();start(u)}else user.verified=u.verified}else{var had=!!user||!!acct();if(user)stop();setAcct(null);setStatus("off");if(had&&typeof authEnded==="function")authEnded()}})},function(e){setStatus("error","Couldn’t load the sync library: "+String(e&&e.message||e))})},
-      signIn:function(email,pw){return lib().then(function(f){return f.auth.signIn(email,pw)}).then(function(u){return start(u).then(function(){return u})})},
-      signUp:function(email,pw){return lib().then(function(f){return f.auth.signUp(email,pw)}).then(function(u){return start(u).then(function(){return u})})},
+      boot:function(){if(!acct())return;setStatus("connecting");lib().then(function(f){f.auth.onAuth(function(u){if(u){if(!user||user.uid!==u.uid){if(user)stop();start(u)}else user.verified=u.verified}else{var had=!!user||!!acct();if(user)stop();if(had){storeHold=true;setAcct(null);reloadApp("You were signed out. Sign in again to see your data; it's kept on this device until you do.")}else{setAcct(null);setStatus("off")}}})},function(e){setStatus("error","Couldn’t load the sync library: "+String(e&&e.message||e))})},
+      signIn:function(email,pw){return lib().then(function(f){return f.auth.signIn(email,pw)}).then(function(u){return enter(u,false)})},
+      signUp:function(email,pw){return lib().then(function(f){return f.auth.signUp(email,pw)}).then(function(u){return enter(u,true)})},
       reset:function(email){return lib().then(function(f){return f.auth.reset(email)})},
-      signOut:function(){var f=fb;stop();setAcct(null);return f?f.auth.signOut():Promise.resolve()},
+      /* Sign out removes this account's copy from the device. Refused while a timer or sprint runs (they belong to the
+         account's data), and while changes haven't reached the cloud unless force (the UI asks first). */
+      signOut:function(force){if(S.timer||(S.sprint&&S.sprint.phase!=="done"))return Promise.reject({code:"app/timer"});var n=unsynced();if(n&&!force)return Promise.reject({code:"app/unsynced",n:n});
+        var f=fb,u=user||acct();stop();storeHold=true;try{if(u)localStorage.removeItem("pc-cache-u-"+u.uid)}catch(x){}setAcct(null);
+        return (f?f.auth.signOut():Promise.resolve()).catch(function(){}).then(function(){reloadApp("Signed out. Your data is in your account and comes back when you sign in.")})},
+      unsynced:function(){return unsynced()},
       /* Email verification, password change and account deletion (55 draws the pages). Deleting needs the password again
          (Firebase wants a recent sign-in); sync stops first so nothing is pushed back while the documents go, then every
-         users/<uid> document is removed and the Firebase user deleted. This device keeps its data. */
+         users/<uid> document is removed and the Firebase user deleted, then this account's copy on the device. */
       verify:function(){return lib().then(function(f){return f.auth.verify()})},
       refresh:function(){return lib().then(function(f){return f.auth.refresh()}).then(function(u){if(user&&u){user.verified=u.verified;emit()}return u})},
       changePw:function(cur,next){return lib().then(function(f){return f.auth.changePassword(cur,next)})},
-      deleteAccount:function(pw){var f,u=user;if(!u)return Promise.reject({code:"auth/no-current-user"});return lib().then(function(x){f=x;return f.auth.reauth(pw)}).then(function(){unsub.forEach(function(g){try{g()}catch(x){}});unsub=[];queue={};store.use(localAdapter);return f.db.list("users/"+u.uid+"/days")}).then(function(L){return f.db.remove(L.map(function(d){return "users/"+u.uid+"/days/"+d.id}).concat(["users/"+u.uid+"/data/cfg","users/"+u.uid+"/data/refl"]))}).then(function(){return f.auth.deleteUser()}).then(function(){stop();setAcct(null)},function(e){if(user&&user.uid===u.uid&&!unsub.length){startP=null;var uu=user;user=null;start(uu)}throw e})},
+      deleteAccount:function(pw){var f,u=user;if(!u)return Promise.reject({code:"auth/no-current-user"});return lib().then(function(x){f=x;return f.auth.reauth(pw)}).then(function(){unsub.forEach(function(g){try{g()}catch(x){}});unsub=[];queue={};store.use(localAdapter);return f.db.list("users/"+u.uid+"/days")}).then(function(L){return f.db.remove(L.map(function(d){return "users/"+u.uid+"/days/"+d.id}).concat(["users/"+u.uid+"/data/cfg","users/"+u.uid+"/data/refl"]))}).then(function(){return f.auth.deleteUser()}).then(function(){stop();storeHold=true;try{localStorage.removeItem("pc-cache-u-"+u.uid)}catch(x){}setAcct(null);reloadApp("Your account and its data were deleted.")},function(e){if(user&&user.uid===u.uid&&!unsub.length){startP=null;var uu=user;user=null;start(uu)}throw e})},
       syncNow:function(){if(!user)return;Object.keys(S.days).forEach(function(k){if(!stampOf("days/"+k))queue["days/"+k]=true});flushQueue();return Promise.resolve().then(merge).then(function(){if(user&&!unsub.length)listen()},function(e){setStatus("error",String(e&&e.message||e))})}
     }})();
   /* store.adopt(id, obj, u): take a remote document as-is (null = removed) without flagging it as a local change. */

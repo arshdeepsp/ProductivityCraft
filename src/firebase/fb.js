@@ -4,7 +4,7 @@
    Tests replace window.PCFB with an in-memory fake, so keep this surface tiny and plain (paths and plain objects). */
 import { initializeApp } from "firebase/app";
 import { initializeAuth, getAuth, indexedDBLocalPersistence, browserLocalPersistence, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, sendEmailVerification, reload, EmailAuthProvider, reauthenticateWithCredential, updatePassword, deleteUser } from "firebase/auth";
-import { initializeFirestore, getFirestore, persistentLocalCache, persistentSingleTabManager, doc, collection, getDoc, getDocs, setDoc, writeBatch, onSnapshot } from "firebase/firestore";
+import { initializeFirestore, getFirestore, persistentLocalCache, persistentSingleTabManager, doc, collection, getDoc, getDocs, setDoc, writeBatch, onSnapshot, terminate, clearIndexedDbPersistence } from "firebase/firestore";
 
 let app = null, auth = null, db = null;
 
@@ -32,13 +32,15 @@ const PCFB = {
     signIn(email, password) { return signInWithEmailAndPassword(auth, email, password).then((r) => me(r.user)); },
     /* A new account gets a verification email right away; failing to send it doesn't fail the sign-up. */
     signUp(email, password) { return createUserWithEmailAndPassword(auth, email, password).then((r) => sendEmailVerification(r.user).catch(() => null).then(() => me(r.user))); },
-    signOut() { return signOut(auth); },
+    /* Signing out also wipes Firestore's offline cache, so the account's documents don't stay on the device. The app
+       reloads right after, which sets the SDK up again. */
+    signOut() { return signOut(auth).then(() => terminate(db)).then(() => clearIndexedDbPersistence(db)).catch(() => null); },
     reset(email) { return sendPasswordResetEmail(auth, email); },
     verify() { return Promise.resolve().then(() => sendEmailVerification(cur())); },
     refresh() { return Promise.resolve().then(() => reload(cur())).then(() => me(auth.currentUser)); },
     reauth(password) { return Promise.resolve().then(() => { const u = cur(); return reauthenticateWithCredential(u, EmailAuthProvider.credential(u.email, password)); }); },
     changePassword(current, next) { return PCFB.auth.reauth(current).then(() => updatePassword(cur(), next)); },
-    deleteUser() { return Promise.resolve().then(() => deleteUser(cur())); }
+    deleteUser() { return Promise.resolve().then(() => deleteUser(cur())).then(() => terminate(db).then(() => clearIndexedDbPersistence(db)).catch(() => null)); }
   },
   db: {
     get(path) { return getDoc(ref(path)).then(snap); },
