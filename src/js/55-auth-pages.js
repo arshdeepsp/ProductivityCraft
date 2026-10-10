@@ -4,9 +4,10 @@
      it opens as the gate: no Close, and "Use without account" at the bottom (remembered; Settings › Account can sign in
      later). Signing out, deleting the account, or the session ending elsewhere opens the gate again. A signed-in session
      never expires on its own: fb.js persists it in IndexedDB. All calls go through cloud (54); errors read via authErr. */
-  var acOutArm=0,NOACCT_KEY="pc-noacct",auPg=null,auView="login",auGate=false,auNote="",auEm="",auArm=0,auBusy=false;
-  function noAcct(){try{return !!localStorage.getItem(NOACCT_KEY)}catch(x){return true}}
-  function setNoAcct(on){try{if(on)localStorage.setItem(NOACCT_KEY,"1");else localStorage.removeItem(NOACCT_KEY)}catch(x){}}
+  var acOutArm=0,eraseArm=0,eraseForce=false,NOACCT_KEY="pc-noacct",auPg=null,auView="login",auGate=false,auNote="",auEm="",auArm=0,auBusy=false;
+  /* "Use without account" holds for this launch only (sessionStorage), so every launch while signed out asks again. */
+  function noAcct(){try{return !!sessionStorage.getItem(NOACCT_KEY)}catch(x){return false}}
+  function setNoAcct(on){try{if(on)sessionStorage.setItem(NOACCT_KEY,"1");else sessionStorage.removeItem(NOACCT_KEY);localStorage.removeItem(NOACCT_KEY)}catch(x){}}
   function authOpen(){return !!auPg&&!auPg.hidden}
   function authErr(e){var c=String(e&&e.code||"");
     if(/invalid-credential|wrong-password|user-not-found|invalid-login/.test(c))return auView==="login"?"Wrong email or password.":"That password isn’t right.";
@@ -34,7 +35,7 @@
     auPg.innerHTML='<div class="au-hd"><h2 id="auTitle">'+AU_T[v]+'</h2>'+(auGate?'':'<button type="button" class="stone save" id="auClose">Close</button>')+'</div>'+
       '<div class="au-scroll"><form class="au-box" id="auForm" novalidate>'+(auGate&&v==="login"?'<p class="au-lead">Sign in to sync your quests, days and subjects across devices.</p>':'')+(auNote?'<p class="au-note" id="auNote">'+esc(auNote)+'</p>':'')+body+
       '<p class="cmsg2" id="auMsg" role="status" aria-live="polite"></p><button type="submit" class="stone '+(v==="delete"?'del':'save')+' au-go" id="auGo">'+go+'</button>'+(links?'<div class="au-links">'+links+'</div>':'')+'</form>'+
-      (auGate?'<div class="au-skip"><button type="button" class="stone" id="auSkip">Use without account</button><p class="help">Everything stays on this device. You can sign in any time from Settings › Account.</p></div>':'')+'</div>';
+      (auGate?'<div class="au-skip"><button type="button" class="stone" id="auSkip">Use without account</button><p class="help">Your data stays on this device. You’ll be asked again next time you open the app.</p></div>':'')+'</div>';
     var cl=auPg.querySelector("#auClose");if(cl)cl.addEventListener("click",closeAuth);
     var sk=auPg.querySelector("#auSkip");if(sk)sk.addEventListener("click",function(){setNoAcct(true);closeAuth()});
     auPg.querySelectorAll("[data-av]").forEach(function(b){b.addEventListener("click",function(){keepEm();openAuth(b.getAttribute("data-av"),auGate)})});
@@ -61,5 +62,5 @@
       if(!(auArm&&Date.now()-auArm<4000)){auArm=Date.now();var b=auPg.querySelector("#auGo");if(b)b.textContent="Tap again to delete";setTimeout(function(){if(authOpen()&&auView==="delete"&&auArm&&Date.now()-auArm>=4000){auArm=0;var b2=auPg.querySelector("#auGo");if(b2&&!auBusy)b2.textContent="Delete account"}},4100);return}
       auArm=0;busy("Deleting your account…");cloud.deleteAccount(pw0).then(function(){auSay("Deleted.")},fail)}}
   /* Launch: a note left by a sign-in/out reload (pc-authnote), then the gate when nobody is signed in. */
-  (function(){var note="";try{note=sessionStorage.getItem("pc-authnote")||"";sessionStorage.removeItem("pc-authnote")}catch(x){}
+  (function(){var note="";try{localStorage.removeItem(NOACCT_KEY);note=sessionStorage.getItem("pc-authnote")||"";sessionStorage.removeItem("pc-authnote")}catch(x){}
     if(!cloudAccount()&&!noAcct())openAuth("login",true,note);else if(note)setSync(note)})();

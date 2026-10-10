@@ -50,8 +50,12 @@ test("signed out, the app opens on Sign in until you sign in or choose to use it
   await expect(page.locator("#auClose")).toHaveCount(0);
   await page.click("#auSkip");
   await expect(page.locator("#authPage")).toBeHidden();
-  expect(await page.evaluate(() => localStorage.getItem("pc-noacct"))).toBe("1");
+  expect(await page.evaluate(() => [sessionStorage.getItem("pc-noacct"), localStorage.getItem("pc-noacct")])).toEqual(["1", null]);
   await expect(page.locator("#quests .q")).toHaveCount(1);
+  const next = await page.context().newPage();
+  await openApp(next, { cfg: { quests: [J] }, extra: gate });
+  await expect(next.locator("#authPage")).toBeVisible();
+  await expect(next.locator("#auSkip")).toBeVisible();
 });
 
 test("a signed-in device never sees the sign-in page; the session just carries on", async ({ page }) => {
@@ -223,4 +227,36 @@ test("the first-run welcome waits until the sign-in gate is closed", async ({ pa
   await expect(page.locator("#gModal")).toBeHidden();
   await page.click("#auSkip");
   await expect(page.locator("#gModal")).toBeVisible();
+});
+
+test("Erase this device removes every copy on it and starts fresh on the sign-in page", async ({ page }) => {
+  await page.addInitScript(fake);
+  await openApp(page, { cfg: { quests: [J] }, extra: gate });
+  await page.click("#auSkip");
+  await page.locator("#quests .q .sw").first().click();
+  await page.evaluate(() => localStorage.setItem("pc-cache-u-zz", "{}"));
+  await page.goto("http://127.0.0.1:4173/index.html#settings");
+  await page.click("[data-st='data']");
+  await page.click("#setErase");
+  await expect(page.locator("#setErase")).toHaveText("Tap again to erase");
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("pc-cache-v1")).days["2026-11-02"].j)).toBe(true);
+  await reloadOn(page, () => page.click("#setErase"));
+  await expect(page.locator("#auNote")).toHaveText("This device’s data was erased.");
+  expect(await page.evaluate(() => localStorage.getItem("pc-cache-u-zz"))).toBeNull();
+  expect(await page.evaluate(() => (JSON.parse(localStorage.getItem("pc-cache-v1")).days["2026-11-02"] || {}).j)).toBeFalsy();
+});
+
+test("Erase this device while signed in signs out too; the account keeps its data", async ({ page }) => {
+  await page.addInitScript(fake);
+  await signedIn(page);
+  await openApp(page, { cfg: { quests: [J] }, extra: gate });
+  await expect.poll(async () => Object.keys((await fb(page)).docs)).toContain("users/u1/data/cfg");
+  await page.goto("http://127.0.0.1:4173/index.html#settings");
+  await page.click("[data-st='data']");
+  await expect(page.locator(".srow", { hasText: "Erase this device" })).toContainText("Signs you out");
+  await page.click("#setErase");
+  await reloadOn(page, () => page.click("#setErase"));
+  await expect(page.locator("#authPage")).toBeVisible();
+  expect(await page.evaluate(() => [localStorage.getItem("pc-account"), localStorage.getItem("pc-cache-u-u1")])).toEqual([null, null]);
+  expect(Object.keys((await fb(page)).docs)).toContain("users/u1/data/cfg");
 });

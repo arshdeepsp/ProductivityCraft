@@ -73,6 +73,11 @@
         var f=fb,u=user||acct();stop();storeHold=true;try{if(u)localStorage.removeItem("pc-cache-u-"+u.uid)}catch(x){}setAcct(null);
         return (f?f.auth.signOut():Promise.resolve()).catch(function(){}).then(function(){reloadApp("Signed out. Your data is in your account and comes back when you sign in.")})},
       unsynced:function(){return unsynced()},
+      /* Erase this device: every copy (guest and each account's), the rescue copy and the signed-in account, then reload
+         to a fresh start on the sign-in page. Accounts keep their data in the cloud. Same timer/unsynced guards as sign-out. */
+      eraseDevice:function(force){if(S.timer||(S.sprint&&S.sprint.phase!=="done"))return Promise.reject({code:"app/timer"});var n=user?unsynced():0;if(n&&!force)return Promise.reject({code:"app/unsynced",n:n});
+        var f=fb;stop();storeHold=true;try{var ks=[];for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&(k.indexOf("pc-cache-")===0||k==="pc-account"||k==="pc-welcomed"||k==="pc-rerate"))ks.push(k)}ks.forEach(function(k){localStorage.removeItem(k)});sessionStorage.removeItem("pc-noacct")}catch(x){}
+        return (f?f.auth.signOut():Promise.resolve()).catch(function(){}).then(function(){reloadApp("This device’s data was erased.")})},
       /* Email verification, password change and account deletion (55 draws the pages). Deleting needs the password again
          (Firebase wants a recent sign-in); sync stops first so nothing is pushed back while the documents go, then every
          users/<uid> document is removed and the Firebase user deleted, then this account's copy on the device. */
