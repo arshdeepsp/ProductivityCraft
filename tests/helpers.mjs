@@ -6,6 +6,7 @@ export async function openApp(page, { now = "2026-11-02T09:00:00-05:00", cfg = {
   await page.addInitScript(([s, x]) => {
     localStorage.setItem("pc-welcomed", "1");
     if (!("pc-splash" in x)) localStorage.setItem("pc-splash", "off");
+    if (!("pc-noacct" in x)) localStorage.setItem("pc-noacct", "1");
     if (!localStorage.getItem("pc-cache-v1")) localStorage.setItem("pc-cache-v1", s);
     for (const [k, v] of Object.entries(x)) localStorage.setItem(k, v);
   }, [JSON.stringify(state), extra]);

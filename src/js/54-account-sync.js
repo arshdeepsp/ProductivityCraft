@@ -53,11 +53,18 @@
     function stop(){unsub.forEach(function(f){try{f()}catch(x){}});unsub=[];user=null;startP=null;queue={};store.use(localAdapter);setStatus("off")}
     return{
       state:state,on:function(f){listeners.push(f)},user:function(){return user},account:acct,
-      boot:function(){if(!acct())return;setStatus("connecting");lib().then(function(f){f.auth.onAuth(function(u){if(u){if(!user||user.uid!==u.uid){if(user)stop();start(u)}}else{if(user)stop();setAcct(null);setStatus("off")}})},function(e){setStatus("error","Couldn’t load the sync library: "+String(e&&e.message||e))})},
+      boot:function(){if(!acct())return;setStatus("connecting");lib().then(function(f){f.auth.onAuth(function(u){if(u){if(!user||user.uid!==u.uid){if(user)stop();start(u)}else user.verified=u.verified}else{var had=!!user||!!acct();if(user)stop();setAcct(null);setStatus("off");if(had&&typeof authEnded==="function")authEnded()}})},function(e){setStatus("error","Couldn’t load the sync library: "+String(e&&e.message||e))})},
       signIn:function(email,pw){return lib().then(function(f){return f.auth.signIn(email,pw)}).then(function(u){return start(u).then(function(){return u})})},
       signUp:function(email,pw){return lib().then(function(f){return f.auth.signUp(email,pw)}).then(function(u){return start(u).then(function(){return u})})},
       reset:function(email){return lib().then(function(f){return f.auth.reset(email)})},
       signOut:function(){var f=fb;stop();setAcct(null);return f?f.auth.signOut():Promise.resolve()},
+      /* Email verification, password change and account deletion (55 draws the pages). Deleting needs the password again
+         (Firebase wants a recent sign-in); sync stops first so nothing is pushed back while the documents go, then every
+         users/<uid> document is removed and the Firebase user deleted. This device keeps its data. */
+      verify:function(){return lib().then(function(f){return f.auth.verify()})},
+      refresh:function(){return lib().then(function(f){return f.auth.refresh()}).then(function(u){if(user&&u){user.verified=u.verified;emit()}return u})},
+      changePw:function(cur,next){return lib().then(function(f){return f.auth.changePassword(cur,next)})},
+      deleteAccount:function(pw){var f,u=user;if(!u)return Promise.reject({code:"auth/no-current-user"});return lib().then(function(x){f=x;return f.auth.reauth(pw)}).then(function(){unsub.forEach(function(g){try{g()}catch(x){}});unsub=[];queue={};store.use(localAdapter);return f.db.list("users/"+u.uid+"/days")}).then(function(L){return f.db.remove(L.map(function(d){return "users/"+u.uid+"/days/"+d.id}).concat(["users/"+u.uid+"/cfg","users/"+u.uid+"/refl"]))}).then(function(){return f.auth.deleteUser()}).then(function(){stop();setAcct(null)},function(e){if(user&&user.uid===u.uid&&!unsub.length){startP=null;var uu=user;user=null;start(uu)}throw e})},
       syncNow:function(){if(!user)return;Object.keys(S.days).forEach(function(k){if(!stampOf("days/"+k))queue["days/"+k]=true});flushQueue();return merge().then(function(){if(user&&!unsub.length)listen()},function(e){setStatus("error",String(e&&e.message||e))})}
     }})();
   /* store.adopt(id, obj, u): take a remote document as-is (null = removed) without flagging it as a local change. */

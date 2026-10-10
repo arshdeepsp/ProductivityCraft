@@ -29,7 +29,7 @@
      live settings for today and later. */
   var lockedThru=null,lockDays=null,lockStart=null,ddm={},ddmKey="";
   function lockReset(){lockedThru=null;ddm={}}
-  /* Quest list for a passed day: as the settings stood, with any scheduled (pending) change already due by then applied. */
+  /* Quest list for a passed day: as the settings stand (queued changes were removed in SCHEMA 16). */
   function lockDefs(d){return activeDefs(d)}
   /* Repeats that fell on a passed day are copied onto it (as one-offs with src, plus a skip), so stopping or editing a
      repeat later never changes that day's plan or "Plan kept". */
