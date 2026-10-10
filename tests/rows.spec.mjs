@@ -35,6 +35,7 @@ test.describe("compact phone rows", () => {
 
   test("holding a row and dragging it reorders the quests; a quick drag just scrolls", async ({ page }) => {
     await openApp(page, { cfg: { quests: Q, subjects: SUBJ } });
+    await page.clock.pauseAt(Date.parse("2026-11-02T09:00:05-05:00"));
     const cdp = await page.context().newCDPSession(page);
     const box = async (t) => page.locator("#quests .q", { hasText: t }).locator(".lbl").boundingBox();
     async function drag(from, to, hold) {
