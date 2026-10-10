@@ -5,6 +5,7 @@ import { openApp } from "./helpers.mjs";
 const fake = `window.__fb={users:{"arsh@example.com":{pw:"secret1",uid:"u1",verified:true}},user:null,docs:{},sent:[],cbs:[]};
 (function(F){function me(){var u=F.user&&F.users[F.user];return u?{uid:u.uid,email:F.user,verified:u.verified}:null}
 function no(c){return Promise.reject({code:c,message:c})}
+function segs(p,even){var n=p.split("/").length;if((n%2===0)!==even)throw new Error("Invalid "+(even?"document":"collection")+" reference: "+p+" has "+n+" segments")}
 window.PCFB={init:function(){},
   auth:{user:me,onAuth:function(cb){F.cbs.push(cb);setTimeout(function(){cb(me())},0);return function(){}},
     signIn:function(e,p){var u=F.users[e];if(!u||u.pw!==p)return no("auth/invalid-credential");F.user=e;return Promise.resolve(me())},
@@ -16,12 +17,12 @@ window.PCFB={init:function(){},
     reauth:function(p){return F.users[F.user]&&F.users[F.user].pw===p?Promise.resolve():no("auth/wrong-password")},
     changePassword:function(c,n){return window.PCFB.auth.reauth(c).then(function(){F.users[F.user].pw=n})},
     deleteUser:function(){delete F.users[F.user];F.user=null;return Promise.resolve()}},
-  db:{get:function(p){return Promise.resolve({id:p.split("/").pop(),data:F.docs[p]?JSON.parse(JSON.stringify(F.docs[p])):null,pending:false})},
-    list:function(p){return Promise.resolve(Object.keys(F.docs).filter(function(k){return k.indexOf(p+"/")===0}).map(function(k){return {id:k.split("/").pop(),data:F.docs[k],pending:false}}))},
-    set:function(p,d){F.docs[p]=d;return Promise.resolve()},
-    batch:function(ops){ops.forEach(function(o){F.docs[o.path]=JSON.parse(JSON.stringify(o.data))});return Promise.resolve()},
-    remove:function(ps){ps.forEach(function(p){delete F.docs[p]});return Promise.resolve()},
-    onDoc:function(){return function(){}},onCol:function(){return function(){}}}}})(window.__fb);`;
+  db:{get:function(p){segs(p,true);return Promise.resolve({id:p.split("/").pop(),data:F.docs[p]?JSON.parse(JSON.stringify(F.docs[p])):null,pending:false})},
+    list:function(p){segs(p,false);return Promise.resolve(Object.keys(F.docs).filter(function(k){return k.indexOf(p+"/")===0}).map(function(k){return {id:k.split("/").pop(),data:F.docs[k],pending:false}}))},
+    set:function(p,d){segs(p,true);F.docs[p]=d;return Promise.resolve()},
+    batch:function(ops){ops.forEach(function(o){segs(o.path,true)});ops.forEach(function(o){F.docs[o.path]=JSON.parse(JSON.stringify(o.data))});return Promise.resolve()},
+    remove:function(ps){ps.forEach(function(p){segs(p,true)});ps.forEach(function(p){delete F.docs[p]});return Promise.resolve()},
+    onDoc:function(p){segs(p,true);return function(){}},onCol:function(p){segs(p,false);return function(){}}}}})(window.__fb);`;
 
 const J = { id: "j", type: "check", label: "Journal" };
 const gate = { "pc-noacct": "" };
@@ -156,7 +157,7 @@ test("change password needs the current one", async ({ page }) => {
 test("delete account asks twice, removes the synced data and the account, and keeps this device's data", async ({ page }) => {
   await page.addInitScript(fake);
   await signedIn(page);
-  await page.addInitScript(() => { window.__fb.docs = { "users/u1/cfg": { quests: [], u: 1 }, "users/u1/refl": { map: {}, u: 1 }, "users/u1/days/2026-10-30": { j: true, u: 1 }, "users/u2/cfg": { u: 1 } }; });
+  await page.addInitScript(() => { window.__fb.docs = { "users/u1/data/cfg": { quests: [], u: 1 }, "users/u1/data/refl": { map: {}, u: 1 }, "users/u1/days/2026-10-30": { j: true, u: 1 }, "users/u2/data/cfg": { u: 1 } }; });
   await openApp(page, { cfg: { quests: [J] }, days: { "2026-11-01": { j: true } } });
   await account(page);
   await page.click("#acDel");
@@ -169,7 +170,7 @@ test("delete account asks twice, removes the synced data and the account, and ke
   await expect(page.locator("#auNote")).toHaveText("Your account was deleted. This device keeps its data.");
   await expect(page.locator("#auSkip")).toBeVisible();
   const F = await fb(page);
-  expect(Object.keys(F.docs)).toEqual(["users/u2/cfg"]);
+  expect(Object.keys(F.docs)).toEqual(["users/u2/data/cfg"]);
   expect(F.users["arsh@example.com"]).toBeUndefined();
   expect(await page.evaluate(() => localStorage.getItem("pc-account"))).toBeNull();
   const S = await page.evaluate(() => JSON.parse(localStorage.getItem("pc-cache-v1")));
@@ -180,7 +181,7 @@ test("delete account asks twice, removes the synced data and the account, and ke
 test("a wrong password on delete changes nothing", async ({ page }) => {
   await page.addInitScript(fake);
   await signedIn(page);
-  await page.addInitScript(() => { window.__fb.docs = { "users/u1/cfg": { quests: [], u: 1 } }; });
+  await page.addInitScript(() => { window.__fb.docs = { "users/u1/data/cfg": { quests: [], u: 1 } }; });
   await openApp(page, { cfg: { quests: [J] } });
   await account(page);
   await page.click("#acDel");

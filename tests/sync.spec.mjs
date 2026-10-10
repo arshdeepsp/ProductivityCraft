@@ -9,17 +9,18 @@ const store = (page) => page.evaluate(() => JSON.parse(localStorage.getItem("pc-
 /* In-memory stand-in for window.PCFB (see src/firebase/fb.js): docs keyed by path, snapshot listeners, auth with one
    known user. window.__cloud exposes the docs and a remote() helper that writes "from another device". */
 const fake = `window.__cloud={docs:{},listeners:[],user:null,authCbs:[],fail:false};
+function segs(path,even){var n=path.split("/").length;if((n%2===0)!==even)throw new Error("Invalid "+(even?"document":"collection")+" reference: "+path+" has "+n+" segments")}
 window.PCFB={init:function(){},
   auth:{user:function(){return window.__cloud.user},onAuth:function(cb){window.__cloud.authCbs.push(cb);setTimeout(function(){cb(window.__cloud.user)},0);return function(){}},
     signIn:function(e,p){if(p!=="secret1")return Promise.reject({code:"auth/invalid-credential",message:"bad"});window.__cloud.user={uid:"u1",email:e};return Promise.resolve(window.__cloud.user)},
     signUp:function(e,p){window.__cloud.user={uid:"u1",email:e};return Promise.resolve(window.__cloud.user)},
     signOut:function(){window.__cloud.user=null;return Promise.resolve()},reset:function(){return Promise.resolve()}},
-  db:{get:function(path){var d=window.__cloud.docs[path];return Promise.resolve({id:path.split("/").pop(),data:d?JSON.parse(JSON.stringify(d)):null,pending:false})},
-    list:function(path){var out=[];Object.keys(window.__cloud.docs).forEach(function(p){if(p.indexOf(path+"/")===0&&p.slice(path.length+1).indexOf("/")<0)out.push({id:p.split("/").pop(),data:JSON.parse(JSON.stringify(window.__cloud.docs[p])),pending:false})});return Promise.resolve(out)},
-    set:function(path,data){window.__cloud.docs[path]=JSON.parse(JSON.stringify(data));return Promise.resolve()},
-    batch:function(ops){if(window.__cloud.fail)return Promise.reject(new Error("offline"));try{ops.forEach(function(o){check(o.data,o.path)})}catch(e){window.__cloud.bad=(window.__cloud.bad||[]).concat(e.message);return Promise.reject(e)}ops.forEach(function(o){window.__cloud.docs[o.path]=JSON.parse(JSON.stringify(o.data))});window.__cloud.writes=(window.__cloud.writes||0)+ops.length;return Promise.resolve()},
-    onDoc:function(path,cb){var l={path:path,cb:cb};window.__cloud.listeners.push(l);return function(){window.__cloud.listeners=window.__cloud.listeners.filter(function(x){return x!==l})}},
-    onCol:function(path,cb){var l={col:path,cb:cb};window.__cloud.listeners.push(l);return function(){window.__cloud.listeners=window.__cloud.listeners.filter(function(x){return x!==l})}}}};
+  db:{get:function(path){if(window.__cloud.throwGet)throw new Error(window.__cloud.throwGet);segs(path,true);var d=window.__cloud.docs[path];return Promise.resolve({id:path.split("/").pop(),data:d?JSON.parse(JSON.stringify(d)):null,pending:false})},
+    list:function(path){segs(path,false);var out=[];Object.keys(window.__cloud.docs).forEach(function(p){if(p.indexOf(path+"/")===0&&p.slice(path.length+1).indexOf("/")<0)out.push({id:p.split("/").pop(),data:JSON.parse(JSON.stringify(window.__cloud.docs[p])),pending:false})});return Promise.resolve(out)},
+    set:function(path,data){segs(path,true);window.__cloud.docs[path]=JSON.parse(JSON.stringify(data));return Promise.resolve()},
+    batch:function(ops){ops.forEach(function(o){segs(o.path,true)});if(window.__cloud.fail)return Promise.reject(new Error("offline"));try{ops.forEach(function(o){check(o.data,o.path)})}catch(e){window.__cloud.bad=(window.__cloud.bad||[]).concat(e.message);return Promise.reject(e)}ops.forEach(function(o){window.__cloud.docs[o.path]=JSON.parse(JSON.stringify(o.data))});window.__cloud.writes=(window.__cloud.writes||0)+ops.length;return Promise.resolve()},
+    onDoc:function(path,cb){segs(path,true);var l={path:path,cb:cb};window.__cloud.listeners.push(l);return function(){window.__cloud.listeners=window.__cloud.listeners.filter(function(x){return x!==l})}},
+    onCol:function(path,cb){segs(path,false);var l={col:path,cb:cb};window.__cloud.listeners.push(l);return function(){window.__cloud.listeners=window.__cloud.listeners.filter(function(x){return x!==l})}}}};
 /* What Firestore refuses in a document: undefined, functions, an array directly inside an array, reserved __x__ field names, documents over 1 MiB. */
 function check(v,at){if(v===undefined||typeof v==="function")throw new Error("bad value at "+at);
   if(Array.isArray(v)){v.forEach(function(x,i){if(Array.isArray(x))throw new Error("nested array at "+at+"["+i+"]");check(x,at+"["+i+"]")})}
@@ -43,10 +44,10 @@ test("signing in pushes local data as documents under users/<uid>, with stamps",
   await openApp(page, { cfg: { quests: [J, CS], repFrozen: true }, days: { "2026-11-01": { j: true, cs: 30, q: [J, CS] } } });
   await page.locator("#quests .q .sw").first().click();
   await signIn(page);
-  await expect.poll(async () => Object.keys(await docs(page)).sort()).toEqual(expect.arrayContaining(["users/u1/cfg", "users/u1/days/2026-11-01", "users/u1/days/2026-11-02"]));
+  await expect.poll(async () => Object.keys(await docs(page)).sort()).toEqual(expect.arrayContaining(["users/u1/data/cfg", "users/u1/days/2026-11-01", "users/u1/days/2026-11-02"]));
   const d = await docs(page);
-  expect(d["users/u1/cfg"].quests.map((q) => q.id)).toEqual(["j", "cs"]);
-  expect(d["users/u1/cfg"].u).toBeGreaterThan(0);
+  expect(d["users/u1/data/cfg"].quests.map((q) => q.id)).toEqual(["j", "cs"]);
+  expect(d["users/u1/data/cfg"].u).toBeGreaterThan(0);
   expect(d["users/u1/days/2026-11-02"]).toMatchObject({ j: true });
   expect(d["users/u1/days/2026-11-02"].u).toBeGreaterThan(0);
   expect(d["users/u1/days/2026-11-02"].sess).toBeUndefined();
@@ -60,7 +61,7 @@ test("later edits push only the changed documents; a removed day is pushed as a 
   await page.addInitScript(fake);
   await openApp(page, { now: "2026-11-02T09:00:00-05:00", cfg: { quests: [J, CS], repFrozen: true } });
   await signIn(page);
-  await expect.poll(async () => (await docs(page))["users/u1/cfg"]).toBeTruthy();
+  await expect.poll(async () => (await docs(page))["users/u1/data/cfg"]).toBeTruthy();
   await page.evaluate(() => { window.__cloud.writes = 0; });
   await page.goto("http://127.0.0.1:4173/index.html#today");
   await page.locator("#quests .q .sw").first().click();
@@ -76,9 +77,9 @@ test("a signed-in device with nothing local pulls everything; remote changes arr
   await page.addInitScript(fake);
   await page.addInitScript(() => { localStorage.setItem("pc-account", JSON.stringify({ uid: "u1", email: "arsh@example.com" })); window.__cloud.user = { uid: "u1", email: "arsh@example.com" };
     const now = Date.parse("2026-11-02T08:00:00-05:00");
-    window.__cloud.docs["users/u1/cfg"] = { quests: [{ id: "r", type: "check", label: "Remote quest" }], rules: [], idleGrove: 0, start: "2026-10-01T04:00:00.000Z", updated: "2026-11-01T10:00:00Z", repFrozen: true, u: now };
+    window.__cloud.docs["users/u1/data/cfg"] = { quests: [{ id: "r", type: "check", label: "Remote quest" }], rules: [], idleGrove: 0, start: "2026-10-01T04:00:00.000Z", updated: "2026-11-01T10:00:00Z", repFrozen: true, u: now };
     window.__cloud.docs["users/u1/days/2026-11-01"] = { r: true, q: [{ id: "r", type: "check", label: "Remote quest" }], u: now };
-    window.__cloud.docs["users/u1/refl"] = { map: { "2026-10-20": { text: "late night" } }, u: now }; });
+    window.__cloud.docs["users/u1/data/refl"] = { map: { "2026-10-20": { text: "late night" } }, u: now }; });
   await openApp(page, { cfg: { quests: [] } });
   await expect(page.locator("#quests .q .lbl")).toHaveText(["Remote quest"]);
   let s = await store(page);
@@ -90,7 +91,7 @@ test("a signed-in device with nothing local pulls everything; remote changes arr
   await page.evaluate(() => window.__cloud.remote("users/u1/days/2026-11-01", { r: true, q: [{ id: "r", type: "check", label: "Remote quest" }], u: Date.parse("2026-11-02T07:00:00-05:00") }));
   await page.waitForTimeout(400);
   expect((await store(page)).days["2026-11-01"].r).toBe(false);
-  await page.evaluate(() => window.__cloud.remote("users/u1/cfg", { quests: [{ id: "r", type: "check", label: "Renamed remotely" }], rules: [], idleGrove: 0, start: "2026-10-01T04:00:00.000Z", repFrozen: true, u: Date.parse("2026-11-02T09:40:00-05:00") }));
+  await page.evaluate(() => window.__cloud.remote("users/u1/data/cfg", { quests: [{ id: "r", type: "check", label: "Renamed remotely" }], rules: [], idleGrove: 0, start: "2026-10-01T04:00:00.000Z", repFrozen: true, u: Date.parse("2026-11-02T09:40:00-05:00") }));
   await expect(page.locator("#quests .q .lbl")).toHaveText(["Renamed remotely"]);
   await page.evaluate(() => window.__cloud.remote("users/u1/days/2026-11-05", { sched: [{ id: "z", q: "r", f: 600, t: 660 }], u: Date.parse("2026-11-02T09:45:00-05:00") }));
   await expect.poll(async () => ((await store(page)).days["2026-11-05"] || {}).sched).toHaveLength(1);
@@ -157,10 +158,10 @@ test("a full account's worth of data pushes as documents Firestore accepts, and 
   const local = await store(page);
   const dayKeys = Object.keys(local.days).sort();
   expect(dayKeys.length).toBeGreaterThanOrEqual(Object.keys(D).length);
-  expect(Object.keys(d).sort()).toEqual(["users/u1/cfg", "users/u1/refl"].concat(dayKeys.map((k) => "users/u1/days/" + k)).sort());
+  expect(Object.keys(d).sort()).toEqual(["users/u1/data/cfg", "users/u1/data/refl"].concat(dayKeys.map((k) => "users/u1/days/" + k)).sort());
   const clean = (o) => { const x = JSON.parse(JSON.stringify(o)); delete x.u; return x; };
-  expect(clean(d["users/u1/cfg"])).toEqual(local.cfg);
-  expect(clean(d["users/u1/refl"]).map).toEqual(local.refl);
+  expect(clean(d["users/u1/data/cfg"])).toEqual(local.cfg);
+  expect(clean(d["users/u1/data/refl"]).map).toEqual(local.refl);
   for (const k of dayKeys) expect(clean(d["users/u1/days/" + k])).toEqual(local.days[k]);
   // a second, empty device signed into the same account ends up with the same data
   const ctx = await browser.newContext({ timezoneId: "America/Toronto", serviceWorkers: "block" });
@@ -198,7 +199,7 @@ test("signing out and back in within one session keeps one set of listeners; a s
   await page.addInitScript(fake);
   await page.addInitScript(() => { localStorage.setItem("pc-account", JSON.stringify({ uid: "u1", email: "arsh@example.com" })); window.__cloud.user = { uid: "u1", email: "arsh@example.com" }; });
   await openApp(page, { cfg: { quests: [J], repFrozen: true } });
-  await expect.poll(async () => (await docs(page))["users/u1/cfg"]).toBeTruthy();
+  await expect.poll(async () => (await docs(page))["users/u1/data/cfg"]).toBeTruthy();
   await expect.poll(() => page.evaluate(() => window.__cloud.listeners.length)).toBe(3);
   await page.goto("http://127.0.0.1:4173/index.html#settings");
   await page.click("[data-st='account']");
@@ -217,4 +218,22 @@ test("signing out and back in within one session keeps one set of listeners; a s
   await expect(page.locator("#auNote")).toContainText("You were signed out.");
   expect(await page.evaluate(() => localStorage.getItem("pc-account"))).toBeNull();
   expect(await page.evaluate(() => window.__cloud.listeners.length)).toBe(0);
+});
+
+test("a sync error on sign-in still signs you in and shows the problem in Settings", async ({ page }) => {
+  await page.addInitScript(fake);
+  await page.addInitScript(() => { window.__cloud.throwGet = "Invalid document reference"; });
+  await openApp(page, { cfg: { quests: [J], repFrozen: true } });
+  await page.goto("http://127.0.0.1:4173/index.html#settings");
+  await page.click("[data-st='account']");
+  await page.click("#acOpen");
+  await page.fill("#auEmail", "arsh@example.com");
+  await page.fill("#auPw", "secret1");
+  await page.click("#auGo");
+  await expect(page.locator("#authPage")).toBeHidden();
+  await expect(page.locator(".srow", { has: page.locator("b", { hasText: /^Sync$/ }) })).toContainText("Problem: Invalid document reference");
+  await page.evaluate(() => { window.__cloud.throwGet = ""; });
+  await page.click("#acSync");
+  await expect(page.locator(".srow", { has: page.locator("b", { hasText: /^Sync$/ }) })).toContainText("Up to date");
+  expect(Object.keys(await docs(page))).toContain("users/u1/data/cfg");
 });

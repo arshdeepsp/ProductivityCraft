@@ -1,7 +1,7 @@
   /* ---- account and cloud sync (Firebase: email/password auth + Firestore) ----
      Nothing here runs until someone signs in. cloud.boot() on startup: if pc-account says a user was signed in on this
      device, the SDK (vendor/firebase.js, built from src/firebase/fb.js) is imported and auth restores the session.
-     Data layout: users/<uid>/cfg, users/<uid>/refl, users/<uid>/days/<date>. Every document carries u (ms, the store's
+     Data layout: users/<uid>/data/cfg, users/<uid>/data/refl, users/<uid>/days/<date> (document paths need an even number of segments). Every document carries u (ms, the store's
      stamp); a removed day is written as {del:true, u} so other devices delete it too. Merge rule per doc: the newer u
      wins; a local doc with no stamp counts as 0 (data from before the store). Local writes keep going to localStorage
      through the local adapter; the cloud adapter wraps it and pushes the changed docs. Remote changes arrive by
@@ -18,7 +18,8 @@
       return import("./vendor/firebase.js").then(function(){fb=window.PCFB;fb.init(FIREBASE_CONFIG);return fb})}
     function base(){return "users/"+user.uid}
     function strip(o){return JSON.parse(JSON.stringify(o))}
-    function docPath(id){return id==="cfg"||id==="refl"?base()+"/"+id:base()+"/"+id}
+    /* Firestore document paths need an even number of segments: cfg and refl live in users/<uid>/data/, days in users/<uid>/days/. */
+    function docPath(id){return id==="cfg"||id==="refl"?base()+"/data/"+id:base()+"/"+id}
     function localDoc(id){if(id==="cfg")return S.cfg;if(id==="refl")return {map:S.refl};if(id.indexOf("days/")===0)return S.days[id.slice(5)]||null;return null}
     /* Stamps are ms timestamps: never |0 them (that truncates to 32 bits). */
     function stampOf(id){return +((S.meta&&S.meta.u&&S.meta.u[id])||0)}
@@ -38,18 +39,18 @@
       if(ru>lu){var d=strip(data);delete d.u;delete d.del;store.adopt(id,id==="refl"?(d.map||{}):d,ru);return true}
       if(lu>ru){queue[id]=true}return false}
     /* First merge after sign-in: everything remote vs everything local, then push what's newer here. */
-    function merge(){setStatus("syncing");return Promise.all([fb.db.get(base()+"/cfg"),fb.db.get(base()+"/refl"),fb.db.list(base()+"/days")]).then(function(r){var seen={cfg:1,refl:1},ch=false;
+    function merge(){setStatus("syncing");return Promise.all([fb.db.get(docPath("cfg")),fb.db.get(docPath("refl")),fb.db.list(base()+"/days")]).then(function(r){var seen={cfg:1,refl:1},ch=false;
       if(takeRemote("cfg",r[0].data))ch=true;else if(S.cfg&&!r[0].data)queue.cfg=true;
       if(takeRemote("refl",r[1].data))ch=true;else if(!r[1].data&&Object.keys(S.refl||{}).length)queue.refl=true;
       r[2].forEach(function(s){var id="days/"+s.id;seen[id]=1;if(takeRemote(id,s.data))ch=true});
       Object.keys(S.days).forEach(function(k){var id="days/"+k;if(!seen[id])queue[id]=true});
       Object.keys((S.meta&&S.meta.del)||{}).forEach(function(id){if(!seen[id])queue[id]=true});
       if(ch){cache();qSig="";render()}flushQueue();if(!Object.keys(queue).length&&!pushing)setStatus("on")})}
-    function listen(){unsub.push(fb.db.onDoc(base()+"/cfg",function(s,e){if(e){setStatus("error",String(e.message||e));return}if(!s||s.pending)return;if(takeRemote("cfg",s.data)){cache();qSig="";render()}flushQueue()}));
-      unsub.push(fb.db.onDoc(base()+"/refl",function(s,e){if(e||!s||s.pending)return;if(takeRemote("refl",s.data)){cache();render()}flushQueue()}));
+    function listen(){unsub.push(fb.db.onDoc(docPath("cfg"),function(s,e){if(e){setStatus("error",String(e.message||e));return}if(!s||s.pending)return;if(takeRemote("cfg",s.data)){cache();qSig="";render()}flushQueue()}));
+      unsub.push(fb.db.onDoc(docPath("refl"),function(s,e){if(e||!s||s.pending)return;if(takeRemote("refl",s.data)){cache();render()}flushQueue()}));
       unsub.push(fb.db.onCol(base()+"/days",function(ch,e){if(e||!ch)return;var any=false;ch.forEach(function(s){if(s.pending)return;if(takeRemote("days/"+s.id,s.data))any=true});if(any){cache();qSig="";render()}flushQueue()}))}
     /* start() is reached twice on a sign-in when boot's auth listener is live (the SDK notifies it before the sign-in promise resolves): the same uid reuses the first run. Listeners attach only once the first merge has gone through (syncNow attaches them after a later successful one). */
-    function start(u){if(user&&user.uid===u.uid&&startP)return startP;user=u;setAcct({uid:u.uid,email:u.email});store.use(cloudAdapter);setStatus("syncing");startP=merge().then(function(){if(user&&!unsub.length)listen()},function(e){setStatus("error",String(e&&e.message||e))});return startP}
+    function start(u){if(user&&user.uid===u.uid&&startP)return startP;user=u;setAcct({uid:u.uid,email:u.email});store.use(cloudAdapter);setStatus("syncing");startP=Promise.resolve().then(merge).then(function(){if(user&&!unsub.length)listen()},function(e){setStatus("error",String(e&&e.message||e))});return startP}
     function stop(){unsub.forEach(function(f){try{f()}catch(x){}});unsub=[];user=null;startP=null;queue={};store.use(localAdapter);setStatus("off")}
     return{
       state:state,on:function(f){listeners.push(f)},user:function(){return user},account:acct,
@@ -64,8 +65,8 @@
       verify:function(){return lib().then(function(f){return f.auth.verify()})},
       refresh:function(){return lib().then(function(f){return f.auth.refresh()}).then(function(u){if(user&&u){user.verified=u.verified;emit()}return u})},
       changePw:function(cur,next){return lib().then(function(f){return f.auth.changePassword(cur,next)})},
-      deleteAccount:function(pw){var f,u=user;if(!u)return Promise.reject({code:"auth/no-current-user"});return lib().then(function(x){f=x;return f.auth.reauth(pw)}).then(function(){unsub.forEach(function(g){try{g()}catch(x){}});unsub=[];queue={};store.use(localAdapter);return f.db.list("users/"+u.uid+"/days")}).then(function(L){return f.db.remove(L.map(function(d){return "users/"+u.uid+"/days/"+d.id}).concat(["users/"+u.uid+"/cfg","users/"+u.uid+"/refl"]))}).then(function(){return f.auth.deleteUser()}).then(function(){stop();setAcct(null)},function(e){if(user&&user.uid===u.uid&&!unsub.length){startP=null;var uu=user;user=null;start(uu)}throw e})},
-      syncNow:function(){if(!user)return;Object.keys(S.days).forEach(function(k){if(!stampOf("days/"+k))queue["days/"+k]=true});flushQueue();return merge().then(function(){if(user&&!unsub.length)listen()},function(e){setStatus("error",String(e&&e.message||e))})}
+      deleteAccount:function(pw){var f,u=user;if(!u)return Promise.reject({code:"auth/no-current-user"});return lib().then(function(x){f=x;return f.auth.reauth(pw)}).then(function(){unsub.forEach(function(g){try{g()}catch(x){}});unsub=[];queue={};store.use(localAdapter);return f.db.list("users/"+u.uid+"/days")}).then(function(L){return f.db.remove(L.map(function(d){return "users/"+u.uid+"/days/"+d.id}).concat(["users/"+u.uid+"/data/cfg","users/"+u.uid+"/data/refl"]))}).then(function(){return f.auth.deleteUser()}).then(function(){stop();setAcct(null)},function(e){if(user&&user.uid===u.uid&&!unsub.length){startP=null;var uu=user;user=null;start(uu)}throw e})},
+      syncNow:function(){if(!user)return;Object.keys(S.days).forEach(function(k){if(!stampOf("days/"+k))queue["days/"+k]=true});flushQueue();return Promise.resolve().then(merge).then(function(){if(user&&!unsub.length)listen()},function(e){setStatus("error",String(e&&e.message||e))})}
     }})();
   /* store.adopt(id, obj, u): take a remote document as-is (null = removed) without flagging it as a local change. */
   store.adopt=function(id,obj,u){if(id==="cfg"){S.cfg=obj}else if(id==="refl"){S.refl=obj||{}}else if(id.indexOf("days/")===0){var k=id.slice(5);if(obj)S.days[k]=obj;else delete S.days[k]}S.meta=S.meta||{u:{}};S.meta.u=S.meta.u||{};if(obj){S.meta.u[id]=u;if(S.meta.del)delete S.meta.del[id]}else{delete S.meta.u[id];(S.meta.del=S.meta.del||{})[id]=u}store.markClean(id,obj);lockReset();qSig=""};
