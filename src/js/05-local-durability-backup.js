@@ -28,11 +28,12 @@
         if(JSON.stringify(m)!==JSON.stringify(a)){S.days[k]=m;dirty[k]=true;n++}
       });
       var r=0;if(j.refl&&typeof j.refl==="object"){S.refl=Object.assign({},S.refl);Object.keys(j.refl).forEach(function(k){if(!S.refl[k]&&j.refl[k]){S.refl[k]=j.refl[k];r++}})}
-      var cu=false;if(j.cfg&&j.cfg.quests&&(!S.cfg||(j.cfg.updated||"")>(S.cfg.updated||""))){saveCfg(j.cfg);S.cfg.updated=j.cfg.updated||S.cfg.updated;if(j.cfg.start)setStart(j.cfg.start);elapsed();cu=true;qSig="";renderRules()}
+      var cu=false;if(j.cfg&&j.cfg.quests&&(!S.cfg||(j.cfg.updated||"")>(S.cfg.updated||""))){saveCfg(clone(j.cfg));S.cfg=Object.assign({},S.cfg,{updated:j.cfg.updated||S.cfg.updated});if(j.cfg.start)setStart(j.cfg.start);elapsed();cu=true;qSig="";renderRules()}
       if(!cu&&usedMig&&!(cfg().quests||[]).length){var c4=clone(cfg());c4.quests=clone(MIG);saveCfg(c4);cu=true;qSig=""}
       if(earliest&&typeof setStart==="function"&&earliest<START_KEY){setStart(parse(earliest).toISOString());var c3=clone(cfg());c3.start=START_AT.toISOString();saveCfg(c3);elapsed()}
-      lockReset();cache();render();flush();
-      setSync("Imported "+n+" day"+(n===1?"":"s")+(r?" and "+r+" reflection"+(r===1?"":"s"):"")+(cu?" and your quests/rules":""));
+      lockReset();cache();
+      /* Reload so every screen and cache starts from the imported data (and, signed in, the first sync pushes it). */
+      appRefresh("Imported "+n+" day"+(n===1?"":"s")+(r?" and "+r+" reflection"+(r===1?"":"s"):"")+(cu?" and your quests/rules":""));
     }).catch(function(x){if(x!==0)setSync("Import failed. Try exporting a fresh backup.")}).finally(function(){impFile.value=""});
   });
 

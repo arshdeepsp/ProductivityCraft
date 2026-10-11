@@ -1,6 +1,8 @@
   /* ---- splash: on launch, and on return after SPLASH_AWAY away. A sapling grows while a bar fills; tap skips. ---- */
   var SPLASH_AWAY=30*60000,splHiddenAt=0,splT=[];
-  function splashOff(){try{return localStorage.getItem("pc-splash")==="off"}catch(x){return false}}
+  /* pc-quick (sessionStorage, one use) = a refresh the app asked for: no splash. */
+  var splQuick=false;try{splQuick=!!sessionStorage.getItem("pc-quick");sessionStorage.removeItem("pc-quick")}catch(x){}
+  function splashOff(){if(splQuick){splQuick=false;return true}try{return localStorage.getItem("pc-splash")==="off"}catch(x){return false}}
   function splashStatus(){if(S.timer)return "Focusing on "+S.timer.label;if(S.sprint)return "Sprint in progress";var hl=document.querySelector("#hudLine b"),xt=document.getElementById("xpText"),q=(cfg().quests||[]).length;if(!q)return "";return (hl&&!rewardsOff()?"Streak "+hl.textContent+" · ":"")+(xt?xt.textContent:"")}
   function splashDraw(stage){var cv=document.getElementById("splCv");if(!cv)return;var c=cv.getContext("2d");c.clearRect(0,0,24,36);c.fillStyle="#4A3424";c.fillRect(2,34,20,2);try{drawPlant(c,1,12,33,stage,grng("focus-sapling"),0)}catch(x){}}
   function hideSplash(){var el=document.getElementById("splash");splT.forEach(clearTimeout);splT=[];if(!el||el.hidden)return;el.classList.add("out");splT.push(setTimeout(function(){el.hidden=true;el.classList.remove("out","run")},200))}
