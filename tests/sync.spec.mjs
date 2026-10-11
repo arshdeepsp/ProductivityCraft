@@ -67,7 +67,7 @@ test("later edits push only the changed documents; a removed day is pushed as a 
   await expect.poll(async () => (await docs(page))["users/u1/days/2026-11-03"]).toMatchObject({ del: true });
 });
 
-test("a signed-in device with nothing local pulls everything; remote changes arrive live and the newer stamp wins", async ({ page }) => {
+test("a signed-in device with nothing local pulls everything; remote changes arrive on return to the app and the newer stamp wins", async ({ page }) => {
   await page.addInitScript(fake);
   await page.addInitScript(() => { if (localStorage.getItem("__fc")) return; localStorage.setItem("pc-account", JSON.stringify({ uid: "u1", email: "arsh@example.com" })); window.__cloud.user = { uid: "u1", email: "arsh@example.com" };
     const now = Date.parse("2026-11-02T08:00:00-05:00");
@@ -206,12 +206,12 @@ test("a running timer pushes nothing until it is stopped", async ({ page }) => {
   expect(await page.evaluate(() => window.__cloud.writes)).toBe(1);
 });
 
-test("signing out and back in starts one set of listeners; a session that ends elsewhere signs this device out but keeps its copy", async ({ page }) => {
+test("signing out and back in works without live listeners; a session that ends elsewhere signs this device out but keeps its copy", async ({ page }) => {
   await page.addInitScript(fake);
   await page.addInitScript(() => { if (localStorage.getItem("__fc")) return; localStorage.setItem("pc-account", JSON.stringify({ uid: "u1", email: "arsh@example.com" })); window.__cloud.user = { uid: "u1", email: "arsh@example.com" }; window.__cloud.save(); });
   await openApp(page, { cfg: { quests: [J], repFrozen: true }, extra: gate });
   await expect.poll(async () => (await docs(page))["users/u1/data/cfg"]).toBeTruthy();
-  await expect.poll(() => page.evaluate(() => window.__cloud.listeners.length)).toBe(3);
+  await expect.poll(async () => !!(await docs(page))["users/u1/data/cfg"]).toBe(true);
   await page.goto("http://127.0.0.1:4173/index.html#settings");
   await page.click("[data-st='account']");
   await reloadOn(page, () => page.click("#acOut"));
@@ -220,7 +220,7 @@ test("signing out and back in starts one set of listeners; a session that ends e
   await page.fill("#auEmail", "arsh@example.com");
   await page.fill("#auPw", "secret1");
   await page.click("#auGo");
-  await expect.poll(() => ev(page, () => window.__cloud.listeners.length)).toBe(3);
+  await expect.poll(() => ev(page, () => !!window.__cloud.docs["users/u1/data/cfg"])).toBe(true);
   await expect.poll(() => ev(page, () => localStorage.getItem("pc-cache-u-u1"))).not.toBeNull();
   await page.evaluate(() => { window.__cloud.user = null; window.__cloud.save(); window.__cloud.authCbs.forEach((cb) => cb(null)); });
   await expect.poll(() => ev(page, () => document.querySelector("#auNote") && document.querySelector("#auNote").textContent)).toContain("You were signed out.");
@@ -292,11 +292,27 @@ test("look and feel lives in the account: a toggle here is pushed, and one from 
   await page.addInitScript(fake);
   await page.addInitScript(() => { if (localStorage.getItem("__fc")) return; localStorage.setItem("pc-account", JSON.stringify({ uid: "u1", email: "arsh@example.com" })); window.__cloud.user = { uid: "u1", email: "arsh@example.com" }; window.__cloud.save(); });
   await openApp(page, { cfg: { quests: [J], repFrozen: true } });
-  await expect.poll(() => page.evaluate(() => window.__cloud.listeners.length)).toBe(3);
+  await expect.poll(async () => !!(await docs(page))["users/u1/data/cfg"]).toBe(true);
   await page.evaluate(() => document.getElementById("sndBtn").click());
   await expect.poll(async () => ((await docs(page))["users/u1/data/cfg"].ui || {}).sfx).toBe(false);
   await page.evaluate(() => window.__cloud.remote("users/u1/data/cfg", Object.assign({}, window.__cloud.docs["users/u1/data/cfg"], { theme: "ocean", ui: { sfx: true, focus: true }, u: Date.now() + 60000 })));
   await expect(page.locator("#sndBtn")).toHaveText("SFX on");
   await expect(page.locator("body")).toHaveClass(/focusview/);
   await expect(page.locator("#fx")).toHaveClass(/ocean/);
+});
+
+test("a burst of +/- taps is one write a few seconds later, and nothing from the cloud lands in between", async ({ page }) => {
+  await page.addInitScript(fake);
+  await page.addInitScript(() => { if (localStorage.getItem("__fc")) return; localStorage.setItem("pc-account", JSON.stringify({ uid: "u1", email: "arsh@example.com" })); window.__cloud.user = { uid: "u1", email: "arsh@example.com" }; window.__cloud.save(); });
+  await openApp(page, { cfg: { quests: [CS], repFrozen: true } });
+  await expect.poll(async () => !!(await docs(page))["users/u1/data/cfg"]).toBe(true);
+  await page.evaluate(() => { window.__cloud.writes = 0; });
+  const plus = page.locator("#quests .q .act button[aria-label^='More']").last();
+  for (let i = 0; i < 5; i++) await plus.click();
+  await page.waitForTimeout(800);
+  expect(await page.evaluate(() => window.__cloud.writes)).toBe(0);
+  await expect.poll(async () => ((await docs(page))["users/u1/days/2026-11-02"] || {}).cs, { timeout: 8000 }).toBe(50);
+  expect(await page.evaluate(() => window.__cloud.writes)).toBe(1);
+  expect(await page.evaluate(() => window.__cloud.listeners.length)).toBe(0);
+  await expect(page.locator("#quests .q output.tapnum").last()).toHaveText("50m");
 });

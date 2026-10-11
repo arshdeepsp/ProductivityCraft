@@ -4,7 +4,7 @@
    Tests replace window.PCFB with an in-memory fake, so keep this surface tiny and plain (paths and plain objects). */
 import { initializeApp } from "firebase/app";
 import { initializeAuth, getAuth, indexedDBLocalPersistence, browserLocalPersistence, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, sendEmailVerification, reload, EmailAuthProvider, reauthenticateWithCredential, updatePassword, deleteUser } from "firebase/auth";
-import { initializeFirestore, getFirestore, persistentLocalCache, persistentSingleTabManager, doc, collection, getDoc, getDocs, setDoc, writeBatch, onSnapshot, terminate, clearIndexedDbPersistence } from "firebase/firestore";
+import { initializeFirestore, getFirestore, persistentLocalCache, persistentSingleTabManager, doc, collection, getDoc, getDocs, setDoc, writeBatch, onSnapshot, query, where, terminate, clearIndexedDbPersistence } from "firebase/firestore";
 
 let app = null, auth = null, db = null;
 
@@ -45,6 +45,8 @@ const PCFB = {
   db: {
     get(path) { return getDoc(ref(path)).then(snap); },
     list(path) { return getDocs(col(path)).then((q) => q.docs.map(snap)); },
+    /* Documents in a collection stamped after `since` (u > since): what changed elsewhere since the last pull. */
+    listSince(path, since) { return getDocs(query(col(path), where("u", ">", since))).then((q) => q.docs.map(snap)); },
     set(path, data) { return setDoc(ref(path), data); },
     batch(ops) {
       const chunks = []; for (let i = 0; i < ops.length; i += 450) chunks.push(ops.slice(i, i + 450));
