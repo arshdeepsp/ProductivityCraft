@@ -1,5 +1,7 @@
 /* ===== Phone rows, slimmed (usability pass): no drag grip (hold the row to reorder), subjects box inline after the
    label, ~52px rows, and a play button on every time row so starting a timer is one tap. ===== */
+/* The play button is a phone control; on wider screens the row already has its own timer button. */
+#quests .q .qplay{display:none}
 @media (max-width:720px){
   #quests .q{grid-template-columns:12px 28px minmax(0,1fr) auto auto!important;padding:6px 8px!important;gap:2px 8px!important;min-height:52px;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
   #quests .q .qgrip{display:none!important}

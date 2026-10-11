@@ -133,3 +133,13 @@ test.describe("today trims (phone)", () => {
     await expect(page.locator(".srow", { hasText: "Your data" })).toContainText("Stays on this device");
   });
 });
+
+test("the phone play button doesn't show on a wide screen", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await openApp(page, { cfg: { quests: [{ id: "cs", type: "time", label: "CS", min: 45 }] } });
+  await expect(page.locator("#quests .q .tmr").first()).toBeVisible();
+  await expect(page.locator("#quests .q .qplay")).toBeHidden();
+  await page.click("#quests .q .tmr");
+  await expect(page.locator("#quests .q.running")).toHaveCount(1);
+  await expect(page.locator("#quests .q .qplay")).toBeHidden();
+});
