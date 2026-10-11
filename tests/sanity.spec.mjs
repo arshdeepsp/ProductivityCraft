@@ -30,3 +30,15 @@ test("an armed Stop disarms on its own after a few seconds", async ({ page }) =>
   await expect(page.locator("#spStop")).toHaveText("Stop sprint");
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("pc-cache-v1")).sprint.phase)).toBe("focus");
 });
+
+test("the to-do review waits while the schedule is open and shows once it closes", async ({ page }) => {
+  const Q = [{ id: "a", type: "todo", label: "Email advisor", addedOn: "2026-11-01" }, { id: "cs", type: "time", label: "CS", min: 30 }];
+  await openApp(page, { cfg: { quests: Q }, extra: { "pc-todoreview": "2026-11-02" } });
+  await page.click("#schBtn");
+  await page.evaluate(() => { localStorage.removeItem("pc-todoreview"); document.dispatchEvent(new Event("visibilitychange")); });
+  await page.clock.runFor(1500);
+  await expect(page.locator("#gModal")).toBeHidden();
+  await page.click("#schOk");
+  await page.clock.runFor(1500);
+  await expect(page.locator("#gTitle")).toHaveText("Still need these to-dos?");
+});

@@ -13,7 +13,9 @@
       function finish(){var ids=Object.keys(drop).filter(function(k){return drop[k]});if(ids.length){var c=clone(cfg());c.quests=c.quests.filter(function(q){return ids.indexOf(q.id)<0});saveCfg(c);var T=todayKey();if(S.days[T]){S.days[T]=Object.assign({},S.days[T],{q:activeDefs(T)});dirty[T]=true;cache()}qSig="";render()}
         try{localStorage.setItem("pc-todoreview",todayKey())}catch(x){}closeG();if(ids.length)setSync(ids.length+" to-do"+(ids.length===1?"":"s")+" deleted")}
       draw()},function(){todoReviewOpen=false})}
-  function reviewDue(){var T=todayKey(),last="";try{last=localStorage.getItem("pc-todoreview")||""}catch(x){}if(last>=T||locked()||S.timer||(typeof groveOpen!=="undefined"&&groveOpen))return false;
+  /* A full-screen page is up (schedule, help, account page, quest editor, grove): pop-ups wait until it closes. */
+  function fullPageOpen(){var b=document.body.classList;return b.contains("sch-open")||b.contains("hp-open")||b.contains("au-open")||b.contains("mgr-on")||b.contains("grove-on")}
+  function reviewDue(){var T=todayKey(),last="";try{last=localStorage.getItem("pc-todoreview")||""}catch(x){}if(last>=T||locked()||S.timer||fullPageOpen()||(typeof groveOpen!=="undefined"&&groveOpen))return false;
     if(!openTodos().some(function(q){return (q.addedOn||"")<T}))return false;
     return document.getElementById("gModal").hidden&&document.getElementById("nqModal").hidden}
   function maybeReviewTodos(){if(reviewDue())setTimeout(function(){if(reviewDue())reviewTodos("open")},600)}

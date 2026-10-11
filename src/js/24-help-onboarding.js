@@ -30,7 +30,7 @@
     var sc=hpPg.querySelector("#hpScroll");sc.scrollTop=0;
     if(topic){var it=hpPg.querySelector('[data-hp="'+topic+'"]');if(it){setTimeout(function(){sc.scrollTop=Math.max(0,it.offsetTop-sc.offsetTop-12);it.classList.add("flash");setTimeout(function(){it.classList.remove("flash")},1300)},0)}}
     var d=hpPg.querySelector("#hlpClose");if(d)d.focus()}
-  function closeHelp(){if(!hpPg)return;hpPg.hidden=true;document.body.classList.remove("hp-open")}
+  function closeHelp(){if(!hpPg)return;hpPg.hidden=true;document.body.classList.remove("hp-open");maybeReviewTodos()}
   document.getElementById("helpBtn").addEventListener("click",function(){openHelp()});
   function openWelcome(){
     var pick=null,style=null;
