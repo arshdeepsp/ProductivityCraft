@@ -316,3 +316,24 @@ test("a burst of +/- taps is one write a few seconds later, and nothing from the
   expect(await page.evaluate(() => window.__cloud.listeners.length)).toBe(0);
   await expect(page.locator("#quests .q output.tapnum").last()).toHaveText("50m");
 });
+
+test("launch reads only what changed since the last pull, and an edit that never reached the cloud goes up on the next launch", async ({ page }) => {
+  await page.addInitScript(fake);
+  await page.addInitScript(() => { if (localStorage.getItem("__fc")) return; localStorage.setItem("pc-account", JSON.stringify({ uid: "u1", email: "arsh@example.com" })); window.__cloud.user = { uid: "u1", email: "arsh@example.com" };
+    const u = Date.parse("2026-11-01T08:00:00-05:00");
+    window.__cloud.docs["users/u1/data/cfg"] = { quests: [{ id: "cs", type: "time", label: "Coursework", min: 60 }], rules: [], idleGrove: 0, start: "2026-09-01T04:00:00.000Z", repFrozen: true, u };
+    window.__cloud.docs["users/u1/data/refl"] = { map: {}, u };
+    for (let i = 1; i <= 30; i++) { const k = "2026-10-" + String(i).padStart(2, "0"); window.__cloud.docs["users/u1/days/" + k] = { cs: 30, q: [{ id: "cs", type: "time", label: "Coursework", min: 60 }], ck: [], u: u - (31 - i) * 3600000 }; }
+    window.__cloud.save(); });
+  await openApp(page, { cfg: { quests: [] } });
+  await expect(page.locator("#quests .q .lbl")).toHaveText(["Coursework"]);
+  await expect.poll(async () => (await store(page)).meta.pulled).toBe(Date.parse("2026-11-01T08:00:00-05:00"));
+  expect(await page.evaluate(() => window.__cloud.reads)).toBeGreaterThan(30);
+  await page.evaluate(() => { const t = Date.now(); window.__cloud.docs["users/u1/data/refl"] = { map: { "2026-10-30": { text: "from the phone" } }, u: t }; window.__cloud.docs["users/u1/days/2026-10-29"] = { cs: 45, u: t }; window.__cloud.save(); window.__cloud.fail = true; });
+  await page.locator("#quests .q .act button[aria-label^='More']").last().click();
+  await page.reload();
+  await expect.poll(async () => (await store(page)).refl["2026-10-30"]?.text).toBe("from the phone");
+  expect((await store(page)).days["2026-10-29"].cs).toBe(45);
+  expect(await page.evaluate(() => window.__cloud.reads)).toBeLessThan(10);
+  await expect.poll(async () => ((await docs(page))["users/u1/days/2026-11-02"] || {}).cs).toBe(10);
+});

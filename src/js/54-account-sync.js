@@ -27,24 +27,33 @@
     function tombOf(id){return +((S.meta&&S.meta.del&&S.meta.del[id])||0)}
     /* Push one doc (or its tombstone) with its stamp; stamp an unstamped local doc now. */
     function op(id){var d=tombOf(id),l=localDoc(id);if(!l&&d)return{path:docPath(id),data:{del:true,u:d}};if(!l)return null;var u=stampOf(id);if(!u){u=Date.now();S.meta.u[id]=u}var data=strip(l);data.u=u;delete data.del;return{path:docPath(id),data:data}}
-    function flushQueue(){if(pushing||!user||!fb)return;var ids=Object.keys(queue);if(!ids.length)return;queue={};pushing=true;var ops=ids.map(op).filter(Boolean);state.pending=ids.length;setStatus("syncing");
-      fb.db.batch(ops).then(function(){pushing=false;state.last=Date.now();state.pending=0;setStatus("on");flushQueue()},function(e){pushing=false;ids.forEach(function(i){queue[i]=true});setStatus("error",String(e&&e.message||e))})}
+    function flushQueue(){if(pushing||!user||!fb)return;var ids=Object.keys(queue);if(!ids.length)return;var t0=Date.now();queue={};pushing=true;var ops=ids.map(op).filter(Boolean);state.pending=ids.length;setStatus("syncing");
+      fb.db.batch(ops).then(function(){pushing=false;state.last=Date.now();state.pending=0;setStatus("on");flushQueue();if(!Object.keys(queue).length&&!pushing){meta().synced=t0;try{localAdapter.save(S)}catch(x){}}},function(e){pushing=false;ids.forEach(function(i){queue[i]=true});setStatus("error",String(e&&e.message||e))})}
     var cloudAdapter={name:"cloud",load:function(){return localAdapter.load()},save:function(state0,changed){localAdapter.save(state0);changed.forEach(function(id){if(id==="session")return;queue[id.charAt(0)==="-"?id.slice(1):id]=true});schedulePush()}};
     /* No real-time traffic: changes are pushed PUSH_DELAY after the last edit (a burst of +/- taps is one write), and
        straight away when the app goes to the background. Other devices' changes are pulled on launch, on return to the
        app (only documents stamped since the last pull) and on Sync now / pull to refresh; there are no live listeners,
        so nothing from the cloud lands while you're tapping. */
-    var PUSH_DELAY=3000,pushT=0,lastU=0,pulling=false;
+    var PUSH_DELAY=3000,pushT=0,pulling=false;
+    /* Cheap pulls: S.meta.pulled (saved with this account's copy on the device, so it goes when the copy goes) = the newest
+       remote stamp seen. With it, launch and return read only documents stamped after it (less PULL_SLACK, for clocks a
+       little apart): a handful of reads instead of every day ever logged. Without it (first use of the account on this
+       device) the full merge runs. S.meta.synced = when everything here last reached the cloud; local docs stamped after
+       it are pushed on the next pull, so edits made just before the app closed still go up. Sync now is always the full merge. */
+    var PULL_SLACK=300000;
+    function meta(){S.meta=S.meta||{u:{}};return S.meta}
     /* Before signing out or clearing: push what's waiting now rather than in PUSH_DELAY, and wait (up to 6 s) for it. */
     var settled=false;
     function settle(){clearTimeout(pushT);flushQueue();return new Promise(function(res){var t0=Date.now();(function w(){if(!pushing||Date.now()-t0>6000)res();else setTimeout(w,100)})()})}
     function schedulePush(){clearTimeout(pushT);pushT=setTimeout(flushQueue,PUSH_DELAY)}
-    function seen(data){var u=+((data&&data.u)||0);if(u>lastU)lastU=u}
-    function pull(){if(!user||!fb||pulling)return Promise.resolve();if(!lastU)return merge();pulling=true;var since=lastU;
-      return Promise.resolve().then(function(){return Promise.all([fb.db.get(docPath("cfg")),fb.db.get(docPath("refl")),fb.db.listSince(base()+"/days",since)])}).then(function(r){pulling=false;var ch=false;
-        [["cfg",r[0]],["refl",r[1]]].forEach(function(x){if(x[1].data){seen(x[1].data);if(takeRemote(x[0],x[1].data))ch=true}});
-        r[2].forEach(function(s){seen(s.data);if(takeRemote("days/"+s.id,s.data))ch=true});
-        if(ch){cache();qSig="";render()}flushQueue()},function(e){pulling=false;setStatus("error",String(e&&e.message||e))})}
+    function seen(data){var u=+((data&&data.u)||0),m=meta();if(u>(m.pulled||0))m.pulled=u}
+    function inSync(t0){if(!Object.keys(queue).length&&!pushing){meta().synced=t0;setStatus("on")}}
+    function pull(){if(!user||!fb)return Promise.resolve();if(pulling)return pulling;if(!meta().pulled)return merge();var since=meta().pulled-PULL_SLACK,t0=Date.now();
+      pulling=Promise.resolve().then(function(){return Promise.all([fb.db.listSince(base()+"/data",since),fb.db.listSince(base()+"/days",since)])}).then(function(r){pulling=false;var ch=false,got={},m=meta(),syn=m.synced||0;
+        r[0].concat(r[1].map(function(x){return{id:"days/"+x.id,data:x.data}})).forEach(function(x){got[x.id]=1;seen(x.data);if(takeRemote(x.id,x.data))ch=true});
+        Object.keys(m.u||{}).forEach(function(id){if(!got[id]&&m.u[id]>syn&&localDoc(id))queue[id]=true});
+        Object.keys(m.del||{}).forEach(function(id){if(!got[id]&&m.del[id]>syn)queue[id]=true});
+        if(ch){qSig="";render()}flushQueue();inSync(t0);cache()},function(e){pulling=false;setStatus("error",String(e&&e.message||e))});return pulling}
     document.addEventListener("visibilitychange",function(){if(!user)return;if(document.visibilityState==="hidden"){clearTimeout(pushT);flushQueue()}else pull()});
     /* A local doc with nothing in it (the default cfg a fresh install makes, a day with only an auto snapshot, no reflections) never beats a remote doc, whatever its stamp: startup housekeeping stamps docs too, and that must not overwrite real data from another device. */
     function emptyLocal(id){var l=localDoc(id);if(!l)return true;if(id==="cfg")return !(l.quests||[]).length&&!(l.subjects||[]).length&&!(l.rules||[]).length;if(id==="refl")return !Object.keys(l.map||{}).length;return Object.keys(l).every(function(f){return f==="q"||f==="ck"||f==="schSkip"})}
@@ -56,16 +65,16 @@
       if(ru>lu){var d=strip(data);delete d.u;delete d.del;store.adopt(id,id==="refl"?(d.map||{}):d,ru);return true}
       if(lu>ru){queue[id]=true}return false}
     /* First merge after sign-in: everything remote vs everything local, then push what's newer here. */
-    function merge(){setStatus("syncing");return Promise.all([fb.db.get(docPath("cfg")),fb.db.get(docPath("refl")),fb.db.list(base()+"/days")]).then(function(r){var got={cfg:1,refl:1},ch=false;
+    function merge(){var t0=Date.now();setStatus("syncing");return Promise.all([fb.db.get(docPath("cfg")),fb.db.get(docPath("refl")),fb.db.list(base()+"/days")]).then(function(r){var got={cfg:1,refl:1},ch=false;
       seen(r[0].data);seen(r[1].data);r[2].forEach(function(s){seen(s.data)});
       if(takeRemote("cfg",r[0].data))ch=true;else if(S.cfg&&!r[0].data)queue.cfg=true;
       if(takeRemote("refl",r[1].data))ch=true;else if(!r[1].data&&Object.keys(S.refl||{}).length)queue.refl=true;
       r[2].forEach(function(s){var id="days/"+s.id;got[id]=1;if(takeRemote(id,s.data))ch=true});
       Object.keys(S.days).forEach(function(k){var id="days/"+k;if(!got[id])queue[id]=true});
       Object.keys((S.meta&&S.meta.del)||{}).forEach(function(id){if(!got[id])queue[id]=true});
-      if(ch){cache();qSig="";render()}flushQueue();if(!Object.keys(queue).length&&!pushing)setStatus("on")})}
+      if(ch){qSig="";render()}flushQueue();inSync(t0);cache()})}
     /* start() is reached twice on a sign-in when boot's auth listener is live (the SDK notifies it before the sign-in promise resolves): the same uid reuses the first run. */
-    function start(u){if(user&&user.uid===u.uid&&startP)return startP;user=u;setAcct({uid:u.uid,email:u.email});store.use(cloudAdapter);setStatus("syncing");startP=Promise.resolve().then(merge).then(function(){if(typeof welcomeCheck==="function")welcomeCheck(0)},function(e){setStatus("error",String(e&&e.message||e))});return startP}
+    function start(u){if(user&&user.uid===u.uid&&startP)return startP;user=u;setAcct({uid:u.uid,email:u.email});store.use(cloudAdapter);setStatus("syncing");startP=Promise.resolve().then(pull).then(function(){if(typeof welcomeCheck==="function")welcomeCheck(0)},function(e){setStatus("error",String(e&&e.message||e))});return startP}
     function stop(){unsub.forEach(function(f){try{f()}catch(x){}});unsub=[];user=null;startP=null;queue={};store.use(localAdapter);setStatus("off")}
     /* Changes not yet in the cloud: queued or in flight, or sync not up to date. */
     /* leaving: this device is deleting the account; the SDK's own "signed out" callback must not reload first. */
