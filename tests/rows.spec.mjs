@@ -111,6 +111,19 @@ test.describe("today trims (phone)", () => {
     await expect(page.locator("#carryNote")).toHaveClass(/hot/);
   });
 
+  test("a row opened from its summary box stays open when the list is rebuilt", async ({ page }) => {
+    await openApp(page, { cfg: { quests: [CS, J] } });
+    const row = page.locator("#quests .q", { hasText: CS.label });
+    await row.locator(".qsum").tap();
+    await expect(row).toHaveClass(/open/);
+    await page.locator("#tdGhost input").fill("Email supervisor");
+    await page.locator("#tdGhost input").press("Enter");
+    await expect(page.locator("#quests .q.t-todo .lbl")).toHaveText(["Email supervisor"]);
+    await expect(page.locator("#quests .q", { hasText: CS.label })).toHaveClass(/open/);
+    await page.locator("#quests .q", { hasText: CS.label }).locator(".qsum").tap();
+    await expect(page.locator("#quests .q", { hasText: CS.label })).not.toHaveClass(/open/);
+  });
+
   test("the quick to-do box is the first thing in the list and adds a to-do", async ({ page }) => {
     await openApp(page, { cfg: { quests: [CS, J] } });
     const gh = page.locator("#tdGhost");
