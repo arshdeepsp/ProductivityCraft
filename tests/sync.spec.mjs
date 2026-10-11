@@ -287,3 +287,16 @@ test("a device that was signed in before data was linked to accounts hands its d
   expect(slots).toEqual([true, "1"]);
   await expect.poll(async () => (((await docs(page))["users/u1/data/cfg"] || {}).quests || []).map((q) => q.label)).toEqual(["My quest"]);
 });
+
+test("look and feel lives in the account: a toggle here is pushed, and one from another device applies at once", async ({ page }) => {
+  await page.addInitScript(fake);
+  await page.addInitScript(() => { if (localStorage.getItem("__fc")) return; localStorage.setItem("pc-account", JSON.stringify({ uid: "u1", email: "arsh@example.com" })); window.__cloud.user = { uid: "u1", email: "arsh@example.com" }; window.__cloud.save(); });
+  await openApp(page, { cfg: { quests: [J], repFrozen: true } });
+  await expect.poll(() => page.evaluate(() => window.__cloud.listeners.length)).toBe(3);
+  await page.evaluate(() => document.getElementById("sndBtn").click());
+  await expect.poll(async () => ((await docs(page))["users/u1/data/cfg"].ui || {}).sfx).toBe(false);
+  await page.evaluate(() => window.__cloud.remote("users/u1/data/cfg", Object.assign({}, window.__cloud.docs["users/u1/data/cfg"], { theme: "ocean", ui: { sfx: true, focus: true }, u: Date.now() + 60000 })));
+  await expect(page.locator("#sndBtn")).toHaveText("SFX on");
+  await expect(page.locator("body")).toHaveClass(/focusview/);
+  await expect(page.locator("#fx")).toHaveClass(/ocean/);
+});

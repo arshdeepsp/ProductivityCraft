@@ -1,5 +1,5 @@
   /* ---- 8-bit sound ---- */
-  var AC=null,sfxOn=true;try{sfxOn=localStorage.getItem("pc-sfx")!=="off"}catch(e){}
+  var AC=null,sfxOn=uiGet("sfx",true)!==false;
   function tone(f,t0,dur,type,vol){var o=AC.createOscillator(),g=AC.createGain();o.type=type||"square";o.frequency.setValueAtTime(f,AC.currentTime+t0);g.gain.setValueAtTime(vol||.06,AC.currentTime+t0);g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+t0+dur);o.connect(g);g.connect(AC.destination);o.start(AC.currentTime+t0);o.stop(AC.currentTime+t0+dur+.02)}
   function sfx(kind){try{if(kind==="base")haptic("medium",true);else if(kind==="clear"||kind==="level"||kind==="chime")haptic("success",true);else if(kind==="stop")haptic("heavy",true);else if(kind==="fail")haptic("error",true)}catch(x){}
     if(!sfxOn)return;try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==="suspended")AC.resume()}catch(e){return}

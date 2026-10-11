@@ -90,6 +90,10 @@
       syncNow:function(){if(!user)return;Object.keys(S.days).forEach(function(k){if(!stampOf("days/"+k))queue["days/"+k]=true});flushQueue();return Promise.resolve().then(merge).then(function(){if(user&&!unsub.length)listen()},function(e){setStatus("error",String(e&&e.message||e))})}
     }})();
   /* store.adopt(id, obj, u): take a remote document as-is (null = removed) without flagging it as a local change. */
-  store.adopt=function(id,obj,u){if(id==="cfg"){S.cfg=obj}else if(id==="refl"){S.refl=obj||{}}else if(id.indexOf("days/")===0){var k=id.slice(5);if(obj)S.days[k]=obj;else delete S.days[k]}S.meta=S.meta||{u:{}};S.meta.u=S.meta.u||{};if(obj){S.meta.u[id]=u;if(S.meta.del)delete S.meta.del[id]}else{delete S.meta.u[id];(S.meta.del=S.meta.del||{})[id]=u}store.markClean(id,obj);lockReset();qSig=""};
+  /* A settings document from another device: apply its look-and-feel now (theme, reduce animations, sound, Minimal view
+     unless a timer forces it, the stats/HUD panels, the list groups, grove info); the caller re-renders. */
+  function applyLook(){sfxOn=uiGet("sfx",true)!==false;statsOpen=!!uiGet("stats");hudOpen=!!uiGet("hud");doneOpen=!!uiGet("done");offOpen=!!uiGet("off");ignOpen=!!uiGet("ign");if(!S.timer)focusView=!!uiGet("focus");
+    [sndLabel,hudSync,applyTheme,calmSync,groveInfoSync,applyHide].forEach(function(f){try{f()}catch(x){}});qSig=""}
+  store.adopt=function(id,obj,u){if(id==="cfg"){S.cfg=obj;applyLook()}else if(id==="refl"){S.refl=obj||{}}else if(id.indexOf("days/")===0){var k=id.slice(5);if(obj)S.days[k]=obj;else delete S.days[k]}S.meta=S.meta||{u:{}};S.meta.u=S.meta.u||{};if(obj){S.meta.u[id]=u;if(S.meta.del)delete S.meta.del[id]}else{delete S.meta.u[id];(S.meta.del=S.meta.del||{})[id]=u}store.markClean(id,obj);lockReset();qSig=""};
   cloud.on(function(){if(typeof setTab!=="undefined"&&setTab==="account"&&typeof renderSettings==="function"&&document.querySelector("[data-view='settings']:not([hidden])"))renderSettings()});
   cloud.boot();

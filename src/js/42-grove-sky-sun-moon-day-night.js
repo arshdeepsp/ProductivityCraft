@@ -47,7 +47,8 @@
   function closeGrove(){if(!groveOpen)return;groveOpen=false;clearTimeout(groveRAF);groveEl.hidden=true;document.body.classList.remove("grove-on");idleReset()}
   document.getElementById("groveBtn").addEventListener("click",function(){openGrove(false)});
   document.getElementById("groveBack").addEventListener("click",closeGrove);
-  (function(){var tg=document.getElementById("groveInfoTg"),on=true;try{on=localStorage.getItem("pc-groveinfo")!=="0"}catch(x){}function upd(){groveEl.classList.toggle("info-off",!on);tg.textContent=on?"Hide info":"Show info";tg.setAttribute("aria-expanded",on)}upd();tg.addEventListener("click",function(e){e.stopPropagation();on=!on;try{localStorage.setItem("pc-groveinfo",on?"1":"0")}catch(x){}upd()})})();
+  function groveInfoSync(){var tg=document.getElementById("groveInfoTg"),on=uiGet("groveInfo",true)!==false;groveEl.classList.toggle("info-off",!on);tg.textContent=on?"Hide info":"Show info";tg.setAttribute("aria-expanded",on)}
+  groveInfoSync();document.getElementById("groveInfoTg").addEventListener("click",function(e){e.stopPropagation();uiSet("groveInfo",!(uiGet("groveInfo",true)!==false));groveInfoSync()});
   groveEl.addEventListener("click",function(e){if(groveIdleMode&&e.target!==document.getElementById("groveBack")&&e.target!==document.getElementById("groveInfoTg"))closeGrove()});
   document.addEventListener("keydown",function(e){if(groveOpen&&(e.key==="Escape"||groveIdleMode))closeGrove()});
   window.addEventListener("resize",function(){if(groveOpen)buildGrove()});

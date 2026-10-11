@@ -24,8 +24,8 @@
     function go_(){var n=b.querySelector("#sjRen").value.trim().slice(0,40);if(!n){b.querySelector("#sjRenMsg").textContent="Give the subject a name.";return}if(subjList().some(function(s){return s.id!==sid&&s.name.toLowerCase()===n.toLowerCase()})){b.querySelector("#sjRenMsg").textContent="You already have that subject.";return}saveSubj(function(L){var s=L.filter(function(z){return z.id===sid})[0];if(s)s.name=n});closeG();qSig="";render();setSync("Renamed to "+n)}
     b.querySelector("#sjRenGo").addEventListener("click",go_);b.querySelector("#sjRen").addEventListener("keydown",function(e){if(e.key==="Enter")go_()})})}
   var openTopic=null;
-  function sjFolded(){try{return JSON.parse(localStorage.getItem("pc-sjfold")||"[]")}catch(x){return []}}
-  function sjFold(sid){var L=sjFolded(),i=L.indexOf(sid);if(i>=0)L.splice(i,1);else L.push(sid);try{localStorage.setItem("pc-sjfold",JSON.stringify(L))}catch(x){}var el=document.querySelector('.sjsec[data-sid="'+sid+'"]');if(el){el.classList.toggle("fold",i<0);el.querySelector(".sjsec-tg").setAttribute("aria-expanded",i>=0)}}
+  function sjFolded(){var L=uiGet("sjfold",[]);return Array.isArray(L)?L.slice():[]}
+  function sjFold(sid){var L=sjFolded(),i=L.indexOf(sid);if(i>=0)L.splice(i,1);else L.push(sid);uiSet("sjfold",L);var el=document.querySelector('.sjsec[data-sid="'+sid+'"]');if(el){el.classList.toggle("fold",i<0);el.querySelector(".sjsec-tg").setAttribute("aria-expanded",i>=0)}}
   function renderSubjects(){
     var el=document.getElementById("subjBody");if(!el)return;var L=subjList(),T=todayKey();
     if(!L.length){el.innerHTML='<div class="subj-empty"><p class="help">Track the subjects you\u2019re learning and how confident you feel in each topic. Ratings are your own perception, and you can update them any time.</p><button type="button" class="stone save" id="sjFirst">+ Add a subject</button></div>';el.querySelector("#sjFirst").addEventListener("click",openSubjAdd);return}

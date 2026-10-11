@@ -10,7 +10,7 @@
   var RANKS=[[0,"Apprentice","sprout"],[7,"Journeyman","sprout"],[21,"Session Player","flame"],[42,"Bandleader","metronome"],[90,"Virtuoso","dumbbell"],[180,"Master","trophy"],[365,"Maestro","star"]];
   var S={days:{},refl:{},cfg:null},dl=null,dlChecked=false,view="today",dirty={},timer=null;
   /* Data schema. Bump SCHEMA and add a step to migrate() whenever the stored shape changes. */
-  var SCHEMA=16,RERATE_MIN=60,MID_FRAC=1/3;
+  var SCHEMA=17,RERATE_MIN=60,MID_FRAC=1/3;
   function migrate(c){c=c||{};var v=c.schema||2;
     if(v<3){if(c.cfg){delete c.cfg.bank;delete c.cfg.commitCheck}v=3}
     if(v<4){Object.keys(c.days||{}).forEach(function(k){var d=c.days[k],s=d&&d.sched;if(s&&!Array.isArray(s)&&typeof s==="object")d.sched=Object.keys(s).sort().map(function(id){return Object.assign({id:"b-"+id,q:id},s[id])})});v=4}
@@ -28,7 +28,15 @@
     if(v<15)v=15;
     /* 16: Strict mode, per-quest change locks and the queued changes they scheduled, the easing budget log, the cap lock date and the commitment-break counter are gone. */
     if(v<16){if(c.cfg){delete c.cfg.strict;delete c.cfg.easeLog;delete c.cfg.capSet;(c.cfg.quests||[]).forEach(function(q){delete q.lock;delete q.lockFrom;delete q.pending})}Object.keys(c.days||{}).forEach(function(k){var x=c.days[k];if(x&&x.brk!=null)delete x.brk});v=16}
+    /* 17: look-and-feel choices that lived in this device's localStorage move into cfg.ui, so they sync with the account. */
+    if(v<17){if(c.cfg){var ui=Object.assign({},c.cfg.ui||{});try{var g=function(k){return localStorage.getItem(k)};if(g("pc-sfx")==="off")ui.sfx=false;if(g("pc-focusview")==="1")ui.focus=true;if(g("pc-stats")==="1")ui.stats=true;if(g("pc-hudopen")==="1")ui.hud=true;
+        if(g("pc-doneopen")==="1")ui.done=true;if(g("pc-offopen")==="1")ui.off=true;if(g("pc-ignopen")==="1")ui.ign=true;if(g("pc-groveinfo")==="0")ui.groveInfo=false;var sf=JSON.parse(g("pc-sjfold")||"[]");if(Array.isArray(sf)&&sf.length)ui.sjfold=sf}catch(x){}
+      if(Object.keys(ui).length)c.cfg.ui=ui}v=17}
     c.schema=v;return c}
+  /* Look-and-feel choices (cfg.ui, synced with the account): sound on/off (sfx), Minimal view (focus), stats panel (stats),
+     HUD details (hud), Done/Off today/Ignored groups (done/off/ign), folded subjects (sjfold), grove info (groveInfo). */
+  function uiGet(k,def){var u=(S.cfg&&S.cfg.ui)||{};return k in u?u[k]:def}
+  function uiSet(k,v){if(!S.cfg)return;var c=clone(S.cfg);c.ui=Object.assign({},c.ui||{});c.ui[k]=v;saveCfg(c)}
   /* If saved data can't be read, or comes from a newer app version, a copy goes to pc-cache-rescue and nothing is saved
      over it (cacheBlock) until a backup is imported. */
   var cacheBlock="";

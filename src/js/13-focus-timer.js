@@ -10,7 +10,7 @@
   }
   /* stopTimer(end): end defaults to now; timerCap passes the moment the daily limit was reached so nothing past it is logged. */
   function stopTimer(end){
-    rollTimer();var t=S.timer;if(!t)return;S.timer=null;cache();notifSync();setTimeout(function(){focusSync(true)},0);if(t.autoFocus){focusView=false;try{localStorage.setItem("pc-focusview","0")}catch(x){}applyHide()}var at=end||Date.now(),cap=!!end,m=Math.round((at-t.start)/60000),T0=todayKey(),T=t.day&&t.day<T0?t.day:T0;
+    rollTimer();var t=S.timer;if(!t)return;S.timer=null;cache();notifSync();setTimeout(function(){focusSync(true)},0);if(t.autoFocus){focusView=!!uiGet("focus");applyHide()}var at=end||Date.now(),cap=!!end,m=Math.round((at-t.start)/60000),T0=todayKey(),T=t.day&&t.day<T0?t.day:T0;
     if(m<1){setSync(cap?"Daily limit reached for "+t.label+". Timer stopped.":"Timer stopped (under a minute).");timerTick();return}
     if(logTimer(t,T,at)){render(true);setSync(cap?"Daily limit reached: "+hm(m)+" added to "+t.label+". Timer stopped.":"+"+hm(m)+" added to "+t.label+(T<T0?" (for "+fmtD(T)+")":""));return}
     setSync("Timer stopped: "+hm(m)+" could not be added (day locked or quest not active).");render();

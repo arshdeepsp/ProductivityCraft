@@ -1,7 +1,8 @@
   /* ---- render ---- */
-  var statsOpen=false;try{statsOpen=localStorage.getItem("pc-stats")==="1"}catch(x){}document.getElementById("statsToggle").addEventListener("click",function(){statsOpen=!statsOpen;try{localStorage.setItem("pc-stats",statsOpen?"1":"0")}catch(x){}render()});
-  var hudOpen=false;try{hudOpen=localStorage.getItem("pc-hudopen")==="1"}catch(x){}
-  (function(){var hd=document.querySelector(".hud"),hl=document.getElementById("hudLine");function upd(){hd.classList.toggle("hud-open",hudOpen);hl.setAttribute("aria-expanded",hudOpen)}upd();hl.addEventListener("click",function(){hudOpen=!hudOpen;try{localStorage.setItem("pc-hudopen",hudOpen?"1":"0")}catch(x){}upd()})})();
+  var statsOpen=!!uiGet("stats");document.getElementById("statsToggle").addEventListener("click",function(){statsOpen=!statsOpen;uiSet("stats",statsOpen);render()});
+  var hudOpen=!!uiGet("hud");
+  function hudSync(){var hd=document.querySelector(".hud"),hl=document.getElementById("hudLine");hd.classList.toggle("hud-open",hudOpen);hl.setAttribute("aria-expanded",hudOpen)}
+  hudSync();document.getElementById("hudLine").addEventListener("click",function(){hudOpen=!hudOpen;uiSet("hud",hudOpen);hudSync()});
   document.getElementById("mbNew").addEventListener("click",function(){document.getElementById("nqBtn").click()});
   document.getElementById("mbGrove").addEventListener("click",function(){openGrove(false)});
   document.getElementById("mbSprint").addEventListener("click",function(){openSprintSetup()});
@@ -11,7 +12,7 @@
 
   var sndBtn=document.getElementById("sndBtn");
   function sndLabel(){sndBtn.textContent=sfxOn?"SFX on":"SFX off";sndBtn.setAttribute("aria-pressed",sfxOn)}
-  sndLabel();sndBtn.addEventListener("click",function(){sfxOn=!sfxOn;try{localStorage.setItem("pc-sfx",sfxOn?"on":"off")}catch(e){}sndLabel();if(sfxOn)sfx("base")});
+  sndLabel();sndBtn.addEventListener("click",function(){sfxOn=!sfxOn;uiSet("sfx",sfxOn);sndLabel();if(sfxOn)sfx("base")});
   document.getElementById("backToday").addEventListener("click",function(){viewKey=null;selDay=null;document.getElementById("dayInfo").textContent="";render()});
   document.getElementById("stripPrev").addEventListener("click",function(){page++;render()});
   document.getElementById("stripNext").addEventListener("click",function(){if(page>0)page--;render()});
